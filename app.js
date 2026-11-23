@@ -33,7 +33,8 @@
   const GARDIEN = [0, 4916];                       // origine de la zone A5, la maison du gardien
   const g = p => [p[0] + GARDIEN[0], p[1] + GARDIEN[1]];
   const z2 = p => [p[0] + 2184, p[1] + 4916];
-  const z3 = p => [p[0] + 2184, p[1] + 3687];       // zone de l'allée du manoir, au-dessus de la grille       // zone de la grille d'entrée, à droite de la maison du gardien
+  const z3 = p => [p[0] + 2184, p[1] + 3687];       // zone de l'allée du manoir, au-dessus de la grille
+  const z4 = p => [p[0] + 4368, p[1] + 3687];       // zone de l'aile d'entrée du manoir, à droite de l'allée
   WORLD.start = g([1380, 640]);
 
   /* Chantiers. « at » : position de la bulle sur la carte. « need » : chantiers à terminer avant.
@@ -160,6 +161,46 @@
     { id: "allee_massif", room: "Allée du manoir", name: "Planter un grand massif", short: "Grand massif", verb: "Planter", cost: 9, icon: "plus", need: ["allee_pelouse"], at: z3([1380, 1100]),
       desc: "Un massif ovale au milieu de la grande pelouse.",
       styles: [{ name: "Hortensias", sw: "#8FA8E8", patch: PATCH.massif_hortensias }, { name: "Tulipes", sw: "#E2483A", patch: PATCH.massif_tulipes }] },
+
+    /* ----- Zone 4 : l'aile d'entrée du manoir, à droite de l'allée. Le grand salon s'ouvre aux chats, qui y entrent par la porte du perron.
+       Le piano et les meubles du coin salon sont triés avec les chats ; le tapis et la cheminée restent à plat. ----- */
+    { id: "manoir_debrousse", room: "Manoir", name: "Débroussailler le devant du manoir", verb: "Débroussailler", cost: 8, icon: "broom", need: ["allee_pelouse"], at: z4([1300, 1000]),
+      desc: "Herbes folles, buissons secs et cailloux tout le long de la façade.", patch: PATCH.manoir_debrousse },
+    { id: "manoir_pelouse", room: "Manoir", name: "Semer la pelouse du manoir", verb: "Semer", cost: 10, icon: "plus", need: ["manoir_debrousse"], at: z4([1950, 1060]),
+      desc: "La grande pelouse de l'allée fait le tour de l'aile.", patch: PATCH.manoir_pelouse },
+    { id: "manoir_chemin", room: "Manoir", name: "Prolonger le chemin le long du manoir", short: "Chemin du manoir", verb: "Prolonger", cost: 14, icon: "hammer", need: ["manoir_pelouse", "allee_chemin"], at: z4([1250, 1390]),
+      desc: "Le chemin longe la façade jusqu'au perron, dans le revêtement choisi à la grille.",
+      patch: eff => PATCH["manoir_chemin_" + (eff("grille_chemin") ? "gravier" : "paves")] },
+    { id: "manoir_fenetres", room: "Manoir", name: "Restaurer les fenêtres", short: "Fenêtres", verb: "Restaurer", cost: 12, icon: "hammer", need: ["manoir_debrousse"], at: z4([1080, 690]),
+      desc: "Châssis pourris et vitres sales sur toute la façade.",
+      styles: [{ name: "Blanches", sw: "#F2F1EC", patch: PATCH.manoir_fenetres_blanches }, { name: "Volets verts", sw: "#2F6B45", patch: PATCH.manoir_volets_verts }] },
+    { id: "manoir_salon", room: "Manoir", name: "Déblayer le grand salon", verb: "Déblayer", cost: 10, icon: "broom", need: ["manoir_debrousse"], at: z4([1480, 600]),
+      desc: "Chaise cassée, planches, gravats : on vide la pièce et on remonte le mur effondré. Les chats pourront y entrer.", patch: PATCH.manoir_salon },
+    { id: "manoir_sol", room: "Manoir", name: "Poser le sol du grand salon", short: "Sol du grand salon", verb: "Poser", cost: 14, icon: "plus", need: ["manoir_salon"], at: z4([1560, 680]),
+      desc: "Le vieux plancher est fichu. Choisis le sol de la plus belle pièce du manoir.",
+      styles: [{ name: "Chêne en chevrons", sw: "#D99A4E", patch: PATCH.manoir_sol_chevrons }, { name: "Damier de marbre", sw: "#2E2E33", patch: PATCH.manoir_sol_marbre }] },
+    { id: "manoir_murs", room: "Manoir", name: "Habiller les murs du grand salon", short: "Murs du grand salon", verb: "Habiller", cost: 12, icon: "hammer", need: ["manoir_salon"], at: z4([1650, 330]),
+      desc: "Du papier peint ou des boiseries, sur les grands murs du salon.",
+      styles: [{ name: "Papier peint vert", sw: "#A8BC94", patch: PATCH.manoir_murs_papier }, { name: "Boiseries bleues", sw: "#9FC3C9", patch: PATCH.manoir_murs_boiseries }] },
+    { id: "manoir_cheminee", room: "Manoir", name: "Construire une cheminée", short: "Cheminée", verb: "Construire", cost: 14, icon: "plus", need: ["manoir_sol"], at: z4([1300, 430]),
+      desc: "Un bon feu dans le grand salon. Les chats viendront dormir devant.",
+      poi: [{ x: 4368 + 1345, y: 3687 + 642, pose: "dort", dir: 1, min: 15000, max: 35000 }, { x: 4368 + 1425, y: 3687 + 655, pose: "dort", dir: 1, min: 15000, max: 35000 }],
+      styles: [{ name: "Marbre blanc", sw: "#ECEAE6", patch: PATCH.manoir_cheminee_marbre }, { name: "Pierre et chêne", sw: "#8C7A66", patch: PATCH.manoir_cheminee_pierre }] },
+    { id: "manoir_canapes", room: "Manoir", name: "Meubler le coin salon", short: "Coin salon", verb: "Meubler", cost: 14, icon: "plus", need: ["manoir_sol"], at: z4([1770, 520]),
+      desc: "Un canapé, deux fauteuils, une table basse et un tapis. Les chats viendront faire la sieste sur le canapé.",
+      poi: [{ x: 4368 + 1745, y: 3687 + 597, pose: "dort", dir: -1, depth: 4389, min: 15000, max: 35000 },
+            { x: 4368 + 1752, y: 3687 + 575, pose: "dort", dir: -1, depth: 4384, min: 15000, max: 35000 }],
+      styles: [{ name: "Chesterfield", sw: "#5A3B2E", patch: PATCH.manoir_canapes_chesterfield }, { name: "Velours", sw: "#1F6E6E", patch: PATCH.manoir_canapes_velours }],
+      // le tapis reste à plat ; chaque meuble est redessiné à part et trié avec les chats, qui passent derrière la table ou un fauteuil
+      parts: ["chesterfield", "velours"].map(n => [["fauteuil", [4312, 4363]], ["canape", [4388, 4383]], ["table", [4395, 4364]]].map(([p, dp], k) => ({ patch: PATCH["manoir_canapes_" + n + "_" + p], depth: dp[n === "velours" ? 1 : 0] }))) },
+    { id: "manoir_piano", room: "Manoir", name: "Installer un piano à queue", short: "Piano", verb: "Installer", cost: 16, icon: "plus", need: ["manoir_sol"], at: z4([1500, 380]), depth: 3687 + 588,
+      desc: "Un grand piano dans le coin du salon. Les chats adorent s'asseoir sur le clavier.",
+      poi: [{ x: 4368 + 1468, y: 3687 + 474, pose: "assis", dir: 1, depth: 3687 + 589, min: 8000, max: 18000 },
+            { x: 4368 + 1462, y: 3687 + 484, pose: "assis", dir: 1, depth: 3687 + 589, min: 8000, max: 18000 }],
+      styles: [{ name: "Laqué noir", sw: "#1E1E22", patch: PATCH.manoir_piano_noir }, { name: "Laqué blanc", sw: "#F4F3EF", patch: PATCH.manoir_piano_blanc }] },
+    { id: "manoir_bureau", room: "Manoir", name: "Aménager le bureau", short: "Bureau", verb: "Aménager", cost: 10, icon: "hammer", need: ["manoir_debrousse"], at: z4([2000, 270]),
+      desc: "La petite pièce aux deux portes devient un bureau.",
+      styles: [{ name: "Bois sombre", sw: "#6B3A26", patch: PATCH.manoir_bureau_bois }, { name: "Blanc et rotin", sw: "#F3F0E8", patch: PATCH.manoir_bureau_blanc }] },
 
     /* ----- Zone 2 : la grille d'entrée. Ordre d'empilement : sol, chemin, mur, massif, abri, banc, grille, lanternes. ----- */
     { id: "grille_debrousse", room: "Grille d'entrée", name: "Débroussailler l'entrée", verb: "Débroussailler", cost: 5, icon: "broom", need: ["jardin_pelouse"], at: z2([1250, 1000]),
@@ -870,16 +911,19 @@
   // cases libres (1 maison, 2 jardin du gardien, 3 entrée du domaine, 4 passage caché dans la haie),
   // recalculées quand un meuble est posé ou qu'un chantier se termine
   let navFree = null;
-  let navHouse = [], navGarden = [], navGate = [], navAllee = [];
-  const HIDDEN = v => v === 4 || v === 6;          // passages où le chat se faufile sans être vu (haie, sous la grille)
+  let navHouse = [], navGarden = [], navGate = [], navAllee = [], navManoir = [], navSalon = [];
+  const HIDDEN = v => v === 4 || v === 6 || v === 9;   // passages où le chat se faufile sans être vu (haie, sous la grille, porte du manoir)
   function buildNav() {
     navFree = new Uint8Array(NAV.w * NAV.h);
     const garden = isDone("jardin_debrousse");      // tant que le jardin est en friche, les chats restent à l'intérieur
     const gate = garden && isDone("grille_debrousse");   // même règle pour l'entrée, qu'ils rejoignent par un trou dans la haie
     const allee = gate && isDone("allee_debrousse");     // et pour l'allée du manoir, où ils passent sous la grille
+    const manoir = allee && isDone("manoir_debrousse");  // puis le devant du manoir
+    const salon = manoir && isDone("manoir_salon");      // et le grand salon, par la porte du perron
     for (let r = 0; r < NAV.h; r++) for (let c = 0; c < NAV.w; c++) {
       const v = NAV.rows[r].charCodeAt(c) - 48;
-      navFree[r * NAV.w + c] = v === 1 || (v === 2 && garden) || ((v === 3 || v === 4) && gate) || (v >= 5 && allee) ? v : 0;
+      navFree[r * NAV.w + c] = v === 1 || (v === 2 && garden) || ((v === 3 || v === 4) && gate) || ((v === 5 || v === 6) && allee) ||
+        (v === 7 && manoir) || ((v === 8 || v === 9) && salon) ? v : 0;
     }
     Object.keys(NAV.blocks).forEach(id => {
       if (isDone(id)) (NAV.blocks[id][S.house[id].style | 0] || NAV.blocks[id][0] || []).forEach(i => { navFree[i] = 0; });
@@ -898,13 +942,15 @@
       }
       if (size > bestSize) { bestSize = size; best = id; }
     }
-    navHouse = []; navGarden = []; navGate = []; navAllee = [];
+    navHouse = []; navGarden = []; navGate = []; navAllee = []; navManoir = []; navSalon = [];
     for (let i = 0; i < navFree.length; i++) {
       if (comp[i] !== best) navFree[i] = 0;
       else if (navFree[i] === 1) navHouse.push(i);
       else if (navFree[i] === 2) navGarden.push(i);
-      else if (navFree[i] === 3) navGate.push(i);       // les passages cachés (4, 6) ne sont jamais une destination
+      else if (navFree[i] === 3) navGate.push(i);       // les passages cachés (4, 6, 9) ne sont jamais une destination
       else if (navFree[i] === 5) navAllee.push(i);
+      else if (navFree[i] === 7) navManoir.push(i);
+      else if (navFree[i] === 8) navSalon.push(i);
     }
   }
   function neighbours(i) {
@@ -920,7 +966,7 @@
   const cellXY = i => [NAV.x0 + (i % NAV.w + 0.5) * NAV.cell, NAV.y0 + (((i / NAV.w) | 0) + 0.5) * NAV.cell];
   function randomCell() {
     // on tire d'abord l'endroit, pour que les chats restent visibles un peu partout : maison, jardin, entrée
-    const pools = [[navHouse, 0.38], [navGarden, 0.27], [navGate, 0.15], [navAllee, 0.2]].filter(p => p[0].length);
+    const pools = [[navHouse, 0.3], [navGarden, 0.2], [navGate, 0.11], [navAllee, 0.13], [navManoir, 0.1], [navSalon, 0.16]].filter(p => p[0].length);
     if (!pools.length) return 0;
     let k = Math.random() * pools.reduce((t, p) => t + p[1], 0);
     for (const p of pools) { k -= p[1]; if (k <= 0) return p[0][Math.floor(Math.random() * p[0].length)]; }
@@ -1236,9 +1282,11 @@
     let h = "";
     SLOTS.forEach(s => {
       const k = effStyle(s.id);
-      if (k == null || !s.depth) return;
-      const p = patchOf(s, k), dp = Array.isArray(s.depth) ? s.depth[k] : s.depth;
-      if (p) h += '<image class="obj" data-depth="' + dp + '" href="' + p.src + '" x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '"/>';
+      if (k == null) return;
+      const img = (p, dp) => { if (p) h += '<image class="obj" data-depth="' + dp + '" href="' + p.src + '" x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '"/>'; };
+      // « parts » : morceaux d'un chantier posé à plat, redessinés un par un à leur profondeur
+      if (s.parts) (s.parts[k] || []).forEach(o => img(o.patch, o.depth));
+      if (s.depth) img(patchOf(s, k), Array.isArray(s.depth) ? s.depth[k] : s.depth);
     });
     if (h) layer.insertAdjacentHTML("beforeend", h);
     sortCats();
@@ -1375,7 +1423,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.9." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.10." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -1471,7 +1519,7 @@
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) { /* sans importance */ }
 
   window.__ronron = { state: () => S, level: () => L, nav: () => navFree, path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
-    navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
+    navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length, navManoir.length, navSalon.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
     audio: () => ({ ctx: AC ? AC.state : null, playing: !!(musicSrc && !musicSrc.pending), track: musicIdx % MUSIC.length, pref: audioPref }), sfx: sfx, sfxNames: () => Object.keys(SFX), sfxRaw: name => SFX[name](),
     walls: () => (WALLS ? WALLS.strips.filter(st => st.node && st.node.parentNode).length : -1), wallsReady: () => !!wallCanvas };
 })();
