@@ -578,7 +578,8 @@
     $("#lives-timer").textContent = S.lives < MAX_LIVES ? "+1 dans " + clock(nextLifeIn()) : "";
     const play = $("#tab-play");
     play.classList.toggle("nolife", S.lives <= 0);
-    $("#play-sub").textContent = S.lives <= 0 ? "Vie dans " + clock(nextLifeIn()) : "Niveau " + S.level;
+    $("#play-sub").textContent = S.lives <= 0 ? "Vie dans " + clock(nextLifeIn()) : levelName(S.level);
+    play.dataset.kind = S.lives <= 0 ? "normal" : kindOf(S.level);
   }
 
   /* ================= 4. Niveaux ================= */
@@ -618,7 +619,31 @@
   }
 
   const board = $("#board");
-  let L = null;          // partie en cours : { lv, n, st, fish, placed, over }
+  let L = null;          // partie en cours : { lv, n, k, sol, st, fish, placed, over, time }
+  // Types de niveaux (calculés par gen.js) : nom affiché et récompense.
+  const KIND_NAME = { normal: "", mini: "Mini-boss", boss: "Boss", geant: "Boss géant" };
+  const kindOf = level => (window.RonronGen ? window.RonronGen.kindOf(level) : "normal");
+  const rewardOf = level => (window.RonronGen ? window.RonronGen.rewardFor(level) : 1);
+  const levelName = level => "Niveau " + level + (KIND_NAME[kindOf(level)] ? " · " + KIND_NAME[kindOf(level)] : "");
+  const FAST = 90;       // secondes : en dessous, une croquette de plus
+
+  // Chrono du niveau : il ne compte que quand l'appli est à l'écran.
+  function elapsed() { if (!L || !L.time) return 0; const t = L.time; return (t.acc + (t.from ? performance.now() - t.from : 0)) / 1000; }
+  function clockText(sec) { sec = Math.floor(sec); return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0"); }
+  function renderChrono() {
+    const el = $("#chrono"); if (!el) return;
+    if (!L || !L.time) { el.hidden = true; return; }
+    const sec = elapsed(); el.hidden = false;
+    el.textContent = clockText(sec);
+    el.classList.toggle("late", sec >= FAST);
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (!L || !L.time || L.over) return;
+    const t = L.time;
+    if (document.hidden && t.from) { t.acc += performance.now() - t.from; t.from = 0; }
+    else if (!document.hidden && !t.from) t.from = performance.now();
+  });
+  setInterval(() => { if (L && L.time && !L.over && view === "level") renderChrono(); }, 250);
   // État d'une case : 0 vide, 1 croix du joueur, 3 chat, 4 erreur (2, ancienne croix automatique, n'est plus utilisé).
 
   function renderFishes(left) {
@@ -636,6 +661,8 @@
     L = null;
     $("#level-title").textContent = "Niveau " + level;
     $("#level-size").textContent = "";
+    $("#screen-level").dataset.kind = kindOf(level);
+    renderChrono();
     board.className = "board loading";
     board.innerHTML = "<span>Préparation de la grille…</span>";
     renderFishes(3);
@@ -649,9 +676,13 @@
 
   function initLevel(lv) {
     const n = lv.n;
-    L = { lv: lv, n: n, st: new Uint8Array(n * n), fish: 3, placed: 0, over: false };
+    const k = lv.k || 1;
+    L = { lv: lv, n: n, k: k, sol: new Set(lv.stars || lv.solution.map((c, r) => r * n + c)), st: new Uint8Array(n * n), fish: 3, placed: 0, over: false,
+          time: { acc: 0, from: document.hidden ? 0 : performance.now() } };
     S.inLevel = { level: lv.level, fishLost: 0 }; save();
-    $("#level-size").textContent = "Grille " + n + " × " + n;
+    const reward = lv.reward || rewardOf(lv.level);
+    $("#level-size").textContent = (KIND_NAME[lv.kind] ? KIND_NAME[lv.kind] + " · " : "") + plural(reward, "croquette");
+    renderChrono();
     // couleurs mélangées selon le niveau
     const rnd = window.RonronGen.mulberry32(lv.level * 31 + 7);
     const cols = ZONE_COLORS.slice();
@@ -668,9 +699,15 @@
     board.innerHTML = h;
     L.cells = $$(".cell", board);
     renderFishes(3);
-    $("#level-hint").textContent = lv.level <= 2
+    $("#level-hint").textContent = k === 2
+      ? "Boss géant : deux chats par zone, par ligne et par colonne, jamais côte à côte."
+      : lv.level <= 2
       ? "Un chat par zone, par ligne et par colonne, jamais côte à côte. Un tap : croix. Deux taps : chat."
-      : "Un tap : une croix. Deux taps rapides : un chat.";
+      : "Un tap : une croix. Deux taps rapides : un chat. En moins de 1:30, une croquette en plus.";
+    if (k === 2 && !S.seenGeant) {         // premier boss géant : on explique la règle avant de lancer le chrono
+      S.seenGeant = true; save(); L.time.from = 0;
+      const cur = L; showRules(() => { if (L === cur && !L.over && !document.hidden) L.time.from = performance.now(); });
+    }
   }
 
   function setCell(i, s) { L.st[i] = s; L.cells[i].dataset.s = s; }
@@ -679,10 +716,9 @@
     if (!L || L.over) return;
     const s = L.st[i];
     if (s >= 2) return;
-    const n = L.n, r = (i / n) | 0, c = i % n;
-    if (L.lv.solution[r] === c) {
+    if (L.sol.has(i)) {
       setCell(i, 3); L.placed++; buzz(12); sfx("cat");      // les croix restent à la main du joueur : rien n'est rempli à sa place
-      if (L.placed === n) win();
+      if (L.placed === L.n * L.k) win();
     } else {
       setCell(i, 4);
       const el = L.cells[i]; el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake");
@@ -693,15 +729,20 @@
   }
 
   function win() {
-    L.over = true;
-    const done = S.level;
-    S.kibble++; S.level++; S.inLevel = null; save(); updateHud();
+    const sec = elapsed();
+    if (L.time && L.time.from) { L.time.acc += performance.now() - L.time.from; L.time.from = 0; }
+    L.over = true; renderChrono();
+    const done = S.level, kind = L.lv.kind || kindOf(done), base = L.lv.reward || rewardOf(done), fast = sec < FAST ? 1 : 0;
+    S.kibble += base + fast; S.level++; S.inLevel = null; save(); updateHud();
     setTimeout(() => sfx("win"), 260);
     setTimeout(() => {
       if (view !== "level") return;
+      const title = { mini: "Mini-boss battu !", boss: "Boss battu !", geant: "Boss géant battu !" }[kind];
       openSheet(
-        '<span class="tag">Niveau ' + done + " réussi</span>" +
-        '<div class="big">' + ico("kibble") + "+1 croquette</div>" +
+        '<span class="tag">Niveau ' + done + " réussi</span>" + (title ? "<h2>" + title + "</h2>" : "") +
+        '<div class="big">' + ico("kibble") + "+" + plural(base + fast, "croquette") + "</div>" +
+        '<p class="timeline">Temps : <strong>' + clockText(sec) + "</strong>" +
+          (fast ? " · bonus de rapidité <strong>+1</strong>" : " · moins de 1:30 = une croquette en plus") + "</p>" +
         "<p>Tu as maintenant <strong>" + plural(S.kibble, "croquette") + "</strong> à dépenser dans la maison.</p>" +
         '<div class="row"><button class="btn ghost" id="w-home" type="button">La maison</button>' +
         '<button class="btn" id="w-next" type="button">Niveau suivant</button></div>',
@@ -719,7 +760,7 @@
       if (view !== "level") return;
       const none = S.lives <= 0;
       openSheet(
-        '<span class="tag">Niveau ' + S.level + "</span><h2>Plus de poissons</h2>" +
+        '<span class="tag">' + levelName(S.level) + "</span><h2>Plus de poissons</h2>" +
         "<p>Le niveau est perdu et te coûte une vie. " +
         (none ? "Tu n'as plus de vie : la prochaine arrive dans <strong>" + clock(nextLifeIn()) + "</strong>."
               : "Il te reste <strong>" + plural(S.lives, "vie") + "</strong>.") + "</p>" +
@@ -787,17 +828,20 @@
   board.addEventListener("pointercancel", endPtr);
   board.addEventListener("contextmenu", e => e.preventDefault());
 
-  function showRules() {
+  function showRules(then) {
+    const two = L && L.k === 2;
     openSheet(
-      "<h2>Règles</h2><ul>" +
-      "<li>Place <strong>un chat dans chaque zone</strong> de couleur.</li>" +
-      "<li>Un seul chat par ligne et par colonne.</li>" +
+      "<h2>Règles" + (two ? " du boss géant" : "") + "</h2><ul>" +
+      (two ? "<li>Place <strong>deux chats dans chaque zone</strong> de couleur.</li><li>Deux chats par ligne et deux par colonne.</li>"
+           : "<li>Place <strong>un chat dans chaque zone</strong> de couleur.</li><li>Un seul chat par ligne et par colonne.</li>") +
       "<li>Deux chats ne se touchent jamais, même en diagonale.</li>" +
       "<li>Un chat mal placé te coûte un poisson. À zéro poisson, le niveau est perdu et tu perds une vie.</li>" +
+      "<li>Tous les 5 niveaux, un mini-boss (3 croquettes) ; tous les 10, un boss (5) ; tous les 20, un boss géant à deux chats (10). " +
+      "Finis un niveau en moins de 1:30 pour une croquette en plus.</li>" +
       "</ul><p><strong>Un tap</strong> pose ou retire une croix ; tu peux glisser le doigt pour en tracer plusieurs. " +
       "<strong>Deux taps rapides</strong> sur une case y posent un chat.</p>" +
-      '<button class="btn block" id="r-ok" type="button">Compris</button>');
-    $("#r-ok").onclick = () => closeSheet();
+      '<button class="btn block" id="r-ok" type="button">Compris</button>', then ? { sticky: true } : undefined);
+    $("#r-ok").onclick = () => { closeSheet(); if (then) then(); };
   }
 
   /* ================= 5. Carte du domaine ================= */
@@ -1470,7 +1514,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.11." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.12." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +

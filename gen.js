@@ -275,21 +275,36 @@
     return null;
   }
 
-  /* Difficulté visée pour un niveau : le « score » du solveur (nombre et poids des raisonnements nécessaires).
-     Elle monte régulièrement dans chaque palier de taille, redescend un peu quand la grille s'agrandit,
-     et varie légèrement d'un niveau à l'autre pour éviter la monotonie. */
+  /* Type de niveau : un mini-boss tous les 5 niveaux, un boss tous les 10, un boss géant à deux chats tous les 20.
+     Entre les deux, la difficulté va en dents de scie : deux niveaux faciles, un moyen, un dur. */
+  function kindOf(level) { return level % 20 === 0 ? "geant" : level % 10 === 0 ? "boss" : level % 5 === 0 ? "mini" : "normal"; }
+  const REWARDS = { normal: 1, mini: 3, boss: 5, geant: 10 };
+  function rewardFor(level) { return REWARDS[kindOf(level)]; }
+  function sizeFor(level) {
+    const t = tierFor(level), kind = kindOf(level);
+    if (kind === "boss") return Math.min(10, t.n + 1);                 // le boss se joue sur la grille du palier suivant
+    if (kind === "geant") return level < 100 ? 8 : level < 240 ? 9 : 10; // deux chats par ligne : il faut de la place
+    return t.n;
+  }
+
+  /* Difficulté visée pour un niveau : le « score » du solveur (nombre et poids des raisonnements nécessaires). */
   const TARGETS = [[2, 10], [6, 18], [8, 24], [10, 32], [12, 40], [15, 50]];
+  const SAW = [1, 0.7, 0.85, 1.05, 1.3];                 // position dans le cycle de 5 : facile, facile, moyen, dur (puis le mini-boss)
+  function baseTarget(index, p) { const r = TARGETS[index]; return r[0] + (r[1] - r[0]) * p; }
   function targetFor(level) {
-    const t = tierFor(level), r = TARGETS[t.index];
-    const wobble = 0.85 + 0.3 * mulberry32(level * 2654435761 + 17)();
-    const breather = level > 10 && level % 5 === 0 ? 0.7 : 1;      // un niveau plus léger tous les cinq
-    return Math.max(1, Math.round((r[0] + (r[1] - r[0]) * t.p) * wobble * breather));
+    const t = tierFor(level), kind = kindOf(level);
+    const wobble = 0.92 + 0.16 * mulberry32(level * 2654435761 + 17)();
+    if (kind === "mini") return Math.round(baseTarget(t.index, t.p) * 1.45 * wobble);
+    if (kind === "boss") return Math.round(baseTarget(Math.min(5, t.index + 1), t.p) * (t.index === 5 ? 1.5 : 1.25) * wobble);
+    if (kind === "geant") return Math.round((42 + 40 * Math.min(1, level / 500)) * wobble);
+    return Math.max(1, Math.round(baseTarget(t.index, t.p) * SAW[level % 5] * wobble));
   }
 
   function makeLevel(level) {
-    const t = tierFor(level);
-    const n = t.n, target = targetFor(level);
-    const even = Math.min(0.8, 0.1 + 0.55 * t.p + 0.04 * t.index);
+    if (kindOf(level) === "geant") return makeLevel2(level);
+    const t = tierFor(level), kind = kindOf(level);
+    const n = sizeFor(level), target = targetFor(level);
+    const even = Math.min(0.85, 0.1 + 0.55 * t.p + 0.04 * t.index + (kind === "normal" ? 0 : 0.15));
     const tol = Math.max(2, Math.round(target * 0.15));
     let best = null, solved = 0;
     // On fabrique plusieurs grilles et on garde celle dont la difficulté mesurée est la plus proche de la cible.
@@ -308,14 +323,220 @@
       }
       if (!res.solved) continue;
       solved++;
-      const cand = { n: n, level: level, regions: Array.from(g), solution: sol, score: res.score, target: target };
+      const cand = { n: n, k: 1, kind: kind, reward: REWARDS[kind], level: level, regions: Array.from(g), solution: sol,
+        stars: sol.map((c, r) => r * n + c), score: res.score, target: target };
       if (!best || Math.abs(cand.score - target) < Math.abs(best.score - target)) best = cand;
       if (Math.abs(best.score - target) <= tol) break;
     }
     return best;
   }
 
-  const api = { makeLevel, logicSolve, countSolutions, tierFor, targetFor, mulberry32 };
+
+  /* ===== Grilles à deux chats : deux par ligne, par colonne et par zone, jamais voisins ===== */
+  function randomSolution2(n, rnd) {
+    const rows = [], cnt = new Int8Array(n);
+    const pairs = [];
+    for (let a = 0; a < n; a++) for (let b = a + 2; b < n; b++) pairs.push([a, b]);
+    let budget = 20000;
+    function rec(r) {
+      if (r === n) return true;
+      if (--budget < 0) return false;
+      const rem = n - r - 1;
+      for (const [a, b] of shuffle(pairs.slice(), rnd)) {
+        if (cnt[a] >= 2 || cnt[b] >= 2) continue;
+        if (r > 0) { const p = rows[r - 1]; if (Math.abs(p[0] - a) <= 1 || Math.abs(p[1] - a) <= 1 || Math.abs(p[0] - b) <= 1 || Math.abs(p[1] - b) <= 1) continue; }
+        cnt[a]++; cnt[b]++; rows.push([a, b]);
+        let ok = true;
+        for (let c = 0; c < n && ok; c++) { const need = 2 - cnt[c]; if (need > Math.ceil(rem / 2) || (need === 2 && (c === a || c === b))) ok = false; }
+        if (ok && rec(r + 1)) return true;
+        cnt[a]--; cnt[b]--; rows.pop();
+      }
+      return false;
+    }
+    return rec(0) ? rows.flatMap((p, r) => [r * n + p[0], r * n + p[1]]) : null;
+  }
+
+  // Zones : on relie les chats deux par deux par un chemin, puis on étend chaque zone de proche en proche.
+  function regions2(n, stars, rnd, even) {
+    const N = n * n, g = new Int8Array(N).fill(-1), isStar = new Uint8Array(N), done = new Uint8Array(N);
+    stars.forEach(i => { isStar[i] = 1; });
+    const nbr = i => { const r = (i / n) | 0, c = i % n; return [r > 0 ? i - n : -1, r < n - 1 ? i + n : -1, c > 0 ? i - 1 : -1, c < n - 1 ? i + 1 : -1].filter(j => j >= 0); };
+    const size = []; let z = 0;
+    for (const a of shuffle(stars.slice(), rnd)) {
+      if (done[a]) continue;
+      // chemin le plus court vers un autre chat libre, par des cases libres
+      const prev = new Int32Array(N).fill(-2); prev[a] = -1; const q = [a]; let b = -1;
+      for (let h = 0; h < q.length && b < 0; h++) {
+        for (const j of shuffle(nbr(q[h]), rnd)) {
+          if (prev[j] !== -2 || g[j] !== -1) continue;
+          if (isStar[j]) { if (!done[j]) { prev[j] = q[h]; b = j; break; } continue; }
+          prev[j] = q[h]; q.push(j);
+        }
+      }
+      if (b < 0) return null;
+      let k = 0;
+      for (let j = b; j !== -1; j = prev[j]) { g[j] = z; k++; }
+      done[a] = done[b] = 1; size.push(k); z++;
+    }
+    let left = 0; for (let i = 0; i < N; i++) if (g[i] === -1) left++;
+    while (left > 0) {
+      const front = []; for (let k = 0; k < n; k++) front.push([]);
+      for (let i = 0; i < N; i++) {
+        if (g[i] !== -1) continue;
+        const seen = new Set();
+        for (const j of nbr(i)) { const zz = g[j]; if (zz !== -1 && !seen.has(zz)) { seen.add(zz); front[zz].push(i); } }
+      }
+      let total = 0; const w = [];
+      for (let k = 0; k < n; k++) { const wk = front[k].length ? (1 - even) * size[k] + even / size[k] : 0; w.push(wk); total += wk; }
+      if (total === 0) return null;
+      let pick = rnd() * total, k = 0;
+      for (; k < n - 1; k++) { pick -= w[k]; if (pick <= 0 && w[k] > 0) break; }
+      while (!front[k].length) k = (k + 1) % n;
+      const cell = front[k][Math.floor(rnd() * front[k].length)];
+      g[cell] = k; size[k]++; left--;
+    }
+    return g;
+  }
+
+  /* Solveur logique à deux chats, avec les mêmes raisonnements qu'un joueur :
+     1. une unité (ligne, colonne, zone) n'a plus que les cases qu'il lui faut ;
+     2. des zones enfermées dans une bande de lignes (ou de colonnes) qui demandent autant de chats qu'elle : la bande leur est réservée, et inversement ;
+     3. une case qui, occupée, rendrait une unité impossible à compléter est exclue. */
+  function logicSolve2(n, g) {
+    const N = n * n, K = 2;
+    const units = [];                                   // 0..n-1 lignes, n..2n-1 colonnes, 2n..3n-1 zones
+    for (let u = 0; u < 3 * n; u++) units.push([]);
+    for (let i = 0; i < N; i++) { units[(i / n) | 0].push(i); units[n + i % n].push(i); units[2 * n + g[i]].push(i); }
+    const unitsOf = i => [(i / n) | 0, n + i % n, 2 * n + g[i]];
+    let cand = new Uint8Array(N).fill(1); const star = new Uint8Array(N); let got = new Int8Array(3 * n);
+    let placed = 0, score = 0, hard = 0;
+    function put(cd, gt, i) {
+      cd[i] = 0;
+      const r = (i / n) | 0, c = i % n;
+      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+        const rr = r + dr, cc = c + dc; if (rr >= 0 && cc >= 0 && rr < n && cc < n) cd[rr * n + cc] = 0;
+      }
+      for (const u of unitsOf(i)) { gt[u]++; if (gt[u] >= K) for (const j of units[u]) cd[j] = 0; }
+    }
+    function place(i) { star[i] = 1; put(cand, got, i); placed++; }
+    // ce qu'une unité peut encore accueillir au plus (sur une ligne ou une colonne, deux cases voisines ne comptent qu'une fois)
+    function room(cd, u) {
+      let k = 0, last = -9;
+      if (u < 2 * n) { for (let p = 0; p < n; p++) { const i = units[u][p]; if (cd[i] && p - last > 1) { k++; last = p; } } return k; }
+      for (const i of units[u]) if (cd[i]) k++;
+      return k;
+    }
+    function dead(cd, gt) { for (let u = 0; u < 3 * n; u++) if (gt[u] < K && room(cd, u) < K - gt[u]) return true; return false; }
+    function singles() {
+      if (dead(cand, got)) return -1;
+      for (let u = 0; u < 3 * n; u++) {
+        const need = K - got[u]; if (need <= 0) continue;
+        const c = units[u].filter(i => cand[i]);
+        if (c.length === need) { place(c[0]); return 1; }
+      }
+      return 0;
+    }
+    function confine(byRow) {
+      const line = i => byRow ? (i / n) | 0 : i % n, lu = byRow ? 0 : n;
+      const lo = new Int8Array(n).fill(127), hi = new Int8Array(n).fill(-1);
+      for (let i = 0; i < N; i++) if (cand[i]) { const z = g[i], l = line(i); if (l < lo[z]) lo[z] = l; if (l > hi[z]) hi[z] = l; }
+      for (let a = 0; a < n; a++) for (let b = a; b < n; b++) {
+        let B = 0; for (let l = a; l <= b; l++) B += K - got[lu + l];
+        if (B <= 0) continue;
+        let I = 0, T = 0; const inside = new Uint8Array(n), touch = new Uint8Array(n);
+        for (let z = 0; z < n; z++) {
+          const need = K - got[2 * n + z]; if (need <= 0 || hi[z] < 0) continue;
+          if (lo[z] >= a && hi[z] <= b) { inside[z] = 1; I += need; }
+          let any = false; for (const i of units[2 * n + z]) if (cand[i] && line(i) >= a && line(i) <= b) { any = true; break; }
+          if (any) { touch[z] = 1; T += need; }
+        }
+        let changed = false;
+        if (I === B) for (let i = 0; i < N; i++) if (cand[i] && line(i) >= a && line(i) <= b && !inside[g[i]]) { cand[i] = 0; changed = true; }
+        if (T === B) for (let i = 0; i < N; i++) if (cand[i] && touch[g[i]] && (line(i) < a || line(i) > b)) { cand[i] = 0; changed = true; }
+        if (changed) { const k = b - a + 1; score += k === 1 ? 1 : 2 + k; if (k > 2) hard++; return true; }
+      }
+      return false;
+    }
+    function lookahead() {
+      for (let i = 0; i < N; i++) {
+        if (!cand[i]) continue;
+        const cd = cand.slice(), gt = got.slice(); put(cd, gt, i);
+        if (dead(cd, gt)) { cand[i] = 0; score += 3; hard++; return true; }
+      }
+      return false;
+    }
+    let guard = 0;
+    while (placed < K * n && guard++ < 4000) {
+      const s = singles();
+      if (s === -1) return { solved: false, score: score, hard: hard, left: 9999 };
+      if (s === 1) continue;
+      if (confine(true) || confine(false)) continue;
+      if (lookahead()) continue;
+      break;
+    }
+    let left = 0; for (let i = 0; i < N; i++) if (cand[i]) left++;
+    return { solved: placed === K * n, score: score, hard: hard, left: left + (K * n - placed) * 2 };
+  }
+
+  function mutate2(n, g, isStar, rnd) {
+    for (let tries = 0; tries < 30; tries++) {
+      const i = Math.floor(rnd() * n * n), r = (i / n) | 0, c = i % n;
+      if (isStar[i]) continue;
+      const nb = [r > 0 ? i - n : -1, r < n - 1 ? i + n : -1, c > 0 ? i - 1 : -1, c < n - 1 ? i + 1 : -1];
+      const j = nb[Math.floor(rnd() * 4)];
+      if (j < 0 || g[j] === g[i]) continue;
+      if (!staysConnected(n, g, g[i], i)) continue;
+      const old = g[i]; g[i] = g[j];
+      return [i, old];
+    }
+    return null;
+  }
+
+  function makeLevel2(level) {
+    const n = sizeFor(level), target = targetFor(level);
+    let best = null, solved = 0;
+    for (let attempt = 0; attempt < 30 && solved < 4; attempt++) {
+      const rnd = mulberry32(level * 7919 + attempt * 104729 + 29);
+      const stars = randomSolution2(n, rnd);
+      if (!stars) continue;
+      const g = regions2(n, stars, rnd, [0.35, 0.6, 0.8][attempt % 3]);
+      if (!g) continue;
+      const isStar = new Uint8Array(n * n); stars.forEach(i => { isStar[i] = 1; });
+      let res = logicSolve2(n, g);
+      for (let it = 0; !res.solved && it < 25 * n; it++) {
+        const m = mutate2(n, g, isStar, rnd);
+        if (!m) break;
+        const res2 = logicSolve2(n, g);
+        if (res2.left <= res.left) res = res2; else g[m[0]] = m[1];
+      }
+      if (!res.solved) continue;
+      solved++;
+      const cand = { n: n, k: 2, kind: "geant", reward: REWARDS.geant, level: level, regions: Array.from(g), stars: stars.slice().sort((a, b) => a - b), score: res.score, target: target };
+      if (!best || Math.abs(cand.score - target) < Math.abs(best.score - target)) best = cand;
+      if (Math.abs(best.score - target) <= Math.max(3, target * 0.15)) break;
+    }
+    return best;
+  }
+
+  // Nombre de solutions à deux chats (plafonné à 2), utilisé seulement par les tests.
+  function countSolutions2(n, g) {
+    let count = 0; const col = new Int8Array(n), reg = new Int8Array(n), rows = [];
+    (function rec(r) {
+      if (count > 1) return;
+      if (r === n) { if (col.every(v => v === 2) && reg.every(v => v === 2)) count++; return; }
+      for (let a = 0; a < n; a++) for (let b = a + 2; b < n; b++) {
+        const za = g[r * n + a], zb = g[r * n + b];
+        if (col[a] >= 2 || col[b] >= 2 || reg[za] >= 2 || reg[zb] >= 2 || (za === zb && reg[za] >= 1)) continue;
+        if (r > 0) { const p = rows[r - 1]; if (Math.abs(p[0] - a) <= 1 || Math.abs(p[1] - a) <= 1 || Math.abs(p[0] - b) <= 1 || Math.abs(p[1] - b) <= 1) continue; }
+        col[a]++; col[b]++; reg[za]++; reg[zb]++; rows.push([a, b]);
+        rec(r + 1);
+        col[a]--; col[b]--; reg[za]--; reg[zb]--; rows.pop();
+      }
+    })(0);
+    return count;
+  }
+
+  const api = { makeLevel, logicSolve, logicSolve2, countSolutions, countSolutions2, tierFor, targetFor, sizeFor, kindOf, rewardFor, mulberry32 };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.RonronGen = api;
   // Utilisé comme tâche de fond : on reçoit un numéro de niveau, on renvoie le niveau.
