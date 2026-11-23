@@ -286,38 +286,38 @@
     { id: "allee_statue", room: "Allée du manoir", name: "Restaurer la statue", short: "Statue", verb: "Restaurer", cost: 9, icon: "hammer", need: ["allee_pelouse"], at: z3([2110, 1060]),
       desc: "La statue est grise de mousse et son socle est fendu.",
       styles: [{ name: "Marbre blanc", sw: "#F2EFE8", patch: PATCH.statue_marbre }, { name: "Bronze", sw: "#B8852E", patch: PATCH.statue_bronze }] },
-    /* ----- Zone 6 : l'aile ouest et son jardin, à gauche du perron. Ses calques passent par-dessus ceux de l'allée.
+    /* ----- Zone 6 : l'aile ouest et son jardin, à gauche du perron. À partir de cette zone, les chantiers coûtent 1,5 fois plus. Ses calques passent par-dessus ceux de l'allée.
        Les chats entrent dans la bibliothèque par le trou du mur de façade, puis vont dans la salle à manger et le hall. ----- */
-    { id: "aile_debrousse", room: "Aile ouest", name: "Débroussailler le jardin de l'aile", verb: "Débroussailler", cost: 8, icon: "broom", need: ["allee_pelouse"], at: z6([820, 820]),
+    { id: "aile_debrousse", room: "Aile ouest", name: "Débroussailler le jardin de l'aile", verb: "Débroussailler", cost: 12, icon: "broom", need: ["allee_pelouse"], at: z6([820, 820]),
       desc: "Herbes folles, branches mortes, souche et arbre mort : tout part.", patch: PATCH.aile_debrousse },
-    { id: "aile_pelouse", room: "Aile ouest", name: "Semer la pelouse du jardin", verb: "Semer", cost: 10, icon: "plus", need: ["aile_debrousse"], at: z6([300, 900]),
+    { id: "aile_pelouse", room: "Aile ouest", name: "Semer la pelouse du jardin", verb: "Semer", cost: 15, icon: "plus", need: ["aile_debrousse"], at: z6([300, 900]),
       desc: "Une belle pelouse verte jusqu'au pied du manoir.", patch: PATCH.aile_pelouse },
-    { id: "aile_chemin", room: "Aile ouest", name: "Refaire le chemin du jardin", short: "Chemin du jardin", verb: "Refaire", cost: 12, icon: "hammer", need: ["aile_pelouse", "allee_chemin"], at: z6([640, 640]),
+    { id: "aile_chemin", room: "Aile ouest", name: "Refaire le chemin du jardin", short: "Chemin du jardin", verb: "Refaire", cost: 18, icon: "hammer", need: ["aile_pelouse", "allee_chemin"], at: z6([640, 640]),
       desc: "Le vieux chemin pavé, dans le revêtement choisi à la grille.",
       patch: eff => PATCH["aile_chemin_" + (eff("grille_chemin") ? "gravier" : "paves")] },
-    { id: "aile_gloriette", room: "Aile ouest", name: "Construire un kiosque", short: "Kiosque", verb: "Construire", cost: 16, icon: "plus", need: ["aile_pelouse"], at: z6([480, 330]),
+    { id: "aile_gloriette", room: "Aile ouest", name: "Construire un kiosque", short: "Kiosque", verb: "Construire", cost: 24, icon: "plus", need: ["aile_pelouse"], at: z6([480, 330]),
       desc: "Un coin à l'ombre dans le jardin. Les chats y font la sieste.",
       poi: [p6(500, 600, "dort", 1), p6(560, 625, "dort", -1)],
       styles: [{ name: "Gloriette en fer blanc", sw: "#EDEDEA", patch: PATCH.aile_gloriette }, { name: "Pergola à glycine", sw: "#9B6AD6", patch: PATCH.aile_pergola }] },
-    { id: "aile_biblio", room: "Aile ouest", name: "Déblayer la grande pièce", verb: "Déblayer", cost: 10, icon: "broom", need: ["aile_debrousse"], at: z6([1600, 700]),
+    { id: "aile_biblio", room: "Aile ouest", name: "Déblayer la grande pièce", verb: "Déblayer", cost: 15, icon: "broom", need: ["aile_debrousse"], at: z6([1600, 700]),
       desc: "Gravats et plancher défoncé. Elle deviendra la bibliothèque, et les chats y entreront par le trou du mur.", patch: PATCH.aile_biblio },
-    { id: "aile_salle", room: "Aile ouest", name: "Déblayer la salle à manger", verb: "Déblayer", cost: 10, icon: "broom", need: ["aile_debrousse"], at: z6([2250, 990]),
+    { id: "aile_salle", room: "Aile ouest", name: "Déblayer la salle à manger", verb: "Déblayer", cost: 15, icon: "broom", need: ["aile_debrousse"], at: z6([2250, 990]),
       desc: "La pièce à côté du hall : on nettoie et on repeint en vert tendre.", patch: PATCH.aile_salle },
-    { id: "aile_facade", room: "Aile ouest", name: "Restaurer la façade de l'aile", short: "Façade de l'aile", verb: "Restaurer", cost: 14, icon: "hammer", need: ["aile_biblio"], at: z6([1450, 1010]),
+    { id: "aile_facade", room: "Aile ouest", name: "Restaurer la façade de l'aile", short: "Façade de l'aile", verb: "Restaurer", cost: 21, icon: "hammer", need: ["aile_biblio"], at: z6([1450, 1010]),
       desc: "On rebouche le trou du mur et on refait les fenêtres, dans le même style que le reste du manoir.",
       patch: eff => PATCH["aile_facade_" + (eff("manoir_fenetres") ? "volets" : "blanche")] },
-    { id: "aile_rayons", room: "Aile ouest", name: "Monter les rayonnages", short: "Rayonnages", verb: "Monter", cost: 16, icon: "plus", need: ["aile_biblio"], at: z6([1800, 540]),
+    { id: "aile_rayons", room: "Aile ouest", name: "Monter les rayonnages", short: "Rayonnages", verb: "Monter", cost: 24, icon: "plus", need: ["aile_biblio"], at: z6([1800, 540]),
       desc: "Des étagères pleines de livres sur les deux murs du fond, avec une échelle.",
       styles: [{ name: "Noyer", sw: "#5E3A22", patch: PATCH.aile_rayons_noyer }, { name: "Blancs", sw: "#F4F2EC", patch: PATCH.aile_rayons_blancs }] },
-    { id: "aile_lecture", room: "Aile ouest", name: "Installer un coin lecture", short: "Coin lecture", verb: "Installer", cost: 14, icon: "plus", need: ["aile_biblio"], at: z6([1700, 760]),
+    { id: "aile_lecture", room: "Aile ouest", name: "Installer un coin lecture", short: "Coin lecture", verb: "Installer", cost: 21, icon: "plus", need: ["aile_biblio"], at: z6([1700, 760]),
       desc: "Un fauteuil bien profond au milieu des livres. Devine qui va s'y installer.",
       poi: [[p6(1700, 700, "dort", -1), p6(1750, 792, "dort", 1)], [p6(1490, 700, "dort", 1), p6(1850, 690, "dort", -1)]],
       styles: [{ name: "Velours vert", sw: "#1F6B45", patch: PATCH.aile_lecture_velours }, { name: "Lin crème", sw: "#F1E9D6", patch: PATCH.aile_lecture_lin }] },
-    { id: "aile_atelier", room: "Aile ouest", name: "Aménager l'atelier de peinture", short: "Atelier", verb: "Aménager", cost: 16, icon: "plus", need: ["aile_biblio"], at: z6([2120, 330]),
+    { id: "aile_atelier", room: "Aile ouest", name: "Aménager l'atelier de peinture", short: "Atelier", verb: "Aménager", cost: 24, icon: "plus", need: ["aile_biblio"], at: z6([2120, 330]),
       desc: "La petite pièce du fond, derrière la bibliothèque, devient un atelier de peintre.",
       poi: [p6(2083, 478, "assis", 1, 2458 + 536), p6(2120, 525, "dort", -1)],
       styles: [{ name: "Bohème", sw: "#D9573B", patch: PATCH.aile_atelier_boheme }, { name: "Tout blanc", sw: "#F6F4EF", patch: PATCH.aile_atelier_blanc }] },
-    { id: "aile_table", room: "Aile ouest", name: "Meubler la salle à manger", short: "Salle à manger", verb: "Meubler", cost: 14, icon: "plus", need: ["aile_salle"], at: z6([2350, 880]), depth: 2458 + 1117,
+    { id: "aile_table", room: "Aile ouest", name: "Meubler la salle à manger", short: "Salle à manger", verb: "Meubler", cost: 21, icon: "plus", need: ["aile_salle"], at: z6([2350, 880]), depth: 2458 + 1117,
       desc: "Une table, des chaises et un buffet. Les chats se cachent dessous et sautent dessus.",
       poi: [p6(2330, 1015, "assis", 1, 2458 + 1118), p6(2370, 1000, "assis", -1, 2458 + 1118)],
       styles: [{ name: "Chêne", sw: "#B07A3E", patch: PATCH.aile_table_chene }, { name: "Table ronde blanche", sw: "#F3F1EA", patch: PATCH.aile_table_ronde }] }
@@ -326,7 +326,7 @@
 
   /* Zones : chaque nouvelle zone du domaine se débloque pour 20 croquettes avant qu'on puisse y lancer des chantiers.
      La maison du gardien et son jardin sont ouverts d'office. */
-  const ZONE_COST = 20;
+  const ZONE_STEP = 20;                 // 1re zone 20 croquettes, 2e 40, 3e 60…
   const ZONES = {
     grille: { name: "La grille d'entrée", desc: "L'entrée du domaine, sa grille et son petit jardin." },
     allee: { name: "L'allée du manoir", desc: "La grande allée qui monte jusqu'au perron." },
@@ -334,6 +334,7 @@
     cour: { name: "La cour d'honneur", desc: "La cour à la fontaine, le hall et la salle des chats." },
     aile: { name: "L'aile ouest", desc: "Son jardin, la bibliothèque et la salle à manger." }
   };
+  const zoneCost = z => ZONE_STEP * (Object.keys(ZONES).indexOf(z) + 1);
   const zoneOf = s => { const p = s.id.split("_")[0]; return ZONES[p] ? p : null; };
   const zoneOpen = z => !z || !!(S.zones && S.zones[z]);
   // une partie commencée avant les zones payantes garde ouvertes les zones où elle a déjà construit
@@ -676,11 +677,13 @@
   const board = $("#board");
   let L = null;          // partie en cours : { lv, n, k, sol, st, fish, placed, over, time }
   // Types de niveaux (calculés par gen.js) : nom affiché et récompense.
-  const KIND_NAME = { normal: "", mini: "Mini-boss", boss: "Boss", geant: "Boss géant" };
+  const KIND_NAME = { normal: "", double: "Deux chats", mini: "Mini-boss", boss: "Boss", geant: "Boss géant" };
   const kindOf = level => (window.RonronGen ? window.RonronGen.kindOf(level) : "normal");
   const rewardOf = level => (window.RonronGen ? window.RonronGen.rewardFor(level) : 1);
   const levelName = level => "Niveau " + level + (KIND_NAME[kindOf(level)] ? " · " + KIND_NAME[kindOf(level)] : "");
-  const FAST = 90;       // secondes : en dessous, une croquette de plus
+  // Bonus de rapidité : en dessous de ce temps, une croquette de plus. Il dépend de la taille de la grille, double avec deux chats.
+  const FAST_BY_SIZE = { 5: 30, 6: 40, 7: 50, 8: 60, 9: 75, 10: 90 };
+  const fastFor = (n, k) => (FAST_BY_SIZE[n] || 90) * (k === 2 ? 2 : 1);
 
   // Chrono du niveau : il ne compte que quand l'appli est à l'écran.
   function elapsed() { if (!L || !L.time) return 0; const t = L.time; return (t.acc + (t.from ? performance.now() - t.from : 0)) / 1000; }
@@ -690,7 +693,7 @@
     if (!L || !L.time) { el.hidden = true; return; }
     const sec = elapsed(); el.hidden = false;
     el.textContent = clockText(sec);
-    el.classList.toggle("late", sec >= FAST);
+    el.classList.toggle("late", sec >= L.fast);
   }
   document.addEventListener("visibilitychange", () => {
     if (!L || !L.time || L.over) return;
@@ -732,7 +735,7 @@
   function initLevel(lv) {
     const n = lv.n;
     const k = lv.k || 1;
-    L = { lv: lv, n: n, k: k, sol: new Set(lv.stars || lv.solution.map((c, r) => r * n + c)), st: new Uint8Array(n * n), fish: 3, placed: 0, over: false,
+    L = { lv: lv, n: n, k: k, fast: fastFor(n, k), sol: new Set(lv.stars || lv.solution.map((c, r) => r * n + c)), st: new Uint8Array(n * n), fish: 3, placed: 0, over: false,
           time: { acc: 0, from: document.hidden ? 0 : performance.now() } };
     S.inLevel = { level: lv.level, fishLost: 0 }; save();
     const reward = lv.reward || rewardOf(lv.level);
@@ -755,10 +758,10 @@
     L.cells = $$(".cell", board);
     renderFishes(3);
     $("#level-hint").textContent = k === 2
-      ? "Boss géant : deux chats par zone, par ligne et par colonne, jamais côte à côte."
+      ? "Deux chats par zone, par ligne et par colonne, jamais côte à côte. En moins de " + clockText(L.fast) + ", une croquette en plus."
       : lv.level <= 2
       ? "Un chat par zone, par ligne et par colonne, jamais côte à côte. Un tap : croix. Deux taps : chat."
-      : "Un tap : une croix. Deux taps rapides : un chat. En moins de 1:30, une croquette en plus.";
+      : "Un tap : une croix. Deux taps rapides : un chat. En moins de " + clockText(L.fast) + ", une croquette en plus.";
     if (k === 2 && !S.seenGeant) {         // premier boss géant : on explique la règle avant de lancer le chrono
       S.seenGeant = true; save(); L.time.from = 0;
       const cur = L; showRules(() => { if (L === cur && !L.over && !document.hidden) L.time.from = performance.now(); });
@@ -787,7 +790,7 @@
     const sec = elapsed();
     if (L.time && L.time.from) { L.time.acc += performance.now() - L.time.from; L.time.from = 0; }
     L.over = true; renderChrono();
-    const done = S.level, kind = L.lv.kind || kindOf(done), base = L.lv.reward || rewardOf(done), fast = sec < FAST ? 1 : 0;
+    const done = S.level, kind = L.lv.kind || kindOf(done), base = L.lv.reward || rewardOf(done), fast = sec < L.fast ? 1 : 0;
     S.kibble += base + fast; S.level++; S.inLevel = null; save(); updateHud();
     setTimeout(() => sfx("win"), 260);
     setTimeout(() => {
@@ -797,7 +800,7 @@
         '<span class="tag">Niveau ' + done + " réussi</span>" + (title ? "<h2>" + title + "</h2>" : "") +
         '<div class="big">' + ico("kibble") + "+" + plural(base + fast, "croquette") + "</div>" +
         '<p class="timeline">Temps : <strong>' + clockText(sec) + "</strong>" +
-          (fast ? " · bonus de rapidité <strong>+1</strong>" : " · moins de 1:30 = une croquette en plus") + "</p>" +
+          (fast ? " · bonus de rapidité <strong>+1</strong>" : " · moins de " + clockText(L.fast) + " = une croquette en plus") + "</p>" +
         "<p>Tu as maintenant <strong>" + plural(S.kibble, "croquette") + "</strong> à dépenser dans la maison.</p>" +
         '<div class="row"><button class="btn ghost" id="w-home" type="button">La maison</button>' +
         '<button class="btn" id="w-next" type="button">Niveau suivant</button></div>',
@@ -886,13 +889,14 @@
   function showRules(then) {
     const two = L && L.k === 2;
     openSheet(
-      "<h2>Règles" + (two ? " du boss géant" : "") + "</h2><ul>" +
+      "<h2>Règles" + (two ? " à deux chats" : "") + "</h2><ul>" +
       (two ? "<li>Place <strong>deux chats dans chaque zone</strong> de couleur.</li><li>Deux chats par ligne et deux par colonne.</li>"
            : "<li>Place <strong>un chat dans chaque zone</strong> de couleur.</li><li>Un seul chat par ligne et par colonne.</li>") +
       "<li>Deux chats ne se touchent jamais, même en diagonale.</li>" +
       "<li>Un chat mal placé te coûte un poisson. À zéro poisson, le niveau est perdu et tu perds une vie.</li>" +
       "<li>Tous les 5 niveaux, un mini-boss (3 croquettes) ; tous les 10, un boss (5) ; tous les 20, un boss géant à deux chats (10). " +
-      "Finis un niveau en moins de 1:30 pour une croquette en plus.</li>" +
+      "Passé le niveau 200, le niveau le plus dur de chaque série se joue aussi à deux chats.</li>" +
+      "<li>Finis vite pour une croquette en plus : de 30 s sur une grille 5 × 5 à 1:30 sur une 10 × 10, le double avec deux chats.</li>" +
       "</ul><p><strong>Un tap</strong> pose ou retire une croix ; tu peux glisser le doigt pour en tracer plusieurs. " +
       "<strong>Deux taps rapides</strong> sur une case y posent un chat.</p>" +
       '<button class="btn block" id="r-ok" type="button">Compris</button>', then ? { sticky: true } : undefined);
@@ -1457,21 +1461,21 @@
       '<button class="mk' + (S.kibble < s.cost || !hasArt(s) ? " poor" : "") + '" type="button" data-slot="' + s.id + '" style="left:' + s.at[0] + "px;top:" + s.at[1] +
       'px" aria-label="' + esc(s.name) + ", " + plural(s.cost, "croquette") + '"><span class="bob">' + ico(s.icon) + "<b>" + s.cost + "</b></span></button>").join("") +
       lockedZones().map(l =>
-      '<button class="mk lock' + (S.kibble < ZONE_COST ? " poor" : "") + '" type="button" data-zone="' + l.z + '" style="left:' + l.at[0] + "px;top:" + l.at[1] +
-      'px" aria-label="Débloquer ' + esc(ZONES[l.z].name) + ", " + plural(ZONE_COST, "croquette") + '"><span class="bob">' + ico("lock") + "<b>" + ZONE_COST + "</b></span></button>").join("");
+      '<button class="mk lock' + (S.kibble < zoneCost(l.z) ? " poor" : "") + '" type="button" data-zone="' + l.z + '" style="left:' + l.at[0] + "px;top:" + l.at[1] +
+      'px" aria-label="Débloquer ' + esc(ZONES[l.z].name) + ", " + plural(zoneCost(l.z), "croquette") + '"><span class="bob">' + ico("lock") + "<b>" + zoneCost(l.z) + "</b></span></button>").join("");
   }
   function openZone(z) {
-    const zone = ZONES[z], poor = S.kibble < ZONE_COST, l = lockedZones().find(o => o.z === z);
+    const zone = ZONES[z], cost = zoneCost(z), poor = S.kibble < cost, l = lockedZones().find(o => o.z === z);
     if (!zone || !l) return;
     const lim = camLimits();
     if (lim.vw) centerOn(l.at[0], l.at[1] + lim.vh * 0.2 / cam.s);
     openSheet('<span class="tag">Nouvelle zone</span><h2>' + esc(zone.name) + "</h2><p>" + esc(zone.desc) +
       " Débloque-la pour y lancer ses chantiers.</p>" +
       '<button class="btn block" id="z-buy" type="button"' + (poor ? " disabled" : "") + ">" +
-      (poor ? "Il te manque " + plural(ZONE_COST - S.kibble, "croquette") : "Débloquer · " + ZONE_COST + " " + ico("kibble")) + "</button>", { noFocus: true });
+      (poor ? "Il te manque " + plural(cost - S.kibble, "croquette") : "Débloquer · " + cost + " " + ico("kibble")) + "</button>", { noFocus: true });
     $("#z-buy").onclick = () => {
-      if (S.kibble < ZONE_COST || zoneOpen(z)) return;
-      S.kibble -= ZONE_COST; S.zones[z] = true;
+      if (S.kibble < cost || zoneOpen(z)) return;
+      S.kibble -= cost; S.zones[z] = true;
       save(); closeSheet(); buzz(15); sfx("buy"); renderHome();
       toast(zone.name + " : zone débloquée !");
     };
@@ -1483,7 +1487,8 @@
     else applyCam();
     const done = SLOTS.filter(s => isDone(s.id)).length, open = SLOTS.filter(available), locks = lockedZones();
     let hint;
-    if (!open.length && locks.length) hint = S.kibble >= ZONE_COST ? "Touche le cadenas pour débloquer une nouvelle zone." : "Réussis des niveaux pour débloquer la zone suivante (" + ZONE_COST + " croquettes).";
+    const cheapest = locks.length ? Math.min.apply(null, locks.map(l => zoneCost(l.z))) : 0;
+    if (!open.length && locks.length) hint = S.kibble >= cheapest ? "Touche le cadenas pour débloquer une nouvelle zone." : "Réussis des niveaux pour débloquer la zone suivante (" + cheapest + " croquettes).";
     else if (done === SLOTS.length) hint = "Tous les chantiers disponibles sont terminés. Les suivants arrivent avec leurs images.";
     else if (open.length && !open.some(hasArt)) hint = "Glisse pour te balader, pince pour zoomer. Les chantiers s'activeront avec leurs images.";
     else if (!open.some(s => S.kibble >= s.cost)) hint = "Réussis des niveaux pour gagner des croquettes, puis reviens lancer un chantier.";
@@ -1604,7 +1609,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.13." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.14." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +

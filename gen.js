@@ -17,7 +17,7 @@
   // Taille de la grille selon le numéro du niveau.
   const TIERS = [
     { from: 1, n: 5 }, { from: 6, n: 6 }, { from: 21, n: 7 },
-    { from: 51, n: 8 }, { from: 121, n: 9 }, { from: 301, n: 10 }
+    { from: 51, n: 8 }, { from: 101, n: 9 }, { from: 151, n: 10 }
   ];
   function tierFor(level) {
     let i = 0;
@@ -277,13 +277,15 @@
 
   /* Type de niveau : un mini-boss tous les 5 niveaux, un boss tous les 10, un boss géant à deux chats tous les 20.
      Entre les deux, la difficulté va en dents de scie : deux niveaux faciles, un moyen, un dur. */
-  function kindOf(level) { return level % 20 === 0 ? "geant" : level % 10 === 0 ? "boss" : level % 5 === 0 ? "mini" : "normal"; }
-  const REWARDS = { normal: 1, mini: 3, boss: 5, geant: 10 };
+  // Passé le niveau 200, le niveau « dur » de chaque cycle de 5 se joue lui aussi avec deux chats.
+  function kindOf(level) { return level % 20 === 0 ? "geant" : level % 10 === 0 ? "boss" : level % 5 === 0 ? "mini" : level > 200 && level % 5 === 4 ? "double" : "normal"; }
+  const REWARDS = { normal: 1, double: 1, mini: 3, boss: 5, geant: 10 };
   function rewardFor(level) { return REWARDS[kindOf(level)]; }
   function sizeFor(level) {
     const t = tierFor(level), kind = kindOf(level);
     if (kind === "boss") return Math.min(10, t.n + 1);                 // le boss se joue sur la grille du palier suivant
-    if (kind === "geant") return level < 100 ? 8 : level < 240 ? 9 : 10; // deux chats par ligne : il faut de la place
+    if (kind === "geant") return level < 100 ? 8 : level < 160 ? 9 : 10; // deux chats par ligne : il faut de la place
+    if (kind === "double") return 10;
     return t.n;
   }
 
@@ -297,11 +299,12 @@
     if (kind === "mini") return Math.round(baseTarget(t.index, t.p) * 1.45 * wobble);
     if (kind === "boss") return Math.round(baseTarget(Math.min(5, t.index + 1), t.p) * (t.index === 5 ? 1.5 : 1.25) * wobble);
     if (kind === "geant") return Math.round((42 + 40 * Math.min(1, level / 500)) * wobble);
+    if (kind === "double") return Math.round((40 + 20 * Math.min(1, level / 600)) * wobble);
     return Math.max(1, Math.round(baseTarget(t.index, t.p) * SAW[level % 5] * wobble));
   }
 
   function makeLevel(level) {
-    if (kindOf(level) === "geant") return makeLevel2(level);
+    if (kindOf(level) === "geant" || kindOf(level) === "double") return makeLevel2(level);
     const t = tierFor(level), kind = kindOf(level);
     const n = sizeFor(level), target = targetFor(level);
     const even = Math.min(0.85, 0.1 + 0.55 * t.p + 0.04 * t.index + (kind === "normal" ? 0 : 0.15));
@@ -511,7 +514,7 @@
       }
       if (!res.solved) continue;
       solved++;
-      const cand = { n: n, k: 2, kind: "geant", reward: REWARDS.geant, level: level, regions: Array.from(g), stars: stars.slice().sort((a, b) => a - b), score: res.score, target: target };
+      const cand = { n: n, k: 2, kind: kindOf(level), reward: REWARDS[kindOf(level)], level: level, regions: Array.from(g), stars: stars.slice().sort((a, b) => a - b), score: res.score, target: target };
       if (!best || Math.abs(cand.score - target) < Math.abs(best.score - target)) best = cand;
       if (Math.abs(best.score - target) <= Math.max(3, target * 0.15)) break;
     }
