@@ -19,6 +19,7 @@
   const TILES = window.RONRON_TILES || [];
   const GARDIEN = [0, 4916];                       // origine de la zone A5, la maison du gardien
   const g = p => [p[0] + GARDIEN[0], p[1] + GARDIEN[1]];
+  const z2 = p => [p[0] + 2184, p[1] + 4916];       // zone de la grille d'entrée, à droite de la maison du gardien
   WORLD.start = g([1380, 640]);
 
   /* Chantiers. « at » : position de la bulle sur la carte. « need » : chantiers à terminer avant.
@@ -100,7 +101,36 @@
     // posé après la clôture : l'arbre est devant elle
     { id: "jardin_arbre", room: "Jardin du gardien", name: "Faire revivre le grand arbre", short: "Grand arbre", verb: "Soigner", cost: 3, icon: "plus", need: ["jardin_pelouse"], at: g([860, 330]),
       desc: "Le vieil arbre derrière la maison n'a plus une feuille. Choisis ce qu'il deviendra.",
-      styles: [{ name: "Cerisier en fleurs", sw: "#F2B6CF", patch: PATCH.arbre_cerisier }, { name: "Pommier", sw: "#5E9E48", patch: PATCH.arbre_pommier }] }
+      styles: [{ name: "Cerisier en fleurs", sw: "#F2B6CF", patch: PATCH.arbre_cerisier }, { name: "Pommier", sw: "#5E9E48", patch: PATCH.arbre_pommier }] },
+
+    /* ----- Zone 2 : la grille d'entrée. Ordre d'empilement : sol, chemin, mur, massif, abri, banc, grille, lanternes. ----- */
+    { id: "grille_debrousse", room: "Grille d'entrée", name: "Débroussailler l'entrée", verb: "Débroussailler", cost: 5, icon: "broom", need: ["jardin_pelouse"], at: z2([1250, 1000]),
+      desc: "Lierre sur le mur, ronces, caisses cassées : l'entrée du domaine disparaît sous la friche.", patch: PATCH.grille_debrousse },
+    { id: "grille_pelouse", room: "Grille d'entrée", name: "Semer la pelouse de l'entrée", verb: "Semer", cost: 6, icon: "plus", need: ["grille_debrousse"], at: z2([1500, 330]),
+      desc: "Une grande pelouse de part et d'autre du mur. Tout le reste de l'entrée se posera dessus.", patch: PATCH.grille_pelouse },
+    { id: "grille_chemin", room: "Grille d'entrée", name: "Refaire le chemin", short: "Chemin", verb: "Refaire", cost: 10, icon: "hammer", need: ["grille_pelouse"], at: z2([1350, 1280]),
+      desc: "Le chemin de terre est défoncé jusqu'au manoir. Choisis son revêtement.",
+      styles: [{ name: "Pavés clairs", sw: "#CDBF9E", patch: PATCH.chemin_paves }, { name: "Gravier doré", sw: "#E9CF8E", patch: PATCH.chemin_gravier }] },
+    { id: "grille_mur", room: "Grille d'entrée", name: "Restaurer le mur", short: "Mur", verb: "Restaurer", cost: 10, icon: "hammer", need: ["grille_pelouse"], at: z2([800, 560]),
+      desc: "Pierres fendues, joints partis : le mur et ses piliers ont besoin d'une vraie remise en état.",
+      styles: [{ name: "Pierre claire", sw: "#EADDB8", patch: PATCH.mur_pierre }, { name: "Chaulé blanc", sw: "#F3EBDD", patch: PATCH.mur_chaule }] },
+    { id: "grille_massif", room: "Grille d'entrée", name: "Planter un massif", short: "Massif", verb: "Planter", cost: 6, icon: "plus", need: ["grille_pelouse"], at: z2([860, 1010]),
+      desc: "Un long massif au pied du mur, bordé de pierres.",
+      styles: [{ name: "Rosiers", sw: "#E46A8C", patch: PATCH.massif_roses }, { name: "Lavande", sw: "#8A63C9", patch: PATCH.massif_lavande }] },
+    { id: "grille_abri", room: "Grille d'entrée", name: "Installer un abri à chats", short: "Abri à chats", verb: "Installer", cost: 8, icon: "plus", need: ["grille_pelouse"], at: z2([1320, 800]),
+      desc: "Une petite cabane avec son coussin, pour les chats qui montent la garde.",
+      styles: [{ name: "Bois", sw: "#8A6238", patch: PATCH.abri_bois }, { name: "Bleu pastel", sw: "#B9CDE6", patch: PATCH.abri_bleu }] },
+    { id: "grille_banc", room: "Grille d'entrée", name: "Poser un banc", short: "Banc", verb: "Poser", cost: 6, icon: "plus", need: ["grille_pelouse"], at: z2([1570, 220]),
+      desc: "Un banc derrière le mur, face à l'allée.",
+      styles: [{ name: "Bois", sw: "#B5733A", patch: PATCH.bancjardin_bois }, { name: "Fer blanc", sw: "#DAD9D2", patch: PATCH.bancjardin_fer }] },
+    { id: "grille_portail", room: "Grille d'entrée", name: "Remplacer la grille", short: "Grille", verb: "Remplacer", cost: 12, icon: "hammer", need: ["grille_chemin"], at: z2([1930, 760]),
+      desc: "La vieille grille rouillée ne ferme plus. La nouvelle sera la première chose qu'on voit du domaine.",
+      // on voit le chemin entre les barreaux : l'image dépend du revêtement choisi
+      styles: [{ name: "Noir et or", sw: "#2A2A30", patch: eff => PATCH["grille_noire_" + (eff("grille_chemin") ? "gravier" : "paves")] },
+               { name: "Vert anglais", sw: "#1F5A3E", patch: eff => PATCH["grille_verte_" + (eff("grille_chemin") ? "gravier" : "paves")] }] },
+    { id: "grille_lanternes", room: "Grille d'entrée", name: "Accrocher des lanternes", short: "Lanternes", verb: "Accrocher", cost: 6, icon: "plus", need: ["grille_pelouse"], at: z2([2260, 930]),
+      desc: "Une lanterne sur chaque pilier de la grille.",
+      styles: [{ name: "Laiton", sw: "#C9A24B", patch: PATCH.lanternes_laiton }, { name: "Fer noir", sw: "#33333A", patch: PATCH.lanternes_noires }] }
   ];
   const SLOT = {}; SLOTS.forEach(s => { SLOT[s.id] = s; });
 
@@ -1186,7 +1216,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.3." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.4." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
