@@ -220,7 +220,7 @@ h2 {
 @keyframes pop { from { transform: scale(0.4); opacity: 0; } }
 @keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 
-.modes { display: flex; gap: 8px; }
+.modes { display: flex; gap: 8px; justify-content: center; }
 .mode {
   flex: 1;
   height: 48px;

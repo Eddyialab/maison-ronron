@@ -19,7 +19,8 @@
   const TILES = window.RONRON_TILES || [];
   const GARDIEN = [0, 4916];                       // origine de la zone A5, la maison du gardien
   const g = p => [p[0] + GARDIEN[0], p[1] + GARDIEN[1]];
-  const z2 = p => [p[0] + 2184, p[1] + 4916];       // zone de la grille d'entrée, à droite de la maison du gardien
+  const z2 = p => [p[0] + 2184, p[1] + 4916];
+  const z3 = p => [p[0] + 2184, p[1] + 3687];       // zone de l'allée du manoir, au-dessus de la grille       // zone de la grille d'entrée, à droite de la maison du gardien
   WORLD.start = g([1380, 640]);
 
   /* Chantiers. « at » : position de la bulle sur la carte. « need » : chantiers à terminer avant.
@@ -103,6 +104,22 @@
       desc: "Le vieil arbre derrière la maison n'a plus une feuille. Choisis ce qu'il deviendra.",
       styles: [{ name: "Cerisier en fleurs", sw: "#F2B6CF", patch: PATCH.arbre_cerisier }, { name: "Pommier", sw: "#5E9E48", patch: PATCH.arbre_pommier }] },
 
+    /* ----- Zone 3 : l'allée du manoir, au-dessus de la grille. Ses sols sont posés AVANT ceux de la grille, qui les recouvrent
+       dans la bande commune aux deux zones ; ses objets (rond-point, arche, lampadaires, statue) sont à la fin de la liste. ----- */
+    { id: "allee_debrousse", room: "Allée du manoir", name: "Débroussailler l'allée", verb: "Débroussailler", cost: 7, icon: "broom", need: ["grille_pelouse"], at: z3([1350, 930]),
+      desc: "Herbes folles, branches mortes et gravats jusqu'au perron du manoir.", patch: PATCH.allee_debrousse },
+    { id: "allee_pelouse", room: "Allée du manoir", name: "Semer la pelouse de l'allée", verb: "Semer", cost: 8, icon: "plus", need: ["allee_debrousse"], at: z3([1000, 960]),
+      desc: "Une grande pelouse entre le labyrinthe et le manoir, dans la continuité de celle de l'entrée.", patch: PATCH.allee_pelouse },
+    { id: "allee_chemin", room: "Allée du manoir", name: "Prolonger le chemin", verb: "Prolonger", cost: 14, icon: "hammer", need: ["allee_pelouse", "grille_chemin"], at: z3([2420, 1040]),
+      desc: "Le chemin de l'entrée continue jusqu'au perron du manoir, dans le revêtement choisi à la grille.",
+      patch: eff => PATCH["allee_chemin_" + (eff("grille_chemin") ? "gravier" : "paves")] },
+    { id: "allee_sentier", room: "Allée du manoir", name: "Refaire le sentier du labyrinthe", short: "Sentier", verb: "Refaire", cost: 10, icon: "hammer", need: ["allee_pelouse"], at: z3([900, 470]),
+      desc: "Les vieilles pierres du sentier sont usées et disjointes.",
+      styles: [{ name: "Dalles claires", sw: "#EFE6CF", patch: PATCH.sentier_dalles }, { name: "Briques", sw: "#C9603E", patch: PATCH.sentier_briques }] },
+    { id: "allee_massif", room: "Allée du manoir", name: "Planter un grand massif", short: "Grand massif", verb: "Planter", cost: 9, icon: "plus", need: ["allee_pelouse"], at: z3([1380, 1100]),
+      desc: "Un massif ovale au milieu de la grande pelouse.",
+      styles: [{ name: "Hortensias", sw: "#8FA8E8", patch: PATCH.massif_hortensias }, { name: "Tulipes", sw: "#E2483A", patch: PATCH.massif_tulipes }] },
+
     /* ----- Zone 2 : la grille d'entrée. Ordre d'empilement : sol, chemin, mur, massif, abri, banc, grille, lanternes. ----- */
     { id: "grille_debrousse", room: "Grille d'entrée", name: "Débroussailler l'entrée", verb: "Débroussailler", cost: 5, icon: "broom", need: ["jardin_pelouse"], at: z2([1250, 1000]),
       desc: "Lierre sur le mur, ronces, caisses cassées : l'entrée du domaine disparaît sous la friche.", patch: PATCH.grille_debrousse },
@@ -130,7 +147,19 @@
                { name: "Vert anglais", sw: "#1F5A3E", patch: eff => PATCH["grille_verte_" + (eff("grille_chemin") ? "gravier" : "paves")] }] },
     { id: "grille_lanternes", room: "Grille d'entrée", name: "Accrocher des lanternes", short: "Lanternes", verb: "Accrocher", cost: 6, icon: "plus", need: ["grille_pelouse"], at: z2([2260, 930]),
       desc: "Une lanterne sur chaque pilier de la grille.",
-      styles: [{ name: "Laiton", sw: "#C9A24B", patch: PATCH.lanternes_laiton }, { name: "Fer noir", sw: "#33333A", patch: PATCH.lanternes_noires }] }
+      styles: [{ name: "Laiton", sw: "#C9A24B", patch: PATCH.lanternes_laiton }, { name: "Fer noir", sw: "#33333A", patch: PATCH.lanternes_noires }] },
+    { id: "allee_rondpoint", room: "Allée du manoir", name: "Créer un rond-point", short: "Rond-point", verb: "Créer", cost: 12, icon: "plus", need: ["allee_pelouse"], at: z3([2080, 780]),
+      desc: "Un îlot planté devant le perron, pour que les voitures tournent autour.",
+      styles: [{ name: "Buis et rosier", sw: "#B3262E", patch: PATCH.rondpoint_buis }, { name: "Cadran solaire", sw: "#B9B29C", patch: PATCH.rondpoint_cadran }] },
+    { id: "allee_arche", room: "Allée du manoir", name: "Dresser une arche fleurie", short: "Arche", verb: "Dresser", cost: 11, icon: "plus", need: ["allee_pelouse"], at: z3([1540, 330]),
+      desc: "Une arche au bout du sentier du labyrinthe.",
+      styles: [{ name: "Roses", sw: "#F0A9C0", patch: PATCH.arche_roses }, { name: "Glycine", sw: "#9B6AD6", patch: PATCH.arche_glycine }] },
+    { id: "allee_lampadaires", room: "Allée du manoir", name: "Installer des lampadaires", short: "Lampadaires", verb: "Installer", cost: 10, icon: "plus", need: ["allee_pelouse"], at: z3([1740, 640]),
+      desc: "Trois lampadaires à l'ancienne le long de l'allée.",
+      styles: [{ name: "Fonte noire", sw: "#2B2B30", patch: PATCH.lampadaires_noirs }, { name: "Vert anglais", sw: "#1F5A3E", patch: PATCH.lampadaires_verts }] },
+    { id: "allee_statue", room: "Allée du manoir", name: "Restaurer la statue", short: "Statue", verb: "Restaurer", cost: 9, icon: "hammer", need: ["allee_pelouse"], at: z3([2110, 1060]),
+      desc: "La statue est grise de mousse et son socle est fendu.",
+      styles: [{ name: "Marbre blanc", sw: "#F2EFE8", patch: PATCH.statue_marbre }, { name: "Bronze", sw: "#B8852E", patch: PATCH.statue_bronze }] }
   ];
   const SLOT = {}; SLOTS.forEach(s => { SLOT[s.id] = s; });
 
@@ -450,7 +479,6 @@
 
   const board = $("#board");
   let L = null;          // partie en cours : { lv, n, st, fish, placed, over }
-  let mode = "cross";
   // État d'une case : 0 vide, 1 croix du joueur, 3 chat, 4 erreur (2, ancienne croix automatique, n'est plus utilisé).
 
   function renderFishes(left) {
@@ -501,8 +529,8 @@
     L.cells = $$(".cell", board);
     renderFishes(3);
     $("#level-hint").textContent = lv.level <= 2
-      ? "Un chat par zone, par ligne et par colonne. Deux chats ne se touchent jamais."
-      : "Appui long sur une case : poser un chat directement.";
+      ? "Un chat par zone, par ligne et par colonne, jamais côte à côte. Un tap : croix. Deux taps : chat."
+      : "Un tap : une croix. Deux taps rapides : un chat.";
   }
 
   function setCell(i, s) { L.st[i] = s; L.cells[i].dataset.s = s; }
@@ -578,14 +606,10 @@
     };
   }
 
-  function setMode(m) {
-    mode = m;
-    $("#mode-cross").setAttribute("aria-pressed", m === "cross");
-    $("#mode-cat").setAttribute("aria-pressed", m === "cat");
-  }
-
-  // Gestes sur la grille : toucher, glisser pour tracer des croix, appui long pour poser un chat.
-  let ptr = null;
+  // Gestes sur la grille : un tap pose ou retire une croix (on peut glisser pour en tracer plusieurs),
+  // deux taps rapides sur la même case y posent un chat.
+  const DOUBLE_TAP = 320;      // délai maximal entre les deux taps, en millisecondes
+  let ptr = null, lastTap = null;
   function cellAt(x, y) {
     const t = document.elementFromPoint(x, y);
     const c = t && t.closest ? t.closest(".cell") : null;
@@ -597,31 +621,28 @@
     if (i < 0) return;
     e.preventDefault();
     try { board.setPointerCapture(e.pointerId); } catch (err) { /* sans importance */ }
-    if (mode === "cat") { ptr = { i: i, cat: true }; return; }
+    const now = performance.now();
+    if (lastTap && lastTap.i === i && now - lastTap.t < DOUBLE_TAP) {
+      // deuxième tap : la croix posée ou retirée par le premier ne compte plus, on tente le chat
+      lastTap = null; ptr = { i: i, done: true };
+      if (L.st[i] <= 1) { setCell(i, 0); tryCat(i); }
+      return;
+    }
     const prev = L.st[i];
-    ptr = { i: i, paint: -1, moved: false, long: false };
+    ptr = { i: i, paint: -1 };
+    lastTap = prev <= 1 ? { i: i, t: now } : null;
     if (prev === 0) { setCell(i, 1); ptr.paint = 1; sfx("cross"); }
     else if (prev === 1) { setCell(i, 0); ptr.paint = 0; sfx("uncross"); }
-    ptr.timer = setTimeout(() => {
-      if (!ptr || ptr.moved || ptr.i !== i) return;
-      ptr.long = true;
-      if (prev <= 1) { setCell(i, prev); tryCat(i); }
-    }, 430);
   });
   board.addEventListener("pointermove", e => {
-    if (!ptr || ptr.cat || ptr.long || !L || L.over) return;
+    if (!ptr || ptr.done || !L || L.over) return;
     const j = cellAt(e.clientX, e.clientY);
     if (j < 0 || j === ptr.i) return;
-    ptr.moved = true; clearTimeout(ptr.timer);
+    lastTap = null;            // on trace des croix en glissant : ce n'est pas un double tap
     if (ptr.paint === 1 && L.st[j] === 0) { setCell(j, 1); sfx("cross"); }
     else if (ptr.paint === 0 && L.st[j] === 1) { setCell(j, 0); sfx("uncross"); }
   });
-  function endPtr(e) {
-    if (!ptr) return;
-    clearTimeout(ptr.timer);
-    if (ptr.cat && e.type === "pointerup" && cellAt(e.clientX, e.clientY) === ptr.i) tryCat(ptr.i);
-    ptr = null;
-  }
+  function endPtr() { ptr = null; }
   board.addEventListener("pointerup", endPtr);
   board.addEventListener("pointercancel", endPtr);
   board.addEventListener("contextmenu", e => e.preventDefault());
@@ -633,8 +654,8 @@
       "<li>Un seul chat par ligne et par colonne.</li>" +
       "<li>Deux chats ne se touchent jamais, même en diagonale.</li>" +
       "<li>Un chat mal placé te coûte un poisson. À zéro poisson, le niveau est perdu et tu perds une vie.</li>" +
-      "</ul><p><strong>Croix</strong> : touche ou glisse pour barrer les cases impossibles. " +
-      "<strong>Chat</strong> : touche une case pour y poser un chat, ou fais un appui long à tout moment.</p>" +
+      "</ul><p><strong>Un tap</strong> pose ou retire une croix ; tu peux glisser le doigt pour en tracer plusieurs. " +
+      "<strong>Deux taps rapides</strong> sur une case y posent un chat.</p>" +
       '<button class="btn block" id="r-ok" type="button">Compris</button>');
     $("#r-ok").onclick = () => closeSheet();
   }
@@ -1230,7 +1251,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.5." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.6." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -1292,8 +1313,6 @@
   $("#btn-settings").onclick = () => openSettings();
   $("#btn-quit").onclick = () => quitLevel();
   $("#btn-rules").onclick = () => showRules();
-  $("#mode-cross").onclick = () => setMode("cross");
-  $("#mode-cat").onclick = () => setMode("cat");
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !sheetSticky) closeSheet(); });
 
   load();
