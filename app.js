@@ -37,6 +37,8 @@
   const z4 = p => [p[0] + 4368, p[1] + 3687];       // zone de l'aile d'entrée du manoir, à droite de l'allée
   const z5 = p => [p[0] + 4368, p[1] + 2458];       // zone de la cour d'honneur, derrière le grand salon
   const p5 = (x, y, pose, dir) => ({ x: x + 4368, y: y + 2458, pose: pose, dir: dir, min: 12000, max: 30000 });
+  const z6 = p => [p[0] + 2184, p[1] + 2458];       // zone de l'aile ouest et de son jardin, à gauche du perron
+  const p6 = (x, y, pose, dir, depth) => ({ x: x + 2184, y: y + 2458, pose: pose, dir: dir, depth: depth, min: 12000, max: 30000 });
   WORLD.start = g([1380, 640]);
 
   /* Chantiers. « at » : position de la bulle sur la carte. « need » : chantiers à terminer avant.
@@ -283,9 +285,58 @@
       styles: [{ name: "Fonte noire", sw: "#2B2B30", patch: PATCH.lampadaires_noirs }, { name: "Vert anglais", sw: "#1F5A3E", patch: PATCH.lampadaires_verts }] },
     { id: "allee_statue", room: "Allée du manoir", name: "Restaurer la statue", short: "Statue", verb: "Restaurer", cost: 9, icon: "hammer", need: ["allee_pelouse"], at: z3([2110, 1060]),
       desc: "La statue est grise de mousse et son socle est fendu.",
-      styles: [{ name: "Marbre blanc", sw: "#F2EFE8", patch: PATCH.statue_marbre }, { name: "Bronze", sw: "#B8852E", patch: PATCH.statue_bronze }] }
+      styles: [{ name: "Marbre blanc", sw: "#F2EFE8", patch: PATCH.statue_marbre }, { name: "Bronze", sw: "#B8852E", patch: PATCH.statue_bronze }] },
+    /* ----- Zone 6 : l'aile ouest et son jardin, à gauche du perron. Ses calques passent par-dessus ceux de l'allée.
+       Les chats entrent dans la bibliothèque par le trou du mur de façade, puis vont dans la salle à manger et le hall. ----- */
+    { id: "aile_debrousse", room: "Aile ouest", name: "Débroussailler le jardin de l'aile", verb: "Débroussailler", cost: 8, icon: "broom", need: ["allee_pelouse"], at: z6([820, 820]),
+      desc: "Herbes folles, branches mortes, souche et arbre mort : tout part.", patch: PATCH.aile_debrousse },
+    { id: "aile_pelouse", room: "Aile ouest", name: "Semer la pelouse du jardin", verb: "Semer", cost: 10, icon: "plus", need: ["aile_debrousse"], at: z6([300, 900]),
+      desc: "Une belle pelouse verte jusqu'au pied du manoir.", patch: PATCH.aile_pelouse },
+    { id: "aile_chemin", room: "Aile ouest", name: "Refaire le chemin du jardin", short: "Chemin du jardin", verb: "Refaire", cost: 12, icon: "hammer", need: ["aile_pelouse", "allee_chemin"], at: z6([640, 640]),
+      desc: "Le vieux chemin pavé, dans le revêtement choisi à la grille.",
+      patch: eff => PATCH["aile_chemin_" + (eff("grille_chemin") ? "gravier" : "paves")] },
+    { id: "aile_gloriette", room: "Aile ouest", name: "Construire un kiosque", short: "Kiosque", verb: "Construire", cost: 16, icon: "plus", need: ["aile_pelouse"], at: z6([480, 330]),
+      desc: "Un coin à l'ombre dans le jardin. Les chats y font la sieste.",
+      poi: [p6(500, 600, "dort", 1), p6(560, 625, "dort", -1)],
+      styles: [{ name: "Gloriette en fer blanc", sw: "#EDEDEA", patch: PATCH.aile_gloriette }, { name: "Pergola à glycine", sw: "#9B6AD6", patch: PATCH.aile_pergola }] },
+    { id: "aile_biblio", room: "Aile ouest", name: "Déblayer la grande pièce", verb: "Déblayer", cost: 10, icon: "broom", need: ["aile_debrousse"], at: z6([1600, 700]),
+      desc: "Gravats et plancher défoncé. Elle deviendra la bibliothèque, et les chats y entreront par le trou du mur.", patch: PATCH.aile_biblio },
+    { id: "aile_salle", room: "Aile ouest", name: "Déblayer la salle à manger", verb: "Déblayer", cost: 10, icon: "broom", need: ["aile_debrousse"], at: z6([2250, 990]),
+      desc: "La pièce à côté du hall : on nettoie et on repeint en vert tendre.", patch: PATCH.aile_salle },
+    { id: "aile_facade", room: "Aile ouest", name: "Restaurer la façade de l'aile", short: "Façade de l'aile", verb: "Restaurer", cost: 14, icon: "hammer", need: ["aile_biblio"], at: z6([1450, 1010]),
+      desc: "On rebouche le trou du mur et on refait les fenêtres, dans le même style que le reste du manoir.",
+      patch: eff => PATCH["aile_facade_" + (eff("manoir_fenetres") ? "volets" : "blanche")] },
+    { id: "aile_rayons", room: "Aile ouest", name: "Monter les rayonnages", short: "Rayonnages", verb: "Monter", cost: 16, icon: "plus", need: ["aile_biblio"], at: z6([1800, 540]),
+      desc: "Des étagères pleines de livres sur les deux murs du fond, avec une échelle.",
+      styles: [{ name: "Noyer", sw: "#5E3A22", patch: PATCH.aile_rayons_noyer }, { name: "Blancs", sw: "#F4F2EC", patch: PATCH.aile_rayons_blancs }] },
+    { id: "aile_lecture", room: "Aile ouest", name: "Installer un coin lecture", short: "Coin lecture", verb: "Installer", cost: 14, icon: "plus", need: ["aile_biblio"], at: z6([1700, 760]),
+      desc: "Un fauteuil bien profond au milieu des livres. Devine qui va s'y installer.",
+      poi: [[p6(1700, 700, "dort", -1), p6(1750, 792, "dort", 1)], [p6(1490, 700, "dort", 1), p6(1850, 690, "dort", -1)]],
+      styles: [{ name: "Velours vert", sw: "#1F6B45", patch: PATCH.aile_lecture_velours }, { name: "Lin crème", sw: "#F1E9D6", patch: PATCH.aile_lecture_lin }] },
+    { id: "aile_table", room: "Aile ouest", name: "Meubler la salle à manger", short: "Salle à manger", verb: "Meubler", cost: 14, icon: "plus", need: ["aile_salle"], at: z6([2350, 880]), depth: 2458 + 1117,
+      desc: "Une table, des chaises et un buffet. Les chats se cachent dessous et sautent dessus.",
+      poi: [p6(2330, 1015, "assis", 1, 2458 + 1118), p6(2370, 1000, "assis", -1, 2458 + 1118)],
+      styles: [{ name: "Chêne", sw: "#B07A3E", patch: PATCH.aile_table_chene }, { name: "Table ronde blanche", sw: "#F3F1EA", patch: PATCH.aile_table_ronde }] }
   ];
   const SLOT = {}; SLOTS.forEach(s => { SLOT[s.id] = s; });
+
+  /* Zones : chaque nouvelle zone du domaine se débloque pour 20 croquettes avant qu'on puisse y lancer des chantiers.
+     La maison du gardien et son jardin sont ouverts d'office. */
+  const ZONE_COST = 20;
+  const ZONES = {
+    grille: { name: "La grille d'entrée", desc: "L'entrée du domaine, sa grille et son petit jardin." },
+    allee: { name: "L'allée du manoir", desc: "La grande allée qui monte jusqu'au perron." },
+    manoir: { name: "L'aile d'entrée du manoir", desc: "La façade, le grand salon et le bureau." },
+    cour: { name: "La cour d'honneur", desc: "La cour à la fontaine, le hall et la salle des chats." },
+    aile: { name: "L'aile ouest", desc: "Son jardin, la bibliothèque et la salle à manger." }
+  };
+  const zoneOf = s => { const p = s.id.split("_")[0]; return ZONES[p] ? p : null; };
+  const zoneOpen = z => !z || !!(S.zones && S.zones[z]);
+  // une partie commencée avant les zones payantes garde ouvertes les zones où elle a déjà construit
+  function migrateZones() {
+    if (!S.zones) S.zones = {};
+    SLOTS.forEach(s => { const z = zoneOf(s); if (z && isDone(s.id)) S.zones[z] = true; });
+  }
 
   /* Déplacements des chats : une grille de cases praticables couvre tout le sol de la maison du gardien.
      Chaque meuble posé retire les cases qu'il occupe. */
@@ -339,7 +390,7 @@
   /* ================= 2. Sauvegarde et vies ================= */
 
   function freshSave() {
-    return { v: 1, level: 1, kibble: 0, lives: MAX_LIVES, lifeAt: 0, house: {}, cats: [], nextCat: 1, inLevel: null };
+    return { v: 1, level: 1, kibble: 0, lives: MAX_LIVES, lifeAt: 0, house: {}, zones: {}, cats: [], nextCat: 1, inLevel: null };
   }
   let S = freshSave();
   let memoryOnly = false;
@@ -995,9 +1046,9 @@
   // cases libres (1 maison, 2 jardin du gardien, 3 entrée du domaine, 4 passage caché dans la haie),
   // recalculées quand un meuble est posé ou qu'un chantier se termine
   let navFree = null;
-  let navHouse = [], navGarden = [], navGate = [], navAllee = [], navManoir = [], navSalon = [], navCour = [], navHall = [], navChats = [];
+  let navHouse = [], navGarden = [], navGate = [], navAllee = [], navManoir = [], navSalon = [], navCour = [], navHall = [], navChats = [], navAile = [], navBiblio = [];
   // passages où le chat se faufile sans être vu : haie, sous la grille, porte du manoir, hall vers la cour, arche de la salle des chats
-  const HIDDEN = v => v === 4 || v === 6 || v === 9 || v === 13 || v === 14;
+  const HIDDEN = v => v === 4 || v === 6 || v === 9 || v === 13 || v === 14 || v === 18;
   function buildNav() {
     navFree = new Uint8Array(NAV.w * NAV.h);
     const garden = isDone("jardin_debrousse");      // tant que le jardin est en friche, les chats restent à l'intérieur
@@ -1007,10 +1058,13 @@
     const salon = manoir && isDone("manoir_salon");      // et le grand salon, par la porte du perron
     const hall = manoir && isDone("cour_hall");          // le hall, puis la cour d'honneur juste derrière
     const chats = hall && isDone("cour_chats");          // et la salle des chats, par l'arche de droite
+    const aile = allee && isDone("aile_debrousse");      // le jardin de l'aile ouest, à gauche du perron
+    const biblio = aile && isDone("aile_biblio"), salle = aile && isDone("aile_salle");
     for (let r = 0; r < NAV.h; r++) for (let c = 0; c < NAV.w; c++) {
       const v = NAV.rows[r].charCodeAt(c) - 48;
       navFree[r * NAV.w + c] = v === 1 || (v === 2 && garden) || ((v === 3 || v === 4) && gate) || ((v === 5 || v === 6) && allee) ||
-        (v === 7 && manoir) || ((v === 8 || v === 9) && salon) || ((v === 10 || v === 11 || v === 13) && hall) || ((v === 12 || v === 14) && chats) ? v : 0;
+        (v === 7 && manoir) || ((v === 8 || v === 9) && salon) || ((v === 10 || v === 11 || v === 13) && hall) || ((v === 12 || v === 14) && chats) ||
+        ((v === 15 || v === 18) && aile) || (v === 16 && biblio) || (v === 17 && salle) ? v : 0;
     }
     Object.keys(NAV.blocks).forEach(id => {
       if (isDone(id)) (NAV.blocks[id][S.house[id].style | 0] || NAV.blocks[id][0] || []).forEach(i => { navFree[i] = 0; });
@@ -1029,7 +1083,7 @@
       }
       if (size > bestSize) { bestSize = size; best = id; }
     }
-    navHouse = []; navGarden = []; navGate = []; navAllee = []; navManoir = []; navSalon = []; navCour = []; navHall = []; navChats = [];
+    navHouse = []; navGarden = []; navGate = []; navAllee = []; navManoir = []; navSalon = []; navCour = []; navHall = []; navChats = []; navAile = []; navBiblio = [];
     for (let i = 0; i < navFree.length; i++) {
       if (comp[i] !== best) navFree[i] = 0;
       else if (navFree[i] === 1) navHouse.push(i);
@@ -1041,6 +1095,8 @@
       else if (navFree[i] === 10) navCour.push(i);
       else if (navFree[i] === 11) navHall.push(i);
       else if (navFree[i] === 12) navChats.push(i);
+      else if (navFree[i] === 15) navAile.push(i);
+      else if (navFree[i] === 16) navBiblio.push(i);          // la salle à manger (17) n'est qu'un passage : les chats y vont pour sauter sur la table
     }
   }
   function neighbours(i) {
@@ -1056,7 +1112,7 @@
   const cellXY = i => [NAV.x0 + (i % NAV.w + 0.5) * NAV.cell, NAV.y0 + (((i / NAV.w) | 0) + 0.5) * NAV.cell];
   function randomCell() {
     // on tire d'abord l'endroit, pour que les chats restent visibles un peu partout : maison, jardin, entrée
-    const pools = [[navHouse, 0.25], [navGarden, 0.16], [navGate, 0.09], [navAllee, 0.1], [navManoir, 0.08], [navSalon, 0.12], [navCour, 0.12], [navHall, 0.02], [navChats, 0.06]].filter(p => p[0].length);
+    const pools = [[navHouse, 0.22], [navGarden, 0.14], [navGate, 0.08], [navAllee, 0.09], [navManoir, 0.07], [navSalon, 0.11], [navCour, 0.11], [navHall, 0.02], [navChats, 0.06], [navAile, 0.07], [navBiblio, 0.03]].filter(p => p[0].length);
     if (!pools.length) return 0;
     let k = Math.random() * pools.reduce((t, p) => t + p[1], 0);
     for (const p of pools) { k -= p[1]; if (k <= 0) return p[0][Math.floor(Math.random() * p[0].length)]; }
@@ -1341,7 +1397,17 @@
 
   let preview = null;   // { id, style } : style essayé depuis la feuille de choix
   const isDone = id => !!(S.house[id] && S.house[id].done);
-  const available = s => !isDone(s.id) && (s.need || []).every(isDone);
+  const available = s => !isDone(s.id) && (s.need || []).every(isDone) && zoneOpen(zoneOf(s));
+  // zones fermées dont un premier chantier serait prêt : on y pose un cadenas
+  function lockedZones() {
+    const out = [];
+    Object.keys(ZONES).forEach(z => {
+      if (zoneOpen(z)) return;
+      const first = SLOTS.find(s => zoneOf(s) === z && !isDone(s.id) && (s.need || []).every(isDone));
+      if (first) out.push({ z: z, at: first.at });
+    });
+    return out;
+  }
   const patchOf = (s, k) => (s.styles ? s.styles[k | 0] && s.styles[k | 0].patch : s.patch);
   const hasArt = s => (s.styles ? s.styles.some(st => st.patch) : !!s.patch);
 
@@ -1385,16 +1451,36 @@
   function renderMarkers() {
     markersEl.innerHTML = preview ? "" : SLOTS.filter(available).map(s =>
       '<button class="mk' + (S.kibble < s.cost || !hasArt(s) ? " poor" : "") + '" type="button" data-slot="' + s.id + '" style="left:' + s.at[0] + "px;top:" + s.at[1] +
-      'px" aria-label="' + esc(s.name) + ", " + plural(s.cost, "croquette") + '"><span class="bob">' + ico(s.icon) + "<b>" + s.cost + "</b></span></button>").join("");
+      'px" aria-label="' + esc(s.name) + ", " + plural(s.cost, "croquette") + '"><span class="bob">' + ico(s.icon) + "<b>" + s.cost + "</b></span></button>").join("") +
+      lockedZones().map(l =>
+      '<button class="mk lock' + (S.kibble < ZONE_COST ? " poor" : "") + '" type="button" data-zone="' + l.z + '" style="left:' + l.at[0] + "px;top:" + l.at[1] +
+      'px" aria-label="Débloquer ' + esc(ZONES[l.z].name) + ", " + plural(ZONE_COST, "croquette") + '"><span class="bob">' + ico("lock") + "<b>" + ZONE_COST + "</b></span></button>").join("");
+  }
+  function openZone(z) {
+    const zone = ZONES[z], poor = S.kibble < ZONE_COST, l = lockedZones().find(o => o.z === z);
+    if (!zone || !l) return;
+    const lim = camLimits();
+    if (lim.vw) centerOn(l.at[0], l.at[1] + lim.vh * 0.2 / cam.s);
+    openSheet('<span class="tag">Nouvelle zone</span><h2>' + esc(zone.name) + "</h2><p>" + esc(zone.desc) +
+      " Débloque-la pour y lancer ses chantiers.</p>" +
+      '<button class="btn block" id="z-buy" type="button"' + (poor ? " disabled" : "") + ">" +
+      (poor ? "Il te manque " + plural(ZONE_COST - S.kibble, "croquette") : "Débloquer · " + ZONE_COST + " " + ico("kibble")) + "</button>", { noFocus: true });
+    $("#z-buy").onclick = () => {
+      if (S.kibble < ZONE_COST || zoneOpen(z)) return;
+      S.kibble -= ZONE_COST; S.zones[z] = true;
+      save(); closeSheet(); buzz(15); sfx("buy"); renderHome();
+      toast(zone.name + " : zone débloquée !");
+    };
   }
 
   function renderHome() {
     renderLayers(); renderMarkers(); renderCats();
     if (!cam.placed && mapEl.clientWidth) { cam.placed = true; centerOn(WORLD.start[0], WORLD.start[1], 0.5); }
     else applyCam();
-    const done = SLOTS.filter(s => isDone(s.id)).length, open = SLOTS.filter(available);
+    const done = SLOTS.filter(s => isDone(s.id)).length, open = SLOTS.filter(available), locks = lockedZones();
     let hint;
-    if (done === SLOTS.length) hint = "Tous les chantiers disponibles sont terminés. Les suivants arrivent avec leurs images.";
+    if (!open.length && locks.length) hint = S.kibble >= ZONE_COST ? "Touche le cadenas pour débloquer une nouvelle zone." : "Réussis des niveaux pour débloquer la zone suivante (" + ZONE_COST + " croquettes).";
+    else if (done === SLOTS.length) hint = "Tous les chantiers disponibles sont terminés. Les suivants arrivent avec leurs images.";
     else if (open.length && !open.some(hasArt)) hint = "Glisse pour te balader, pince pour zoomer. Les chantiers s'activeront avec leurs images.";
     else if (!open.some(s => S.kibble >= s.cost)) hint = "Réussis des niveaux pour gagner des croquettes, puis reviens lancer un chantier.";
     else hint = "Touche une bulle pour lancer un chantier.";
@@ -1453,7 +1539,7 @@
 
   markersEl.addEventListener("click", e => {
     const m = e.target.closest ? e.target.closest(".mk") : null;
-    if (m && dragDist < 10) openSlot(SLOT[m.dataset.slot]);
+    if (m && dragDist < 10) { if (m.dataset.zone) openZone(m.dataset.zone); else openSlot(SLOT[m.dataset.slot]); }
   });
 
   /* ================= 8. Boutique ================= */
@@ -1514,7 +1600,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.12." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.13." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -1579,6 +1665,7 @@
   $("#btn-rules").onclick = () => showRules();
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !sheetSticky) closeSheet(); });
 
+  migrateZones();
   buildNav();
   let abandoned = false;
   if (S.inLevel) {            // l'appli a été fermée en plein niveau
@@ -1610,7 +1697,7 @@
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) { /* sans importance */ }
 
   window.__ronron = { state: () => S, level: () => L, nav: () => navFree, path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
-    navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length, navManoir.length, navSalon.length, navCour.length, navHall.length, navChats.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
+    navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length, navManoir.length, navSalon.length, navCour.length, navHall.length, navChats.length, navAile.length, navBiblio.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
     audio: () => ({ ctx: AC ? AC.state : null, playing: !!(musicSrc && !musicSrc.pending), track: musicIdx % MUSIC.length, pref: audioPref }), sfx: sfx, sfxNames: () => Object.keys(SFX), sfxRaw: name => SFX[name](),
     walls: () => (WALLS ? WALLS.strips.filter(st => st.node && st.node.parentNode).length : -1), wallsReady: () => !!wallCanvas };
 })();

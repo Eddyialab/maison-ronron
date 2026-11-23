@@ -142,6 +142,10 @@ h2 {
   font-size: 0.72rem; font-weight: 800;
 }
 .mk.poor .bob { border-color: #C9BFB3; color: #A99F94; }
+/* cadenas d'une nouvelle zone : plus grand, sur fond sombre */
+.mk.lock .bob { width: 52px; height: 52px; background: #3A3340; border-color: #F2C14E; color: #F2C14E; }
+.mk.lock b { background: var(--accent); }
+.mk.lock.poor .bob { border-color: #8E8696; color: #C9C1D1; }
 .mk:focus-visible .bob { outline: 3px solid #fff; outline-offset: 2px; }
 @keyframes bob { 50% { transform: translateY(-5px); } }
 .mapbtn { position: absolute; left: 12px; top: 62px; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3); }
