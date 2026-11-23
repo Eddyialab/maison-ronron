@@ -242,6 +242,132 @@
   }
   function buzz(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) { /* sans importance */ } }
 
+  /* ---------- Sons et musique ----------
+     Tout passe par un AudioContext : c'est le seul moyen de régler le volume sur iPhone.
+     Les bruitages sont fabriqués à la volée (aucun fichier) ; les musiques sont trois morceaux joués à la suite, en boucle. */
+  const AUDIO_KEY = "maison-ronron-audio";
+  const MUSIC = ["assets/a/musique-1.mp3", "assets/a/musique-2.mp3", "assets/a/musique-3.mp3"];
+  const audioPref = { sfx: 0.7, music: 0.45 };
+  try { Object.assign(audioPref, JSON.parse(localStorage.getItem(AUDIO_KEY) || "{}")); } catch (e) { /* réglages par défaut */ }
+  let AC = null, sfxOut = null, musicOut = null, musicSrc = null, musicIdx = Math.floor(Math.random() * MUSIC.length), musicTimer = 0, musicRun = 0, noiseBuf = null, lastTick = 0;
+  const curve = v => v * v;                       // l'oreille n'entend pas le volume de façon linéaire
+  function audioApply() {
+    if (!AC) return;
+    sfxOut.gain.value = curve(audioPref.sfx);
+    musicOut.gain.setTargetAtTime(curve(audioPref.music) * 0.9, AC.currentTime, 0.08);
+    if (audioPref.music > 0) startMusic(); else stopMusic();
+  }
+  function setAudio(key, v) {
+    audioPref[key] = Math.max(0, Math.min(1, v));
+    try { localStorage.setItem(AUDIO_KEY, JSON.stringify(audioPref)); } catch (e) { /* sans importance */ }
+    audioApply();
+  }
+  // Les navigateurs n'autorisent le son qu'après un premier geste : on démarre (ou on relance) à chaque appui.
+  function audioWake() {
+    try {
+      if (!AC) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        AC = new Ctx();
+        sfxOut = AC.createGain(); musicOut = AC.createGain();
+        sfxOut.connect(AC.destination); musicOut.connect(AC.destination);
+        audioApply();
+      } else if (AC.state !== "running" && !document.hidden) AC.resume();
+    } catch (e) { AC = null; }
+  }
+  ["pointerdown", "touchend", "keydown"].forEach(ev => document.addEventListener(ev, audioWake, true));
+  document.addEventListener("visibilitychange", () => {
+    if (!AC) return;
+    try { if (document.hidden) AC.suspend(); else AC.resume(); } catch (e) { /* sans importance */ }
+  });
+
+  function stopMusic() {
+    musicRun++; clearTimeout(musicTimer);
+    if (musicSrc) { try { musicSrc.onended = null; musicSrc.stop(); } catch (e) { /* déjà arrêtée */ } musicSrc = null; }
+  }
+  function startMusic() {
+    if (!AC || musicSrc || audioPref.music <= 0) return;
+    const run = ++musicRun, url = MUSIC[musicIdx % MUSIC.length];
+    clearTimeout(musicTimer);
+    musicSrc = { pending: true };
+    fetch(url).then(r => r.arrayBuffer()).then(data => new Promise((ok, ko) => AC.decodeAudioData(data, ok, ko))).then(buf => {
+      if (run !== musicRun) return;
+      const src = AC.createBufferSource();
+      src.buffer = buf; src.connect(musicOut);
+      src.onended = () => {
+        if (musicSrc !== src) return;
+        musicSrc = null; musicIdx++;
+        musicTimer = setTimeout(startMusic, 1800);          // un court silence, puis le morceau suivant
+      };
+      src.start(); musicSrc = src;
+    }).catch(() => { if (run === musicRun) { musicSrc = null; musicIdx++; musicTimer = setTimeout(startMusic, 20000); } });
+  }
+
+  // Briques des bruitages : une note (o.f en Hz, glissant vers o.f2) ou un souffle filtré.
+  function tone(o) {
+    const t0 = AC.currentTime + (o.t || 0), osc = AC.createOscillator(), g = AC.createGain();
+    osc.type = o.type || "sine";
+    osc.frequency.setValueAtTime(o.f, t0);
+    if (o.f2) osc.frequency.exponentialRampToValueAtTime(o.f2, t0 + o.d);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(o.g, t0 + (o.a || 0.006));
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.d);
+    osc.connect(g); g.connect(sfxOut);
+    osc.start(t0); osc.stop(t0 + o.d + 0.03);
+  }
+  function hiss(o) {
+    if (!noiseBuf) {
+      noiseBuf = AC.createBuffer(1, Math.floor(AC.sampleRate * 0.4), AC.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const t0 = AC.currentTime + (o.t || 0), src = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+    src.buffer = noiseBuf; f.type = "bandpass"; f.frequency.value = o.f; f.Q.value = o.q || 1.2;
+    g.gain.setValueAtTime(o.g, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.d);
+    src.connect(f); f.connect(g); g.connect(sfxOut);
+    src.start(t0); src.stop(t0 + o.d + 0.02);
+  }
+  const chime = (notes, t, step, d, g) => notes.forEach((f, k) => { tone({ f: f, t: t + k * step, d: d, g: g, type: "triangle" }); tone({ f: f * 2, t: t + k * step, d: d * 0.6, g: g * 0.25 }); });
+  const SFX = {
+    tap: () => tone({ f: 620, f2: 520, d: 0.045, g: 0.07, type: "triangle" }),
+    cross: () => tone({ f: 900, f2: 700, d: 0.05, g: 0.11, type: "triangle" }),
+    uncross: () => tone({ f: 520, f2: 400, d: 0.05, g: 0.09, type: "triangle" }),
+    cat: () => {                                   // petit « mrrp » montant, puis deux notes claires
+      tone({ f: 480, f2: 760, d: 0.11, g: 0.16, type: "triangle" });
+      chime([784, 1175], 0.09, 0.08, 0.26, 0.17);
+    },
+    wrong: () => {                                 // deux notes graves qui frottent
+      tone({ f: 196, f2: 120, d: 0.32, g: 0.26, type: "triangle" });
+      tone({ f: 208, f2: 127, d: 0.32, g: 0.16, type: "triangle" });
+      hiss({ f: 300, d: 0.12, g: 0.12 });
+    },
+    win: () => { chime([523, 659, 784, 1047], 0, 0.1, 0.34, 0.18); chime([1319, 1568, 2093], 0.44, 0.07, 0.6, 0.1); },
+    lose: () => chime([392, 311, 262], 0, 0.2, 0.5, 0.17),
+    build: () => {                                 // trois coups de marteau, puis l'étincelle du travail fini
+      [0, 0.15, 0.3].forEach(t => { hiss({ f: 1100, q: 2, t: t, d: 0.07, g: 0.35 }); tone({ f: 170, f2: 90, t: t, d: 0.09, g: 0.3 }); });
+      chime([1047, 1319, 1568, 2093], 0.5, 0.07, 0.5, 0.13);
+    },
+    buy: () => {                                   // ronron (note grave qui tremble) et carillon de bienvenue
+      for (let k = 0; k < 9; k++) tone({ f: 62 + (k % 2) * 4, t: k * 0.05, d: 0.05, g: 0.14, type: "sawtooth", a: 0.01 });
+      chime([659, 784, 1047], 0.3, 0.1, 0.45, 0.16);
+    },
+    wear: () => chime([880, 1319], 0, 0.07, 0.28, 0.13)
+  };
+  function sfx(name) {
+    if (!AC || AC.state !== "running" || audioPref.sfx <= 0) return;
+    if (name === "cross" || name === "uncross") {            // en glissant le doigt, pas plus d'un tic toutes les 40 ms
+      const now = performance.now();
+      if (now - lastTick < 40) return;
+      lastTick = now;
+    }
+    try { SFX[name](); } catch (e) { /* un bruitage raté ne doit jamais gêner le jeu */ }
+  }
+  // un tic discret sur les boutons de l'interface
+  document.addEventListener("click", e => {
+    const b = e.target.closest ? e.target.closest("button, .mk") : null;
+    if (b && !b.disabled && !(b.closest && b.closest("#board"))) sfx("tap");
+  }, true);
+
   let lastKibble = -1;
   function updateHud() {
     syncLives();
@@ -295,7 +421,7 @@
   const board = $("#board");
   let L = null;          // partie en cours : { lv, n, st, fish, placed, over }
   let mode = "cross";
-  // État d'une case : 0 vide, 1 croix du joueur, 2 croix automatique, 3 chat, 4 erreur.
+  // État d'une case : 0 vide, 1 croix du joueur, 3 chat, 4 erreur (2, ancienne croix automatique, n'est plus utilisé).
 
   function renderFishes(left) {
     let h = "";
@@ -357,19 +483,13 @@
     if (s >= 2) return;
     const n = L.n, r = (i / n) | 0, c = i % n;
     if (L.lv.solution[r] === c) {
-      setCell(i, 3); L.placed++; buzz(12);
-      const z = L.lv.regions[i];
-      for (let j = 0; j < n * n; j++) {
-        if (L.st[j] > 1) continue;
-        const rr = (j / n) | 0, cc = j % n;
-        if (rr === r || cc === c || L.lv.regions[j] === z || (Math.abs(rr - r) <= 1 && Math.abs(cc - c) <= 1)) setCell(j, 2);
-      }
+      setCell(i, 3); L.placed++; buzz(12); sfx("cat");      // les croix restent à la main du joueur : rien n'est rempli à sa place
       if (L.placed === n) win();
     } else {
       setCell(i, 4);
       const el = L.cells[i]; el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake");
       L.fish--; S.inLevel.fishLost++; save();
-      renderFishes(L.fish); buzz([30, 40, 30]);
+      renderFishes(L.fish); buzz([30, 40, 30]); sfx("wrong");
       if (L.fish <= 0) lose();
     }
   }
@@ -378,6 +498,7 @@
     L.over = true;
     const done = S.level;
     S.kibble++; S.level++; S.inLevel = null; save(); updateHud();
+    setTimeout(() => sfx("win"), 260);
     setTimeout(() => {
       if (view !== "level") return;
       openSheet(
@@ -395,6 +516,7 @@
   function lose() {
     L.over = true;
     loseLife(); S.inLevel = null; save(); updateHud();
+    setTimeout(() => sfx("lose"), 320);
     setTimeout(() => {
       if (view !== "level") return;
       const none = S.lives <= 0;
@@ -448,8 +570,8 @@
     if (mode === "cat") { ptr = { i: i, cat: true }; return; }
     const prev = L.st[i];
     ptr = { i: i, paint: -1, moved: false, long: false };
-    if (prev === 0) { setCell(i, 1); ptr.paint = 1; }
-    else if (prev === 1) { setCell(i, 0); ptr.paint = 0; }
+    if (prev === 0) { setCell(i, 1); ptr.paint = 1; sfx("cross"); }
+    else if (prev === 1) { setCell(i, 0); ptr.paint = 0; sfx("uncross"); }
     ptr.timer = setTimeout(() => {
       if (!ptr || ptr.moved || ptr.i !== i) return;
       ptr.long = true;
@@ -461,8 +583,8 @@
     const j = cellAt(e.clientX, e.clientY);
     if (j < 0 || j === ptr.i) return;
     ptr.moved = true; clearTimeout(ptr.timer);
-    if (ptr.paint === 1 && L.st[j] === 0) setCell(j, 1);
-    else if (ptr.paint === 0 && L.st[j] === 1) setCell(j, 0);
+    if (ptr.paint === 1 && L.st[j] === 0) { setCell(j, 1); sfx("cross"); }
+    else if (ptr.paint === 0 && L.st[j] === 1) { setCell(j, 0); sfx("uncross"); }
   });
   function endPtr(e) {
     if (!ptr) return;
@@ -989,7 +1111,7 @@
         S.house[slot.id] = { done: true, style: sel };
       }
       buildNav(); settleCats();
-      save(); closeSheet(); buzz(15);
+      save(); closeSheet(); buzz(15); sfx(restyle ? "wear" : "build");
       if (!restyle) toast(slot.name + " : c'est fait !");
     };
   }
@@ -1040,7 +1162,7 @@
     const used = S.cats.map(c => c.name);
     const name = CAT_NAMES.find(n => used.indexOf(n) < 0) || "Chat " + S.nextCat;
     S.cats.push({ id: S.nextCat++, breed: breed.id, name: name, owned: [], wear: null });
-    save(); renderShop(); buzz(15);
+    save(); renderShop(); buzz(15); sfx("buy");
     toast(name + " a rejoint la maison.");
   });
   $("#shop-cats").addEventListener("click", e => {
@@ -1052,7 +1174,7 @@
       if (S.kibble < acc.price) return;
       S.kibble -= acc.price; cat.owned.push(acc.id); cat.wear = acc.id;
     } else cat.wear = cat.wear === acc.id ? null : acc.id;
-    save(); renderShop();
+    save(); renderShop(); sfx("wear");
   });
   $("#shop-cats").addEventListener("change", e => {
     if (e.target.tagName !== "INPUT") return;
@@ -1064,7 +1186,10 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.2." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.3." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      '<span class="tag">Son</span>' +
+      '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
+      '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
       '<span class="tag">Sauvegarde</span>' +
       '<p>Copie ce code et garde-le quelque part (une note, un message) : il permet de retrouver ta partie sur un autre téléphone ou après une réinstallation.</p>' +
       '<textarea class="code" id="b-code" rows="3" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Code de sauvegarde"></textarea>' +
@@ -1076,6 +1201,9 @@
       '<div class="field"><input id="t-level" type="number" min="1" max="99999" inputmode="numeric" value="' + S.level + '" aria-label="Numéro de niveau">' +
       '<button class="btn ghost small" id="t-go" type="button">Aller à ce niveau</button></div>' +
       '<button class="btn danger small" id="t-reset" type="button">Tout recommencer</button>');
+    $("#v-music").oninput = e => { setAudio("music", e.target.value / 100); $("#o-music").textContent = e.target.value; };
+    $("#v-sfx").oninput = e => { setAudio("sfx", e.target.value / 100); $("#o-sfx").textContent = e.target.value; };
+    $("#v-sfx").onchange = () => sfx("cat");               // un exemple à entendre quand on relâche le curseur
     const mine = saveCode();
     $("#b-code").value = mine;
     $("#b-copy").onclick = () => {
@@ -1145,5 +1273,6 @@
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) { /* sans importance */ }
 
   window.__ronron = { state: () => S, level: () => L, nav: () => navFree, path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
+    audio: () => ({ ctx: AC ? AC.state : null, playing: !!(musicSrc && !musicSrc.pending), track: musicIdx % MUSIC.length, pref: audioPref }), sfx: sfx, sfxNames: () => Object.keys(SFX), sfxRaw: name => SFX[name](),
     walls: () => (WALLS ? WALLS.strips.filter(st => st.node && st.node.parentNode).length : -1), wallsReady: () => !!wallCanvas };
 })();

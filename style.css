@@ -414,3 +414,8 @@ h2 {
   width: 100%; min-height: 64px; resize: none; border: 1px solid var(--edge); border-radius: 12px; padding: 8px 10px;
   font: 600 12px/1.35 ui-monospace, Menlo, Consolas, monospace; color: inherit; background: var(--page); word-break: break-all;
 }
+
+/* ---------- Volume (réglages) ---------- */
+.vol { display: grid; grid-template-columns: 5.5rem 1fr 2.2rem; align-items: center; gap: 10px; font-weight: 700; }
+.vol input[type="range"] { width: 100%; height: 28px; accent-color: var(--accent); touch-action: pan-y; }
+.vol output { text-align: right; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
