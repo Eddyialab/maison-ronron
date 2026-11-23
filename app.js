@@ -90,7 +90,7 @@
     { id: "jardin_allee", room: "Jardin du gardien", name: "Refaire l'allée", short: "Allée", verb: "Refaire", cost: 3, icon: "hammer", need: ["jardin_pelouse"], at: g([900, 1290]),
       desc: "Il manque des dalles entre le portail et le perron.",
       styles: [{ name: "Pavés clairs", sw: "#E6DCC0", patch: PATCH.allee_paves }, { name: "Gravier et briques", sw: "#B5553C", patch: PATCH.allee_gravier }] },
-    { id: "jardin_fontaine", room: "Jardin du gardien", name: "Restaurer la fontaine", short: "Fontaine", verb: "Restaurer", cost: 4, icon: "hammer", need: ["jardin_pelouse"], at: g([2140, 1160]),
+    { id: "jardin_fontaine", room: "Jardin du gardien", name: "Restaurer la fontaine", short: "Fontaine", verb: "Restaurer", cost: 4, icon: "hammer", need: ["jardin_pelouse"], at: g([2140, 1160]), depth: 4916 + 1240,
       desc: "La fontaine est à sec et envahie d'herbes. On la remet en eau.",
       styles: [{ name: "Pierre claire", sw: "#7FB5DA", patch: PATCH.fontaine_pierre }, { name: "Mosaïque bleue", sw: "#2F7FB0", patch: PATCH.fontaine_mosaique }] },
     { id: "jardin_cloture", room: "Jardin du gardien", name: "Refaire la clôture", short: "Clôture", verb: "Refaire", cost: 5, icon: "hammer", need: ["jardin_pelouse"], at: g([330, 1150]),
@@ -787,14 +787,17 @@
 
   const catRT = {};   // état d'animation de chaque chat, par identifiant
   const rand = (a, b) => a + Math.random() * (b - a);
-  let navFree = null;      // cases libres (1 maison, 2 jardin), recalculées quand un meuble est posé ou qu'un chantier se termine
-  let navHouse = [], navGarden = [];
+  // cases libres (1 maison, 2 jardin du gardien, 3 entrée du domaine, 4 passage caché dans la haie),
+  // recalculées quand un meuble est posé ou qu'un chantier se termine
+  let navFree = null;
+  let navHouse = [], navGarden = [], navGate = [];
   function buildNav() {
     navFree = new Uint8Array(NAV.w * NAV.h);
     const garden = isDone("jardin_debrousse");      // tant que le jardin est en friche, les chats restent à l'intérieur
+    const gate = garden && isDone("grille_debrousse");   // même règle pour l'entrée, qu'ils rejoignent par un trou dans la haie
     for (let r = 0; r < NAV.h; r++) for (let c = 0; c < NAV.w; c++) {
       const v = NAV.rows[r].charCodeAt(c) - 48;
-      navFree[r * NAV.w + c] = v === 1 || (v === 2 && garden) ? v : 0;
+      navFree[r * NAV.w + c] = v === 1 || (v === 2 && garden) || (v >= 3 && gate) ? v : 0;
     }
     Object.keys(NAV.blocks).forEach(id => {
       if (isDone(id)) NAV.blocks[id][S.house[id].style | 0].forEach(i => { navFree[i] = 0; });
@@ -813,10 +816,12 @@
       }
       if (size > bestSize) { bestSize = size; best = id; }
     }
-    navHouse = []; navGarden = [];
+    navHouse = []; navGarden = []; navGate = [];
     for (let i = 0; i < navFree.length; i++) {
       if (comp[i] !== best) navFree[i] = 0;
-      else (navFree[i] === 2 ? navGarden : navHouse).push(i);
+      else if (navFree[i] === 1) navHouse.push(i);
+      else if (navFree[i] === 2) navGarden.push(i);
+      else if (navFree[i] === 3) navGate.push(i);       // les cases de la haie (4) ne sont jamais une destination
     }
   }
   function neighbours(i) {
@@ -831,13 +836,17 @@
   const cellOf = (x, y) => Math.floor((y - NAV.y0) / NAV.cell) * NAV.w + Math.floor((x - NAV.x0) / NAV.cell);
   const cellXY = i => [NAV.x0 + (i % NAV.w + 0.5) * NAV.cell, NAV.y0 + (((i / NAV.w) | 0) + 0.5) * NAV.cell];
   function randomCell() {
-    // le jardin est plus grand que la maison : on tire d'abord l'endroit, pour que les chats restent visibles des deux côtés
-    const pool = navGarden.length && (!navHouse.length || Math.random() < 0.45) ? navGarden : navHouse;
-    return pool.length ? pool[Math.floor(Math.random() * pool.length)] : 0;
+    // on tire d'abord l'endroit, pour que les chats restent visibles un peu partout : maison, jardin, entrée
+    const pools = [[navHouse, 0.45], [navGarden, 0.32], [navGate, 0.23]].filter(p => p[0].length);
+    if (!pools.length) return 0;
+    let k = Math.random() * pools.reduce((t, p) => t + p[1], 0);
+    for (const p of pools) { k -= p[1]; if (k <= 0) return p[0][Math.floor(Math.random() * p[0].length)]; }
+    const last = pools[pools.length - 1][0];
+    return last[Math.floor(Math.random() * last.length)];
   }
   function nearestFree(x, y) {
     let best = -1, bd = 1e12;
-    for (let i = 0; i < navFree.length; i++) if (navFree[i]) { const p = cellXY(i), d = (p[0] - x) * (p[0] - x) + (p[1] - y) * (p[1] - y); if (d < bd) { bd = d; best = i; } }
+    for (let i = 0; i < navFree.length; i++) if (navFree[i] && navFree[i] !== 4) { const p = cellXY(i), d = (p[0] - x) * (p[0] - x) + (p[1] - y) * (p[1] - y); if (d < bd) { bd = d; best = i; } }
     return best;
   }
   // Plus court chemin case par case, puis on ne garde que les changements de direction.
@@ -1010,7 +1019,7 @@
   }
   function renderCats() {
     $("#objects").innerHTML = catsSVG();
-    S.cats.forEach(c => { const r = rt(c); r.node = $('#objects [data-cat="' + c.id + '"]'); r.shown = null; placeCat(c, 0); });
+    S.cats.forEach(c => { const r = rt(c); r.node = $('#objects [data-cat="' + c.id + '"]'); r.shown = null; r.hidden = false; placeCat(c, 0); });
     renderDepth();
   }
   let lastT = 0, lastSort = 0;
@@ -1022,7 +1031,9 @@
       const r = rt(cat);
       if (r.state === "walk") {
         const goal = r.path[0], dx = goal[0] - r.x, dy = goal[1] - r.y;
-        const d = Math.hypot(dx, dy * 1.6), step = 62 * dt;   // la profondeur est écrasée par la vue de dessus
+        const inHedge = navFree[cellOf(r.x, r.y)] === 4;      // dans la haie : le chat disparaît et se faufile vite
+        if (inHedge !== !!r.hidden) { r.hidden = inHedge; r.node.style.opacity = inHedge ? 0 : 1; }
+        const d = Math.hypot(dx, dy * 1.6), step = (inHedge ? 150 : 62) * dt;   // la profondeur est écrasée par la vue de dessus
         if (d <= step) {
           r.x = goal[0]; r.y = goal[1]; r.path.shift();
           if (!r.path.length) {
@@ -1035,7 +1046,10 @@
           r.x += dx / d * step; r.y += dy / d * step;
           if (Math.abs(dx) > 1.5) r.dir = dx > 0 ? 1 : -1;
         }
-      } else if (t > r.until) newTrip(r);
+      } else {
+        if (r.hidden) { r.hidden = false; r.node.style.opacity = 1; }
+        if (t > r.until) newTrip(r);
+      }
       placeCat(cat, t);
     });
     if (t - lastSort > 100) { lastSort = t; sortCats(); }
@@ -1216,7 +1230,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.4." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.5." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -1303,6 +1317,7 @@
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) { /* sans importance */ }
 
   window.__ronron = { state: () => S, level: () => L, nav: () => navFree, path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
+    navCount: () => [navHouse.length, navGarden.length, navGate.length], hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
     audio: () => ({ ctx: AC ? AC.state : null, playing: !!(musicSrc && !musicSrc.pending), track: musicIdx % MUSIC.length, pref: audioPref }), sfx: sfx, sfxNames: () => Object.keys(SFX), sfxRaw: name => SFX[name](),
     walls: () => (WALLS ? WALLS.strips.filter(st => st.node && st.node.parentNode).length : -1), wallsReady: () => !!wallCanvas };
 })();
