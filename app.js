@@ -68,11 +68,13 @@
       desc: "Un lampadaire dans l'angle du salon.",
       styles: [{ name: "Laiton et crème", sw: "#E8D9A8", patch: PATCH.lampe_laiton }, { name: "Noir", sw: "#2E2D31", patch: PATCH.lampe_noire }] },
     { id: "salon_canape", room: "Maison du gardien", name: "Installer un canapé", short: "Canapé", verb: "Installer", cost: 4, icon: "plus", need: ["salon_sol"], at: g([1540, 600]),
-      desc: "Le canapé se place sous la fenêtre.",
+      desc: "Le canapé se place sous la fenêtre. Les chats viendront y faire la sieste.",
+      poi: { x: 1475, y: 4916 + 600, pose: "dort", dir: -1, min: 14000, max: 32000 },
       styles: [{ name: "Velours vert", sw: "#3F7A55", patch: PATCH.vert }, { name: "Lin corail", sw: "#EE7F78", patch: PATCH.corail }] },
     // « depth » : objet debout au milieu d'une pièce ; il est trié avec les chats pour qu'ils passent derrière ou devant lui
     { id: "salon_arbre", room: "Maison du gardien", name: "Monter un arbre à chat", short: "Arbre à chat", verb: "Monter", cost: 4, icon: "plus", need: ["salon_sol"], at: g([890, 640]), depth: 5740,
       desc: "Griffoir, niche et perchoir : il s'installe dans la petite pièce de gauche.",
+      poi: { x: 866, y: 4916 + 580, pose: "assis", dir: 1, depth: 5741, min: 9000, max: 20000 },
       styles: [{ name: "Beige", sw: "#D9C4A0", patch: PATCH.arbrechat_naturel }, { name: "Gris et bois", sw: "#6E7078", patch: PATCH.arbrechat_gris }] },
 
     { id: "entree_balai", room: "Maison du gardien", name: "Balayer l'entrée", verb: "Balayer", cost: 1, icon: "broom", need: ["salon_menage"], at: g([1330, 1050]),
@@ -106,6 +108,7 @@
       styles: [{ name: "Pavés clairs", sw: "#E6DCC0", patch: PATCH.allee_paves }, { name: "Gravier et briques", sw: "#B5553C", patch: PATCH.allee_gravier }] },
     { id: "jardin_fontaine", room: "Jardin du gardien", name: "Restaurer la fontaine", short: "Fontaine", verb: "Restaurer", cost: 4, icon: "hammer", need: ["jardin_pelouse"], at: g([2140, 1160]), depth: 4916 + 1240,
       desc: "La fontaine est à sec et envahie d'herbes. On la remet en eau.",
+      poi: { x: 2070, y: 4916 + 1278, pose: "assis", dir: 1, depth: 4916 + 1241, min: 7000, max: 15000 },
       styles: [{ name: "Pierre claire", sw: "#7FB5DA", patch: PATCH.fontaine_pierre }, { name: "Mosaïque bleue", sw: "#2F7FB0", patch: PATCH.fontaine_mosaique }] },
     { id: "jardin_cloture", room: "Jardin du gardien", name: "Refaire la clôture", short: "Clôture", verb: "Refaire", cost: 5, icon: "hammer", need: ["jardin_pelouse"], at: g([330, 1150]),
       desc: "Piquets cassés, portail rouillé : on refait tout le tour du jardin.",
@@ -116,6 +119,31 @@
     { id: "jardin_arbre", room: "Jardin du gardien", name: "Faire revivre le grand arbre", short: "Grand arbre", verb: "Soigner", cost: 3, icon: "plus", need: ["jardin_pelouse"], at: g([860, 330]),
       desc: "Le vieil arbre derrière la maison n'a plus une feuille. Choisis ce qu'il deviendra.",
       styles: [{ name: "Cerisier en fleurs", sw: "#F2B6CF", patch: PATCH.arbre_cerisier }, { name: "Pommier", sw: "#5E9E48", patch: PATCH.arbre_pommier }] },
+
+    /* ----- Objets pour chats. « poi » : là où un chat vient s'installer (pattes au point x, y, en pixels du monde).
+       Pour les objets triés avec les chats, « depth » peut dépendre du style : le transat et l'herbe ne sont pas posés au même endroit. ----- */
+    { id: "objet_panier", room: "Maison du gardien", name: "Installer un panier", short: "Panier", verb: "Installer", cost: 6, icon: "plus", need: ["salon_sol"], at: g([1158, 575]),
+      desc: "Un panier douillet dans le salon. Les chats viendront s'y rouler en boule.",
+      poi: { x: 1158, y: 4916 + 640, pose: "dort", dir: 1, min: 15000, max: 35000 },
+      styles: [{ name: "Osier", sw: "#C9A063", patch: PATCH.panier_osier }, { name: "Tissu bleu", sw: "#8FB3D9", patch: PATCH.panier_bleu }] },
+    { id: "objet_griffoir", room: "Maison du gardien", name: "Monter un griffoir", short: "Griffoir", verb: "Monter", cost: 6, icon: "plus", need: ["salon_sol"], at: g([1095, 760]), depth: 4916 + 852,
+      desc: "Pour se faire les griffes ailleurs que sur le canapé.",
+      poi: { x: 1150, y: 4916 + 860, pose: "griffe", dir: -1, min: 4000, max: 8000 },
+      styles: [{ name: "Sisal", sw: "#D8C08A", patch: PATCH.griffoir_sisal }, { name: "Cactus", sw: "#4E9A45", patch: PATCH.griffoir_cactus }] },
+    { id: "objet_gamelles", room: "Maison du gardien", name: "Préparer les gamelles", short: "Gamelles", verb: "Préparer", cost: 5, icon: "plus", need: ["cuisine_sol"], at: g([1815, 870]),
+      desc: "Croquettes et eau fraîche dans la cuisine. Les chats passeront manger.",
+      poi: { x: 1705, y: 4916 + 915, pose: "assis", dir: 1, min: 5000, max: 10000 },
+      styles: [{ name: "Céramique bleue", sw: "#5A86C5", patch: PATCH.gamelles_ceramique }, { name: "Inox sur support", sw: "#C7CCD1", patch: PATCH.gamelles_inox }] },
+    { id: "objet_transat", room: "Jardin du gardien", name: "Installer un transat pour chat", short: "Transat", verb: "Installer", cost: 8, icon: "plus", need: ["jardin_pelouse"], at: g([520, 990]),
+      depth: [4916 + 1108, 4916 + 1046],
+      desc: "Un transat à leur taille, pour la sieste au soleil.",
+      poi: [{ x: 572, y: 4916 + 1052, pose: "dort", dir: 1, depth: 4916 + 1109, min: 15000, max: 35000 }, { x: 468, y: 4916 + 1000, pose: "dort", dir: 1, depth: 4916 + 1047, min: 15000, max: 35000 }],
+      styles: [{ name: "Bois rayé", sw: "#D9534F", patch: PATCH.transat_bois }, { name: "Rotin", sw: "#E9B949", patch: PATCH.transat_rotin }] },
+    { id: "objet_herbe", room: "Jardin du gardien", name: "Planter de l'herbe à chat", short: "Herbe à chat", verb: "Planter", cost: 6, icon: "plus", need: ["jardin_pelouse"], at: g([1680, 1250]),
+      depth: [4916 + 1421, 4916 + 1434],
+      desc: "Les chats adorent la mâchonner.",
+      poi: [{ x: 1425, y: 4916 + 1325, pose: "assis", dir: 1, min: 5000, max: 11000 }, { x: 1472, y: 4916 + 1345, pose: "assis", dir: 1, min: 5000, max: 11000 }],
+      styles: [{ name: "Bac en bois", sw: "#8A6238", patch: PATCH.herbe_bac }, { name: "Pot en terre", sw: "#C46A3C", patch: PATCH.herbe_pot }] },
 
     /* ----- Zone 3 : l'allée du manoir, au-dessus de la grille. Ses sols sont posés AVANT ceux de la grille, qui les recouvrent
        dans la bande commune aux deux zones ; ses objets (rond-point, arche, lampadaires, statue) sont à la fin de la liste. ----- */
@@ -149,9 +177,11 @@
       styles: [{ name: "Rosiers", sw: "#E46A8C", patch: PATCH.massif_roses }, { name: "Lavande", sw: "#8A63C9", patch: PATCH.massif_lavande }] },
     { id: "grille_abri", room: "Grille d'entrée", name: "Installer un abri à chats", short: "Abri à chats", verb: "Installer", cost: 8, icon: "plus", need: ["grille_pelouse"], at: z2([1320, 800]),
       desc: "Une petite cabane avec son coussin, pour les chats qui montent la garde.",
+      poi: [{ x: 3460, y: 5882, pose: "dort", dir: 1, min: 12000, max: 26000 }, { x: 3487, y: 5836, pose: "dort", dir: 1, min: 12000, max: 26000 }],
       styles: [{ name: "Bois", sw: "#8A6238", patch: PATCH.abri_bois }, { name: "Bleu pastel", sw: "#B9CDE6", patch: PATCH.abri_bleu }] },
     { id: "grille_banc", room: "Grille d'entrée", name: "Poser un banc", short: "Banc", verb: "Poser", cost: 6, icon: "plus", need: ["grille_pelouse"], at: z2([1570, 220]),
       desc: "Un banc derrière le mur, face à l'allée.",
+      poi: [{ x: 3790, y: 5185, pose: "dort", dir: 1, min: 12000, max: 26000 }, { x: 3800, y: 5178, pose: "dort", dir: 1, min: 12000, max: 26000 }],
       styles: [{ name: "Bois", sw: "#B5733A", patch: PATCH.bancjardin_bois }, { name: "Fer blanc", sw: "#DAD9D2", patch: PATCH.bancjardin_fer }] },
     { id: "grille_portail", room: "Grille d'entrée", name: "Remplacer la grille", short: "Grille", verb: "Remplacer", cost: 12, icon: "hammer", need: ["grille_chemin"], at: z2([1930, 760]),
       desc: "La vieille grille rouillée ne ferme plus. La nouvelle sera la première chose qu'on voit du domaine.",
@@ -186,7 +216,17 @@
     { id: "smoking", name: "Chat smoking", price: 6, fur: "#3F3D45", dark: "#2A282E", belly: "#FFFFFF", bib: true },
     { id: "siamois", name: "Siamois", price: 8, fur: "#F1E3CC", dark: "#6B4A3A", points: true, eye: "#3F95CF" },
     { id: "chartreux", name: "Chartreux", price: 10, fur: "#8E99A8", dark: "#727D8C", eye: "#D99A22" },
-    { id: "mainecoon", name: "Maine coon", price: 15, fur: "#B07A4A", dark: "#7E5230", belly: "#F3E3CC", stripes: true, big: true }
+    { id: "mainecoon", name: "Maine coon", price: 15, fur: "#B07A4A", dark: "#7E5230", belly: "#F3E3CC", stripes: true, big: true },
+    { id: "noir", name: "Chat noir", price: 10, fur: "#26242A", dark: "#141316", eye: "#C9D94A" },
+    { id: "blanc", name: "Chat blanc", price: 15, fur: "#F4F1EC", dark: "#D8D3CC", eye: "#5FA4DD" },
+    { id: "tricolore", name: "Tricolore", price: 20, fur: "#F6F2EC", dark: "#E07A2E", belly: "#FFFFFF", eye: "#7DAA3C" },
+    { id: "scottish", name: "Scottish fold", price: 25, fur: "#B3B6BE", dark: "#8A8D96", belly: "#E9E6E2", stripes: true, eye: "#E08A1E" },
+    { id: "birman", name: "Sacré de Birmanie", price: 30, fur: "#F1E2CB", dark: "#5A3F33", points: true, eye: "#4D7FD0", big: true },
+    { id: "bengal", name: "Bengal", price: 35, fur: "#D39A4E", dark: "#6B4423", belly: "#F3DFC0", stripes: true, eye: "#3DAA4E" },
+    { id: "persan", name: "Persan", price: 40, fur: "#F2E6D2", dark: "#D9C8AE", eye: "#D97A1E", big: true },
+    { id: "sphynx", name: "Sphynx", price: 45, fur: "#E8B9AA", dark: "#C98F80", eye: "#2EB8A6" },
+    { id: "bengalneige", name: "Bengal des neiges", price: 50, fur: "#E2E4E8", dark: "#6E727C", belly: "#F4EDE2", stripes: true, eye: "#3FA4E0" },
+    { id: "or", name: "Chat d'or", price: 60, fur: "#E2B43A", dark: "#B9822A", belly: "#F4D27A", stripes: true, eye: "#1FA060" }
   ];
   const BREED = {}; BREEDS.forEach(b => { BREED[b.id] = b; });
   /* Chats peints : quatre poses par race (debout, marche, assis, dort), tournées vers la droite.
@@ -211,8 +251,9 @@
     { id: "bonnet", name: "Bonnet", price: 3 },
     { id: "couronne", name: "Couronne", price: 6 }
   ];
-  const CAT_NAMES = ["Mochi", "Caramel", "Pixel", "Noisette", "Gribouille", "Plume", "Biscotte", "Ziggy", "Pépite", "Olive", "Câlin", "Praline"];
-  const MAX_CATS = 10;
+  const CAT_NAMES = ["Mochi", "Caramel", "Pixel", "Noisette", "Gribouille", "Plume", "Biscotte", "Ziggy", "Pépite", "Olive", "Câlin", "Praline",
+    "Réglisse", "Nougat", "Filou", "Sushi", "Cannelle", "Moka"];
+  const MAX_CATS = 16;
 
   /* ================= 2. Sauvegarde et vies ================= */
 
@@ -829,17 +870,19 @@
   // cases libres (1 maison, 2 jardin du gardien, 3 entrée du domaine, 4 passage caché dans la haie),
   // recalculées quand un meuble est posé ou qu'un chantier se termine
   let navFree = null;
-  let navHouse = [], navGarden = [], navGate = [];
+  let navHouse = [], navGarden = [], navGate = [], navAllee = [];
+  const HIDDEN = v => v === 4 || v === 6;          // passages où le chat se faufile sans être vu (haie, sous la grille)
   function buildNav() {
     navFree = new Uint8Array(NAV.w * NAV.h);
     const garden = isDone("jardin_debrousse");      // tant que le jardin est en friche, les chats restent à l'intérieur
     const gate = garden && isDone("grille_debrousse");   // même règle pour l'entrée, qu'ils rejoignent par un trou dans la haie
+    const allee = gate && isDone("allee_debrousse");     // et pour l'allée du manoir, où ils passent sous la grille
     for (let r = 0; r < NAV.h; r++) for (let c = 0; c < NAV.w; c++) {
       const v = NAV.rows[r].charCodeAt(c) - 48;
-      navFree[r * NAV.w + c] = v === 1 || (v === 2 && garden) || (v >= 3 && gate) ? v : 0;
+      navFree[r * NAV.w + c] = v === 1 || (v === 2 && garden) || ((v === 3 || v === 4) && gate) || (v >= 5 && allee) ? v : 0;
     }
     Object.keys(NAV.blocks).forEach(id => {
-      if (isDone(id)) NAV.blocks[id][S.house[id].style | 0].forEach(i => { navFree[i] = 0; });
+      if (isDone(id)) (NAV.blocks[id][S.house[id].style | 0] || NAV.blocks[id][0] || []).forEach(i => { navFree[i] = 0; });
     });
     // on ne garde que le plus grand ensemble de cases reliées entre elles, pour qu'aucun chat ne reste coincé
     const comp = new Int32Array(navFree.length); let best = 0, bestSize = 0, id = 0;
@@ -855,12 +898,13 @@
       }
       if (size > bestSize) { bestSize = size; best = id; }
     }
-    navHouse = []; navGarden = []; navGate = [];
+    navHouse = []; navGarden = []; navGate = []; navAllee = [];
     for (let i = 0; i < navFree.length; i++) {
       if (comp[i] !== best) navFree[i] = 0;
       else if (navFree[i] === 1) navHouse.push(i);
       else if (navFree[i] === 2) navGarden.push(i);
-      else if (navFree[i] === 3) navGate.push(i);       // les cases de la haie (4) ne sont jamais une destination
+      else if (navFree[i] === 3) navGate.push(i);       // les passages cachés (4, 6) ne sont jamais une destination
+      else if (navFree[i] === 5) navAllee.push(i);
     }
   }
   function neighbours(i) {
@@ -876,7 +920,7 @@
   const cellXY = i => [NAV.x0 + (i % NAV.w + 0.5) * NAV.cell, NAV.y0 + (((i / NAV.w) | 0) + 0.5) * NAV.cell];
   function randomCell() {
     // on tire d'abord l'endroit, pour que les chats restent visibles un peu partout : maison, jardin, entrée
-    const pools = [[navHouse, 0.45], [navGarden, 0.32], [navGate, 0.23]].filter(p => p[0].length);
+    const pools = [[navHouse, 0.38], [navGarden, 0.27], [navGate, 0.15], [navAllee, 0.2]].filter(p => p[0].length);
     if (!pools.length) return 0;
     let k = Math.random() * pools.reduce((t, p) => t + p[1], 0);
     for (const p of pools) { k -= p[1]; if (k <= 0) return p[0][Math.floor(Math.random() * p[0].length)]; }
@@ -885,7 +929,7 @@
   }
   function nearestFree(x, y) {
     let best = -1, bd = 1e12;
-    for (let i = 0; i < navFree.length; i++) if (navFree[i] && navFree[i] !== 4) { const p = cellXY(i), d = (p[0] - x) * (p[0] - x) + (p[1] - y) * (p[1] - y); if (d < bd) { bd = d; best = i; } }
+    for (let i = 0; i < navFree.length; i++) if (navFree[i] && !HIDDEN(navFree[i])) { const p = cellXY(i), d = (p[0] - x) * (p[0] - x) + (p[1] - y) * (p[1] - y); if (d < bd) { bd = d; best = i; } }
     return best;
   }
   // Plus court chemin case par case, puis on ne garde que les changements de direction.
@@ -921,10 +965,42 @@
     }
     return catRT[cat.id];
   }
+  /* Points d'intérêt : meubles et objets où un chat vient dormir, s'asseoir ou se faire les griffes.
+     Le chat marche jusqu'à la case libre la plus proche, saute à sa place, y reste un moment, puis redescend. */
+  function poiList() {
+    const list = [];
+    SLOTS.forEach(s => {
+      if (!s.poi || !isDone(s.id)) return;
+      const k = S.house[s.id].style | 0, p = Array.isArray(s.poi) ? (s.poi[k] || s.poi[0]) : s.poi;
+      list.push(Object.assign({ id: s.id }, p));
+    });
+    return list;
+  }
+  function pickPoi(r, from) {
+    const busy = {};
+    Object.keys(catRT).forEach(k => { const o = catRT[k]; if (o !== r && o.poi) busy[o.poi.id] = true; });
+    const list = poiList().filter(p => !busy[p.id]);
+    for (let tries = 0; tries < 3 && list.length; tries++) {
+      const p = list.splice(Math.floor(Math.random() * list.length), 1)[0];
+      const near = nearestFree(p.x, p.y);
+      if (near < 0) continue;
+      const a = cellXY(near);
+      if (Math.hypot(a[0] - p.x, a[1] - p.y) > 260) continue;      // trop loin d'une case où les chats ont accès en ce moment
+      const path = near === from ? [a] : pathTo(from, near);
+      if (!path.length) continue;
+      return { poi: Object.assign({ ax: a[0], ay: a[1] }, p), path: path };
+    }
+    return null;
+  }
   function newTrip(r) {
     let from = cellOf(r.x, r.y);
     if (!(from >= 0 && navFree[from])) from = nearestFree(r.x, r.y);
-    // le plus souvent une balade dans la pièce, parfois une traversée de la maison
+    r.poi = null; r.goal = null;
+    // de temps en temps, un meuble ou un objet ; le plus souvent une balade dans la pièce, parfois une traversée du domaine
+    if (Math.random() < 0.32) {
+      const go = pickPoi(r, from);
+      if (go) { r.goal = go.poi; r.poi = go.poi; r.path = go.path; r.state = "walk"; return; }
+    }
     let to = randomCell();
     if (Math.random() < 0.65) for (let k = 0; k < 12; k++) {
       const c = randomCell(), a = cellXY(c);
@@ -934,10 +1010,18 @@
     r.state = r.path.length ? "walk" : "idle";
     if (!r.path.length) r.until = performance.now() + 1500;
   }
+  function startHop(r, x, y, t, next) {
+    r.state = "hop"; r.hop = { x0: r.x, y0: r.y, x1: x, y1: y, t0: t, dur: 380 + Math.min(320, Math.hypot(x - r.x, y - r.y) * 2), next: next };
+    if (Math.abs(x - r.x) > 3) r.dir = x > r.x ? 1 : -1;
+  }
   // Après la pose d'un meuble : les chats qui se trouvent dessus rejoignent la case libre la plus proche.
   function settleCats() {
     Object.keys(catRT).forEach(k => {
-      const r = catRT[k], i = cellOf(r.x, r.y);
+      const r = catRT[k];
+      if (r.poi && r.state !== "walk") { const p = cellXY(nearestFree(r.poi.ax, r.poi.ay)); r.x = p[0]; r.y = p[1]; }   // on le fait redescendre de son meuble
+      r.poi = null; r.goal = null; r.hop = null; r.lift = 0;
+      if (r.state === "hop" || r.state === "poi") { r.state = "idle"; r.until = 0; }
+      const i = cellOf(r.x, r.y);
       if (i >= 0 && navFree[i]) { if (r.state === "walk") { r.path = []; r.state = "idle"; r.until = 0; } return; }
       const p = cellXY(nearestFree(r.x, r.y)); r.x = p[0]; r.y = p[1]; r.path = []; r.state = "idle"; r.until = 0;
     });
@@ -969,8 +1053,11 @@
     const r = rt(cat);
     if (!r.node) return;
     if (isSprite(cat)) {
-      r.node.setAttribute("transform", "translate(" + r.x.toFixed(1) + "," + r.y.toFixed(1) + ") scale(" + r.dir + ",1)");
-      setPose(cat, r, r.state === "sleep" ? "dort" : r.state === "walk" ? (Math.floor((t || 0) / 190) % 2 ? "marche" : "debout") : (r.sit ? "assis" : "debout"));
+      r.node.setAttribute("transform", "translate(" + r.x.toFixed(1) + "," + (r.y - (r.lift || 0)).toFixed(1) + ") scale(" + r.dir + ",1)");
+      let pose = r.state === "sleep" ? "dort" : r.state === "walk" ? (Math.floor((t || 0) / 190) % 2 ? "marche" : "debout") : (r.sit ? "assis" : "debout");
+      if (r.state === "hop") pose = "marche";
+      if (r.state === "poi") pose = r.poi.pose === "griffe" ? (Math.floor((t || 0) / 420) % 2 ? "marche" : "debout") : r.poi.pose;
+      setPose(cat, r, pose);
       return;
     }
     const sc = CAT_SCALE * (BREED[cat.breed] && BREED[cat.breed].big ? 1.18 : 1);
@@ -1035,7 +1122,12 @@
     const layer = $("#objects");
     if (!layer) return;
     const items = Array.from(layer.children).filter(n => !n.classList.contains("wall")).map(n => {
-      if (n.dataset.cat) { const r = catRT[n.dataset.cat]; return r ? { n: n, cat: true, x: r.x, y: r.y, hw: 46, h: 104 } : { n: n, y: 0 }; }
+      if (n.dataset.cat) {
+        const r = catRT[n.dataset.cat];
+        if (!r) return { n: n, y: 0 };
+        const up = r.poi && (r.state === "poi" || r.state === "hop");
+        return { n: n, cat: !up, x: r.x, y: up && r.poi.depth ? Math.max(r.y, r.poi.depth) : r.y, hw: 46, h: 104 };
+      }
       return { n: n, y: +n.dataset.depth };   // meuble : son image ne contient déjà que ce qui dépasse des murs
     }).sort((p, q) => p.y - q.y);
     const after = items.map(() => []);
@@ -1070,12 +1162,15 @@
       const r = rt(cat);
       if (r.state === "walk") {
         const goal = r.path[0], dx = goal[0] - r.x, dy = goal[1] - r.y;
-        const inHedge = navFree[cellOf(r.x, r.y)] === 4;      // dans la haie : le chat disparaît et se faufile vite
+        const inHedge = HIDDEN(navFree[cellOf(r.x, r.y)]);      // dans la haie ou sous la grille : le chat disparaît et se faufile vite
         if (inHedge !== !!r.hidden) { r.hidden = inHedge; r.node.style.opacity = inHedge ? 0 : 1; }
         const d = Math.hypot(dx, dy * 1.6), step = (inHedge ? 150 : 62) * dt;   // la profondeur est écrasée par la vue de dessus
         if (d <= step) {
           r.x = goal[0]; r.y = goal[1]; r.path.shift();
-          if (!r.path.length) {
+          if (!r.path.length && r.goal) {                       // arrivé au pied du meuble : il saute dessus
+            const p = r.goal; r.goal = null;
+            startHop(r, p.x, p.y, t, "poi");
+          } else if (!r.path.length) {
             const k = Math.random();
             if (k < 0.55) { r.state = "idle"; r.sit = Math.random() < 0.6; r.until = t + rand(1500, 4500); }
             else if (k < 0.8) { r.state = "sleep"; r.until = t + rand(6000, 14000); }
@@ -1085,6 +1180,17 @@
           r.x += dx / d * step; r.y += dy / d * step;
           if (Math.abs(dx) > 1.5) r.dir = dx > 0 ? 1 : -1;
         }
+      } else if (r.state === "hop") {
+        const h = r.hop, u = Math.min(1, (t - h.t0) / h.dur), e = u * u * (3 - 2 * u);
+        r.x = h.x0 + (h.x1 - h.x0) * e; r.y = h.y0 + (h.y1 - h.y0) * e;
+        r.lift = Math.sin(Math.PI * u) * Math.min(46, 14 + Math.abs(h.y1 - h.y0) * 0.35);      // petit bond
+        if (u >= 1) {
+          r.lift = 0; r.hop = null;
+          if (h.next === "poi" && r.poi) { r.state = "poi"; r.dir = r.poi.dir || r.dir; r.until = t + rand(r.poi.min || 8000, r.poi.max || 16000); }
+          else { r.poi = null; r.state = "idle"; r.sit = Math.random() < 0.5; r.until = t + rand(800, 2500); }
+        }
+      } else if (r.state === "poi") {
+        if (t > r.until) startHop(r, r.poi.ax, r.poi.ay, t, "floor");
       } else {
         if (r.hidden) { r.hidden = false; r.node.style.opacity = 1; }
         if (t > r.until) newTrip(r);
@@ -1131,8 +1237,8 @@
     SLOTS.forEach(s => {
       const k = effStyle(s.id);
       if (k == null || !s.depth) return;
-      const p = patchOf(s, k);
-      if (p) h += '<image class="obj" data-depth="' + s.depth + '" href="' + p.src + '" x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '"/>';
+      const p = patchOf(s, k), dp = Array.isArray(s.depth) ? s.depth[k] : s.depth;
+      if (p) h += '<image class="obj" data-depth="' + dp + '" href="' + p.src + '" x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '"/>';
     });
     if (h) layer.insertAdjacentHTML("beforeend", h);
     sortCats();
@@ -1269,7 +1375,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.8." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.9." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -1365,7 +1471,7 @@
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) { /* sans importance */ }
 
   window.__ronron = { state: () => S, level: () => L, nav: () => navFree, path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
-    navCount: () => [navHouse.length, navGarden.length, navGate.length], hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
+    navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
     audio: () => ({ ctx: AC ? AC.state : null, playing: !!(musicSrc && !musicSrc.pending), track: musicIdx % MUSIC.length, pref: audioPref }), sfx: sfx, sfxNames: () => Object.keys(SFX), sfxRaw: name => SFX[name](),
     walls: () => (WALLS ? WALLS.strips.filter(st => st.node && st.node.parentNode).length : -1), wallsReady: () => !!wallCanvas };
 })();
