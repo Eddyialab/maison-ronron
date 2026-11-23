@@ -4,6 +4,19 @@
 (function () {
   "use strict";
 
+  // Si quelque chose casse, on le dit à l'écran au lieu de laisser le jeu figé sans explication.
+  let complained = false;
+  window.addEventListener("error", e => {
+    if (complained || !e || !e.message || /ResizeObserver|Script error/.test(e.message)) return;
+    complained = true;
+    const d = document.createElement("div");
+    d.setAttribute("role", "alert");
+    d.style.cssText = "position:fixed;left:12px;right:12px;bottom:12px;z-index:99;padding:12px 14px;border-radius:14px;background:#2B2622;color:#fff;font:600 14px/1.35 system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.3)";
+    d.textContent = "Un problème est survenu. Ferme l'app et rouvre-la. (" + e.message + (e.lineno ? ", ligne " + e.lineno : "") + ")";
+    d.onclick = () => d.remove();
+    (document.body || document.documentElement).appendChild(d);
+  });
+
   /* ================= 1. Données ================= */
 
   const MAX_LIVES = 5;
@@ -208,14 +221,17 @@
   }
   let S = freshSave();
   let memoryOnly = false;
+  let loaded = false;      // tant que la partie n'a pas été relue, on n'écrit rien : on ne remplace jamais une sauvegarde par une partie vide
 
   function load() {
     try {
       const raw = localStorage.getItem(SAVE_KEY);
       if (raw) S = Object.assign(freshSave(), JSON.parse(raw));
+      loaded = true;
     } catch (e) { memoryOnly = true; }
   }
   function save() {
+    if (!loaded) return;
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { memoryOnly = true; }
   }
 
@@ -451,7 +467,8 @@
   function getWorker() {
     if (worker || workerBroken) return worker;
     try {
-      worker = new Worker("gen.js");
+      const tag = document.querySelector('script[src^="gen.js"]');       // même version que le reste de la page
+      worker = new Worker(tag ? tag.getAttribute("src") : "gen.js");
       worker.onmessage = e => deliver(e.data);
       worker.onerror = () => {
         workerBroken = true; worker = null;
@@ -1252,7 +1269,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.7." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.8." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -1308,6 +1325,7 @@
 
   /* ================= 10. Démarrage ================= */
 
+  load();
   $("#tab-home").onclick = () => show("home");
   $("#tab-shop").onclick = () => show("shop");
   $("#tab-play").onclick = () => startLevel();
@@ -1316,7 +1334,6 @@
   $("#btn-rules").onclick = () => showRules();
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !sheetSticky) closeSheet(); });
 
-  load();
   buildNav();
   let abandoned = false;
   if (S.inLevel) {            // l'appli a été fermée en plein niveau
