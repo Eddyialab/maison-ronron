@@ -313,6 +313,10 @@
       desc: "Un fauteuil bien profond au milieu des livres. Devine qui va s'y installer.",
       poi: [[p6(1700, 700, "dort", -1), p6(1750, 792, "dort", 1)], [p6(1490, 700, "dort", 1), p6(1850, 690, "dort", -1)]],
       styles: [{ name: "Velours vert", sw: "#1F6B45", patch: PATCH.aile_lecture_velours }, { name: "Lin crème", sw: "#F1E9D6", patch: PATCH.aile_lecture_lin }] },
+    { id: "aile_atelier", room: "Aile ouest", name: "Aménager l'atelier de peinture", short: "Atelier", verb: "Aménager", cost: 16, icon: "plus", need: ["aile_biblio"], at: z6([2120, 330]),
+      desc: "La petite pièce du fond, derrière la bibliothèque, devient un atelier de peintre.",
+      poi: [p6(2083, 478, "assis", 1, 2458 + 536), p6(2120, 525, "dort", -1)],
+      styles: [{ name: "Bohème", sw: "#D9573B", patch: PATCH.aile_atelier_boheme }, { name: "Tout blanc", sw: "#F6F4EF", patch: PATCH.aile_atelier_blanc }] },
     { id: "aile_table", room: "Aile ouest", name: "Meubler la salle à manger", short: "Salle à manger", verb: "Meubler", cost: 14, icon: "plus", need: ["aile_salle"], at: z6([2350, 880]), depth: 2458 + 1117,
       desc: "Une table, des chaises et un buffet. Les chats se cachent dessous et sautent dessus.",
       poi: [p6(2330, 1015, "assis", 1, 2458 + 1118), p6(2370, 1000, "assis", -1, 2458 + 1118)],
@@ -1059,12 +1063,12 @@
     const hall = manoir && isDone("cour_hall");          // le hall, puis la cour d'honneur juste derrière
     const chats = hall && isDone("cour_chats");          // et la salle des chats, par l'arche de droite
     const aile = allee && isDone("aile_debrousse");      // le jardin de l'aile ouest, à gauche du perron
-    const biblio = aile && isDone("aile_biblio"), salle = aile && isDone("aile_salle");
+    const biblio = aile && isDone("aile_biblio"), salle = aile && isDone("aile_salle"), atelier = biblio && isDone("aile_atelier");
     for (let r = 0; r < NAV.h; r++) for (let c = 0; c < NAV.w; c++) {
       const v = NAV.rows[r].charCodeAt(c) - 48;
       navFree[r * NAV.w + c] = v === 1 || (v === 2 && garden) || ((v === 3 || v === 4) && gate) || ((v === 5 || v === 6) && allee) ||
         (v === 7 && manoir) || ((v === 8 || v === 9) && salon) || ((v === 10 || v === 11 || v === 13) && hall) || ((v === 12 || v === 14) && chats) ||
-        ((v === 15 || v === 18) && aile) || (v === 16 && biblio) || (v === 17 && salle) ? v : 0;
+        ((v === 15 || v === 18) && aile) || (v === 16 && biblio) || (v === 17 && salle) || (v === 19 && atelier) ? v : 0;
     }
     Object.keys(NAV.blocks).forEach(id => {
       if (isDone(id)) (NAV.blocks[id][S.house[id].style | 0] || NAV.blocks[id][0] || []).forEach(i => { navFree[i] = 0; });
