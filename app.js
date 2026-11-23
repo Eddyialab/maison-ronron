@@ -264,8 +264,9 @@
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  let view = "home";
+  let view = "home", pendingReload = false;
   function show(name) {
+    if (pendingReload && name !== "level") { pendingReload = false; save(); location.reload(); return; }
     view = name;
     ["home", "level", "shop"].forEach(v => { $("#screen-" + v).hidden = v !== name; });
     app.classList.toggle("inlevel", name === "level");
@@ -1251,7 +1252,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.6." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.7." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -1331,7 +1332,18 @@
 
   // App installée : fonctionnement hors ligne, et on demande au téléphone de ne pas effacer la sauvegarde.
   if ("serviceWorker" in navigator && window.top === window && /^https?:$/.test(location.protocol)) {
-    window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+    // Mise à jour : dès qu'une nouvelle version prend la main, on recharge la page (hors d'un niveau, pour ne rien faire perdre).
+    let hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!hadController) { hadController = true; return; }       // première installation : rien à recharger
+      if (view === "level") pendingReload = true; else location.reload();
+    });
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
+        // l'app reste souvent ouverte en arrière-plan : on revérifie quand elle revient au premier plan
+        document.addEventListener("visibilitychange", () => { if (!document.hidden) reg.update().catch(() => {}); });
+      }).catch(() => {});
+    });
   }
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) { /* sans importance */ }
 
