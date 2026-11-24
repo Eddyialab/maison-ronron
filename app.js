@@ -39,6 +39,8 @@
   const p5 = (x, y, pose, dir) => ({ x: x + 4368, y: y + 2458, pose: pose, dir: dir, min: 12000, max: 30000 });
   const z6 = p => [p[0] + 2184, p[1] + 2458];       // zone de l'aile ouest et de son jardin, à gauche du perron
   const p6 = (x, y, pose, dir, depth) => ({ x: x + 2184, y: y + 2458, pose: pose, dir: dir, depth: depth, min: 12000, max: 30000 });
+  const z7 = p => [p[0] + 6552, p[1] + 2458];       // zone de l'aile est, derrière la salle des chats
+  const p7 = (x, y, pose, dir) => ({ x: x + 6552, y: y + 2458, pose: pose, dir: dir, min: 12000, max: 30000 });
   WORLD.start = g([1380, 640]);
 
   /* Chantiers. « at » : position de la bulle sur la carte. « need » : chantiers à terminer avant.
@@ -320,7 +322,36 @@
     { id: "aile_table", room: "Aile ouest", name: "Meubler la salle à manger", short: "Salle à manger", verb: "Meubler", cost: 21, icon: "plus", need: ["aile_salle"], at: z6([2350, 880]), depth: 2458 + 1117,
       desc: "Une table, des chaises et un buffet. Les chats se cachent dessous et sautent dessus.",
       poi: [p6(2330, 1015, "assis", 1, 2458 + 1118), p6(2370, 1000, "assis", -1, 2458 + 1118)],
-      styles: [{ name: "Chêne", sw: "#B07A3E", patch: PATCH.aile_table_chene }, { name: "Table ronde blanche", sw: "#F3F1EA", patch: PATCH.aile_table_ronde }] }
+      styles: [{ name: "Chêne", sw: "#B07A3E", patch: PATCH.aile_table_chene }, { name: "Table ronde blanche", sw: "#F3F1EA", patch: PATCH.aile_table_ronde }] },
+    /* ----- Zone 7 : l'aile est du manoir, derrière la salle des chats, et son jardin. Chantiers à 1,5 fois le prix ; calques posés à plat.
+       Les chats y passent par la salle des chats : dehors vers le jardin, dedans vers la chambre, puis la cuisine et la salle de bain. ----- */
+    { id: "est_debrousse", room: "Aile est", name: "Débroussailler le jardin de l'aile est", short: "Débroussailler", verb: "Débroussailler", cost: 12, icon: "broom", need: ["cour_desherbe"], at: z7([1350, 420]),
+      desc: "Herbes folles, broussailles et cailloux : on dégage tout autour de l'aile.", patch: PATCH.est_debrousse },
+    { id: "est_pelouse", room: "Aile est", name: "Semer la pelouse de l'aile est", short: "Pelouse", verb: "Semer", cost: 15, icon: "plus", need: ["est_debrousse"], at: z7([2050, 1250]),
+      desc: "Une pelouse bien verte des deux côtés du chemin.", patch: PATCH.est_pelouse },
+    { id: "est_chemin", room: "Aile est", name: "Refaire le chemin de l'aile est", short: "Chemin", verb: "Refaire", cost: 18, icon: "hammer", need: ["est_pelouse", "allee_chemin"], at: z7([1850, 700]),
+      desc: "Le chemin qui longe l'aile, dans le revêtement choisi à la grille.",
+      patch: eff => PATCH["est_chemin_" + (eff("grille_chemin") ? "gravier" : "paves")] },
+    { id: "est_massifs", room: "Aile est", name: "Planter des massifs", short: "Massifs", verb: "Planter", cost: 18, icon: "plus", need: ["est_pelouse"], at: z7([1450, 1180]),
+      desc: "Des fleurs tout le long du pied des murs.",
+      styles: [{ name: "Rosiers anciens", sw: "#E58FA6", patch: PATCH.est_massifs_rosiers }, { name: "Lavande et buis", sw: "#8E6BC9", patch: PATCH.est_massifs_lavande }] },
+    { id: "est_deblai", room: "Aile est", name: "Déblayer l'aile est", short: "Déblayer l'aile", verb: "Déblayer", cost: 21, icon: "broom", need: ["est_debrousse"], at: z7([1000, 800]),
+      desc: "Gravats, plâtre tombé et mur effondré : on remet les trois pièces en état. Les chats y viendront depuis leur salle.", patch: PATCH.est_deblai },
+    { id: "est_facade", room: "Aile est", name: "Restaurer la façade de l'aile est", short: "Façade de l'aile", verb: "Restaurer", cost: 21, icon: "hammer", need: ["est_deblai"], at: z7([850, 1230]),
+      desc: "Des fenêtres neuves, dans le même style que le reste du manoir.",
+      patch: eff => PATCH["est_facade_" + (eff("manoir_fenetres") ? "volets" : "blanche")] },
+    { id: "est_cuisine", room: "Aile est", name: "Installer la cuisine", short: "Cuisine", verb: "Installer", cost: 27, icon: "plus", need: ["est_deblai"], at: z7([1150, 820]),
+      desc: "Un fourneau, une grande table et, bien sûr, les gamelles des chats.",
+      poi: [[p7(880, 885, "assis", -1), p7(1060, 872, "assis", -1), p7(1245, 935, "dort", -1)], [p7(1225, 905, "assis", 1), p7(1115, 880, "assis", 1)]],
+      styles: [{ name: "Rustique", sw: "#6B4A2E", patch: PATCH.est_cuisine_rustique }, { name: "Campagne bleue", sw: "#8FB3CF", patch: PATCH.est_cuisine_bleue }] },
+    { id: "est_chambre", room: "Aile est", name: "Meubler la chambre", short: "Chambre", verb: "Meubler", cost: 24, icon: "plus", need: ["est_deblai"], at: z7([560, 500]),
+      desc: "Un grand lit et un panier à son pied. Devine qui dormira sur le lit quand même.",
+      poi: [[p7(523, 515, "dort", -1), p7(578, 562, "dort", 1)], [p7(690, 505, "dort", -1), p7(602, 600, "dort", 1), p7(533, 470, "assis", 1)]],
+      styles: [{ name: "Lit à baldaquin", sw: "#C98A9A", patch: PATCH.est_chambre_baldaquin }, { name: "Fer blanc", sw: "#EDEBE4", patch: PATCH.est_chambre_fer }] },
+    { id: "est_bain", room: "Aile est", name: "Aménager la salle de bain", short: "Salle de bain", verb: "Aménager", cost: 24, icon: "plus", need: ["est_deblai"], at: z7([600, 1110]),
+      desc: "Une baignoire à pattes de lion. Quand elle est vide, les chats adorent s'y rouler en boule.",
+      poi: [[p7(507, 1140, "dort", 1), p7(618, 1205, "dort", -1)], [p7(498, 1136, "dort", 1), p7(700, 1160, "assis", -1)]],
+      styles: [{ name: "Noir et blanc", sw: "#2E2E33", patch: PATCH.est_bain_noir }, { name: "Cuivre et zellige", sw: "#2F7D5B", patch: PATCH.est_bain_cuivre }] }
   ];
   const SLOT = {}; SLOTS.forEach(s => { SLOT[s.id] = s; });
 
@@ -332,7 +363,8 @@
     allee: { name: "L'allée du manoir", desc: "La grande allée qui monte jusqu'au perron." },
     manoir: { name: "L'aile d'entrée du manoir", desc: "La façade, le grand salon et le bureau." },
     cour: { name: "La cour d'honneur", desc: "La cour à la fontaine, le hall et la salle des chats." },
-    aile: { name: "L'aile ouest", desc: "Son jardin, la bibliothèque et la salle à manger." }
+    aile: { name: "L'aile ouest", desc: "Son jardin, la bibliothèque et la salle à manger." },
+    est: { name: "L'aile est", desc: "Son jardin, une cuisine, une chambre et une salle de bain." }
   };
   const zoneCost = z => ZONE_STEP * (Object.keys(ZONES).indexOf(z) + 1);
   const zoneOf = s => { const p = s.id.split("_")[0]; return ZONES[p] ? p : null; };
@@ -991,27 +1023,57 @@
     cam.s = Math.min(l.max, Math.max(l.min, cam.s));
     cam.x = Math.min(0, Math.max(l.vw - WORLD.w * cam.s, cam.x));
     cam.y = Math.min(0, Math.max(l.vh - WORLD.h * cam.s, cam.y));
+    if (!camFrame) camFrame = requestAnimationFrame(drawCam);
+  }
+  // On n'écrit la position de la carte qu'une fois par image, même si le doigt envoie plus d'évènements.
+  // Pendant un pincement, les images ne sont rechargées qu'à petite cadence : c'est ce qui faisait saccader le zoom.
+  let camFrame = 0, viewAt = 0, viewTimer = 0, wheelAt = 0;
+  const zooming = () => fingers.size >= 2 || performance.now() - wheelAt < 250;
+  function drawCam() {
+    camFrame = 0;
     worldEl.style.transform = "translate(" + cam.x.toFixed(1) + "px," + cam.y.toFixed(1) + "px) scale(" + cam.s.toFixed(4) + ")";
-    worldEl.style.setProperty("--inv", (1 / cam.s).toFixed(3));
-    loadTiles(l);
+    markersEl.style.setProperty("--inv", (1 / cam.s).toFixed(3));
+    clearTimeout(viewTimer);
+    if (zooming() && performance.now() - viewAt < 220) viewTimer = setTimeout(updateView, 240);
+    else updateView();
   }
 
-  // On n'affiche que les dalles proches de l'écran : la carte entière ne tiendrait pas en mémoire sur un téléphone.
-  // En vue très éloignée, le plan d'ensemble suffit : on n'en charge aucune.
+  /* Mémoire des images : sur un téléphone, la carte entière en pleine définition (dalles + calques des chantiers) ne tient pas.
+     Près de l'écran : pleine définition. Au-delà : rien. En vue éloignée : les versions réduites (4 fois plus petites), dalles comprises,
+     pour que les chantiers restent visibles sans saturer la mémoire (sinon le téléphone efface des images et l'écran clignote). */
   const tilesEl = $("#tiles"), tileNodes = {};
-  function loadTiles(l) {
-    const far = cam.s < 0.26, m = 500;
-    const x0 = -cam.x / cam.s - m, y0 = -cam.y / cam.s - m, x1 = (l.vw - cam.x) / cam.s + m, y1 = (l.vh - cam.y) / cam.s + m;
+  const FAR = 0.26;
+  const lowSrc = src => src.replace(/^assets\/([tp])\//, "assets/$1/lo/");
+  let layerNodes = [];
+  function wantSrc(r, full, box, far, cur) {
+    const vis = r.x < box.x1 && r.x + r.w > box.x0 && r.y < box.y1 && r.y + r.h > box.y0;
+    if (far) return vis ? lowSrc(full) : null;
+    if (vis) return full;
+    const m = 700, keep = r.x < box.x1 + m && r.x + r.w > box.x0 - m && r.y < box.y1 + m && r.y + r.h > box.y0 - m;
+    return keep ? cur : null;
+  }
+  function updateView() {
+    viewAt = performance.now();
+    const l = camLimits();
+    if (!l.vw) return;
+    const far = cam.s < FAR, m = 500;
+    const box = { x0: -cam.x / cam.s - m, y0: -cam.y / cam.s - m, x1: (l.vw - cam.x) / cam.s + m, y1: (l.vh - cam.y) / cam.s + m };
     TILES.forEach((t, i) => {
-      const near = !far && t.x < x1 && t.x + t.w > x0 && t.y < y1 && t.y + t.h > y0;
-      const keep = !far && t.x < x1 + 1500 && t.x + t.w > x0 - 1500 && t.y < y1 + 1500 && t.y + t.h > y0 - 1500;
-      if (near && !tileNodes[i]) {
-        const im = document.createElement("img");
-        im.className = "tile"; im.alt = ""; im.decoding = "async"; im.draggable = false;
-        im.style.cssText = "left:" + t.x + "px;top:" + t.y + "px;width:" + t.w + "px;height:" + t.h + "px";
-        im.src = t.src;
-        tilesEl.appendChild(im); tileNodes[i] = im;
-      } else if (!keep && tileNodes[i]) { tileNodes[i].remove(); delete tileNodes[i]; }
+      let n = tileNodes[i];
+      const want = wantSrc(t, t.src, box, far, n ? n.getAttribute("src") : null);
+      if (!want) { if (n) { n.remove(); delete tileNodes[i]; } return; }
+      if (!n) {
+        n = document.createElement("img");
+        n.className = "tile"; n.alt = ""; n.decoding = "async"; n.draggable = false;
+        n.style.cssText = "left:" + t.x + "px;top:" + t.y + "px;width:" + t.w + "px;height:" + t.h + "px";
+        tilesEl.appendChild(n); tileNodes[i] = n;
+      }
+      if (n.getAttribute("src") !== want) n.setAttribute("src", want);
+    });
+    layerNodes.forEach(n => {
+      const p = n._p, cur = n.getAttribute("src"), want = wantSrc(p, p.src, box, far, cur);
+      if (want === cur) return;
+      if (want) n.setAttribute("src", want); else n.removeAttribute("src");
     });
   }
   function centerOn(wx, wy, s) {
@@ -1051,11 +1113,15 @@
       pinchDist = d; dragDist = 99;
     }
   });
-  function liftFinger(e) { fingers.delete(e.pointerId); if (fingers.size < 2) pinchDist = 0; }
+  function liftFinger(e) {
+    const was = fingers.size; fingers.delete(e.pointerId);
+    if (fingers.size < 2) pinchDist = 0;
+    if (was >= 2 && fingers.size < 2) { clearTimeout(viewTimer); updateView(); }
+  }
   window.addEventListener("pointerup", liftFinger);
   window.addEventListener("pointercancel", liftFinger);
   mapEl.addEventListener("wheel", e => {
-    e.preventDefault();
+    e.preventDefault(); wheelAt = performance.now();
     const r = mapEl.getBoundingClientRect();
     zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.12 : 1 / 1.12);
   }, { passive: false });
@@ -1125,9 +1191,9 @@
   // cases libres (1 maison, 2 jardin du gardien, 3 entrée du domaine, 4 passage caché dans la haie),
   // recalculées quand un meuble est posé ou qu'un chantier se termine
   let navFree = null;
-  let navHouse = [], navGarden = [], navGate = [], navAllee = [], navManoir = [], navSalon = [], navCour = [], navHall = [], navChats = [], navAile = [], navBiblio = [];
+  let navHouse = [], navGarden = [], navGate = [], navAllee = [], navManoir = [], navSalon = [], navCour = [], navHall = [], navChats = [], navAile = [], navBiblio = [], navEst = [], navEstIn = [];
   // passages où le chat se faufile sans être vu : haie, sous la grille, porte du manoir, hall vers la cour, arche de la salle des chats
-  const HIDDEN = v => v === 4 || v === 6 || v === 9 || v === 13 || v === 14 || v === 18;
+  const HIDDEN = v => v === 4 || v === 6 || v === 9 || v === 13 || v === 14 || v === 18 || v === 24 || v === 25;
   function buildNav() {
     navFree = new Uint8Array(NAV.w * NAV.h);
     const garden = isDone("jardin_debrousse");      // tant que le jardin est en friche, les chats restent à l'intérieur
@@ -1139,11 +1205,13 @@
     const chats = hall && isDone("cour_chats");          // et la salle des chats, par l'arche de droite
     const aile = allee && isDone("aile_debrousse");      // le jardin de l'aile ouest, à gauche du perron
     const biblio = aile && isDone("aile_biblio"), salle = aile && isDone("aile_salle"), atelier = biblio && isDone("aile_atelier");
+    const est = chats && isDone("est_debrousse"), estIn = chats && isDone("est_deblai");   // l'aile est, par la salle des chats
     for (let r = 0; r < NAV.h; r++) for (let c = 0; c < NAV.w; c++) {
       const v = NAV.rows[r].charCodeAt(c) - 48;
       navFree[r * NAV.w + c] = v === 1 || (v === 2 && garden) || ((v === 3 || v === 4) && gate) || ((v === 5 || v === 6) && allee) ||
         (v === 7 && manoir) || ((v === 8 || v === 9) && salon) || ((v === 10 || v === 11 || v === 13) && hall) || ((v === 12 || v === 14) && chats) ||
-        ((v === 15 || v === 18) && aile) || (v === 16 && biblio) || (v === 17 && salle) || (v === 19 && atelier) ? v : 0;
+        ((v === 15 || v === 18) && aile) || (v === 16 && biblio) || (v === 17 && salle) || (v === 19 && atelier) ||
+        ((v === 20 || v === 24) && est) || (((v >= 21 && v <= 23) || v === 25) && estIn) ? v : 0;
     }
     Object.keys(NAV.blocks).forEach(id => {
       if (isDone(id)) (NAV.blocks[id][S.house[id].style | 0] || NAV.blocks[id][0] || []).forEach(i => { navFree[i] = 0; });
@@ -1162,7 +1230,7 @@
       }
       if (size > bestSize) { bestSize = size; best = id; }
     }
-    navHouse = []; navGarden = []; navGate = []; navAllee = []; navManoir = []; navSalon = []; navCour = []; navHall = []; navChats = []; navAile = []; navBiblio = [];
+    navHouse = []; navGarden = []; navGate = []; navAllee = []; navManoir = []; navSalon = []; navCour = []; navHall = []; navChats = []; navAile = []; navBiblio = []; navEst = []; navEstIn = [];
     for (let i = 0; i < navFree.length; i++) {
       if (comp[i] !== best) navFree[i] = 0;
       else if (navFree[i] === 1) navHouse.push(i);
@@ -1176,6 +1244,8 @@
       else if (navFree[i] === 12) navChats.push(i);
       else if (navFree[i] === 15) navAile.push(i);
       else if (navFree[i] === 16) navBiblio.push(i);          // la salle à manger (17) n'est qu'un passage : les chats y vont pour sauter sur la table
+      else if (navFree[i] === 20) navEst.push(i);
+      else if (navFree[i] >= 21 && navFree[i] <= 23) navEstIn.push(i);
     }
   }
   function neighbours(i) {
@@ -1191,7 +1261,7 @@
   const cellXY = i => [NAV.x0 + (i % NAV.w + 0.5) * NAV.cell, NAV.y0 + (((i / NAV.w) | 0) + 0.5) * NAV.cell];
   function randomCell() {
     // on tire d'abord l'endroit, pour que les chats restent visibles un peu partout : maison, jardin, entrée
-    const pools = [[navHouse, 0.22], [navGarden, 0.14], [navGate, 0.08], [navAllee, 0.09], [navManoir, 0.07], [navSalon, 0.11], [navCour, 0.11], [navHall, 0.02], [navChats, 0.06], [navAile, 0.07], [navBiblio, 0.03]].filter(p => p[0].length);
+    const pools = [[navHouse, 0.22], [navGarden, 0.14], [navGate, 0.08], [navAllee, 0.09], [navManoir, 0.07], [navSalon, 0.11], [navCour, 0.11], [navHall, 0.02], [navChats, 0.06], [navAile, 0.07], [navBiblio, 0.03], [navEst, 0.06], [navEstIn, 0.06]].filter(p => p[0].length);
     if (!pools.length) return 0;
     let k = Math.random() * pools.reduce((t, p) => t + p[1], 0);
     for (const p of pools) { k -= p[1]; if (k <= 0) return p[0][Math.floor(Math.random() * p[0].length)]; }
@@ -1429,7 +1499,7 @@
   function tick(t) {
     requestAnimationFrame(tick);
     const dt = Math.min(0.1, (t - lastT) / 1000); lastT = t;
-    if (view !== "home" || reducedMotion) return;
+    if (view !== "home" || reducedMotion || zooming()) return;
     S.cats.forEach(cat => {
       const r = rt(cat);
       if (r.state === "walk") {
@@ -1495,6 +1565,7 @@
     if (preview && preview.id === id) return preview.style;
     return isDone(id) ? (S.house[id].style | 0) : null;
   }
+  let layersKey = null;
   function renderLayers() {
     const shown = [];
     SLOTS.forEach(s => {
@@ -1506,7 +1577,15 @@
       const more = s.extra && s.extra(effStyle);
       if (more) shown.push(more);
     });
-    layersEl.innerHTML = shown.map(p => '<img class="layer" alt="" draggable="false" src="' + p.src + '" style="left:' + p.x + "px;top:" + p.y + "px;width:" + p.w + "px;height:" + p.h + 'px">').join("");
+    // les calques ne changent pas à chaque passage ici : on ne refait les images que si la liste a changé
+    const key = shown.map(p => p.src + "@" + p.x + "," + p.y).join("|");
+    if (key !== layersKey) {
+      layersKey = key;
+      layersEl.innerHTML = shown.map(p => '<img class="layer" alt="" decoding="async" draggable="false" style="left:' + p.x + "px;top:" + p.y + "px;width:" + p.w + "px;height:" + p.h + 'px">').join("");
+      layerNodes = Array.from(layersEl.children);
+      layerNodes.forEach((n, k) => { n._p = shown[k]; });
+      updateView();
+    }
     refreshWalls(shown);
     renderDepth();
   }
@@ -1738,7 +1817,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.15." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.16." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -1837,8 +1916,11 @@
   }
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) { /* sans importance */ }
 
-  window.__ronron = { state: () => S, level: () => L, nav: () => navFree, path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
-    navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length, navManoir.length, navSalon.length, navCour.length, navHall.length, navChats.length, navAile.length, navBiblio.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
+  // pour les tests : regarder un point de la carte à une échelle donnée (sans les limites du zoom), avec le chargement des images qui va avec
+  const look = (x, y, sc) => { const l = camLimits(); cam.s = sc; cam.x = l.vw / 2 - x * sc; cam.y = l.vh / 2 - y * sc;
+    worldEl.style.transform = "translate(" + cam.x + "px," + cam.y + "px) scale(" + sc + ")"; markersEl.style.setProperty("--inv", 1 / sc); updateView(); };
+  window.__ronron = { state: () => S, level: () => L, nav: () => navFree, look: look, layers: () => layerNodes.map(n => [n._p.src, n.getAttribute("src") || ""]), path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
+    navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length, navManoir.length, navSalon.length, navCour.length, navHall.length, navChats.length, navAile.length, navBiblio.length, navEst.length, navEstIn.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
     audio: () => ({ ctx: AC ? AC.state : null, playing: !!(musicSrc && !musicSrc.pending), track: musicIdx % MUSIC.length, pref: audioPref }), sfx: sfx, sfxNames: () => Object.keys(SFX), sfxRaw: name => SFX[name](),
     walls: () => (WALLS ? WALLS.strips.filter(st => st.node && st.node.parentNode).length : -1), wallsReady: () => !!wallCanvas };
 })();
