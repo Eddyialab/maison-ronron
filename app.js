@@ -37,6 +37,8 @@
   const z4 = p => [p[0] + 4368, p[1] + 3687];       // zone de l'aile d'entrée du manoir, à droite de l'allée
   const z5 = p => [p[0] + 4368, p[1] + 2458];       // zone de la cour d'honneur, derrière le grand salon
   const p5 = (x, y, pose, dir) => ({ x: x + 4368, y: y + 2458, pose: pose, dir: dir, min: 12000, max: 30000 });
+  const p5c = (x, y, pose, dir, depth) => ({ x: x + 4368, y: y + 2458, pose: pose, dir: dir, depth: depth, min: 12000, max: 30000 });
+  const p4 = (x, y, pose, dir, depth) => ({ x: x + 4368, y: y + 3687, pose: pose, dir: dir, depth: depth, min: 12000, max: 30000 });
   const z6 = p => [p[0] + 2184, p[1] + 2458];       // zone de l'aile ouest et de son jardin, à gauche du perron
   const p6 = (x, y, pose, dir, depth) => ({ x: x + 2184, y: y + 2458, pose: pose, dir: dir, depth: depth, min: 12000, max: 30000 });
   const z7 = p => [p[0] + 6552, p[1] + 2458];       // zone de l'aile est, derrière la salle des chats
@@ -478,7 +480,82 @@
     { id: "gardien_lanternes", room: "Jardin du gardien", name: "Poser des lanternes", short: "Lanternes", verb: "Poser", cost: 12, icon: "plus", need: ["jardin_allee"], at: g([760, 1220]),
       desc: "De petites lanternes le long de l'allée.",
       styles: [{ name: "Noires", sw: "#2B2B2E", patch: PATCH.gardien_lanternes_naturel }, { name: "Blanches", sw: "#F2F2EE", patch: PATCH.gardien_lanternes_colore }],
-      parts: [[{ patch: PATCH.gardien_lanternes_naturel_p0, depth: 6096 }, { patch: PATCH.gardien_lanternes_naturel_p1, depth: 6196 }, { patch: PATCH.gardien_lanternes_naturel_p2, depth: 6344 }], [{ patch: PATCH.gardien_lanternes_colore_p0, depth: 6100 }, { patch: PATCH.gardien_lanternes_colore_p1, depth: 6201 }, { patch: PATCH.gardien_lanternes_colore_p2, depth: 6245 }, { patch: PATCH.gardien_lanternes_colore_p3, depth: 6354 }]] }
+      parts: [[{ patch: PATCH.gardien_lanternes_naturel_p0, depth: 6096 }, { patch: PATCH.gardien_lanternes_naturel_p1, depth: 6196 }, { patch: PATCH.gardien_lanternes_naturel_p2, depth: 6344 }], [{ patch: PATCH.gardien_lanternes_colore_p0, depth: 6100 }, { patch: PATCH.gardien_lanternes_colore_p1, depth: 6201 }, { patch: PATCH.gardien_lanternes_colore_p2, depth: 6245 }, { patch: PATCH.gardien_lanternes_colore_p3, depth: 6354 }]] },
+    /* ----- Détails du manoir (zone C4 : salon, bureau, façade, pelouse) et de la cour d'honneur (C3), ajoutés après coup, sans cadenas.
+       La haie et la jardinière de la cour ne bloquent pas les chats : ils passent derrière, cachés le temps de traverser. ----- */
+    { id: "manoir_coussin", room: "Manoir", name: "Poser un coussin devant la cheminée", short: "Coussin", verb: "Poser", cost: 9, icon: "plus", need: ["manoir_cheminee"], at: z4([1410, 615]),
+      desc: "Un gros coussin rond devant le feu. Devine qui va dormir dessus.",
+      poi: [[p4(1410, 634, "dort", 1, 4368)], [p4(1428, 644, "dort", 1, 4370)]],
+      styles: [{ name: "Velours bordeaux", sw: "#7E1F33", patch: PATCH.manoir_coussin_velours }, { name: "Tricot crème", sw: "#EADFC4", patch: PATCH.manoir_coussin_tricot }],
+      // redessiné trié avec les chats : sinon le pied du fauteuil (et son bout de tapis) passe par-dessus
+      parts: [[{ patch: PATCH.manoir_coussin_velours, depth: 4367 }], [{ patch: PATCH.manoir_coussin_tricot, depth: 4369 }]] },
+    { id: "manoir_tableau", room: "Manoir", name: "Accrocher un tableau", short: "Tableau", verb: "Accrocher", cost: 10, icon: "plus", need: ["manoir_murs"], at: z4([1815, 440]),
+      desc: "Un grand tableau au-dessus du canapé.",
+      styles: [{ name: "Paysage doré", sw: "#C9A23A", patch: PATCH.manoir_tableau_paysage }, { name: "Planche botanique", sw: "#F3F1E8", patch: PATCH.manoir_tableau_botanique }] },
+    { id: "manoir_manteau", room: "Manoir", name: "Décorer la cheminée", short: "Déco de cheminée", verb: "Décorer", cost: 10, icon: "plus", need: ["manoir_cheminee"], at: z4([1300, 370]),
+      desc: "Quelques objets sur le manteau de la cheminée.",
+      styles: [{ name: "Pendule dorée", sw: "#D4AE3E", patch: eff => eff("manoir_cheminee") === 1 ? PATCH.manoir_manteau_pendule_pierre : PATCH.manoir_manteau_pendule },
+               { name: "Pivoines", sw: "#E58FB0", patch: eff => eff("manoir_cheminee") === 1 ? PATCH.manoir_manteau_pivoines_pierre : PATCH.manoir_manteau_pivoines }] },
+    { id: "manoir_globe", room: "Manoir", name: "Installer un globe", short: "Globe", verb: "Installer", cost: 9, icon: "plus", need: ["manoir_bureau"], at: z4([2000, 215]),
+      desc: "Un globe terrestre sur pied, dans le bureau.",
+      styles: [{ name: "Bois ancien", sw: "#9C7A3C", patch: eff => eff("manoir_bureau") === 1 ? PATCH.manoir_globe_bois_blanc : PATCH.manoir_globe_bois },
+               { name: "Bleu pastel", sw: "#9CC7E6", patch: eff => eff("manoir_bureau") === 1 ? PATCH.manoir_globe_pastel_blanc : PATCH.manoir_globe_pastel }] },
+    { id: "cour_tapis", room: "Cour", name: "Dérouler un tapis de couloir", short: "Tapis", verb: "Dérouler", cost: 8, icon: "plus", need: ["cour_hall"], at: z4([995, 315]),
+      desc: "Un long tapis dans la petite pièce à côté du hall.",
+      styles: [{ name: "Rouge et or", sw: "#A3242C", patch: PATCH.cour_tapis_rouge }, { name: "Sauge et crème", sw: "#8FA27E", patch: PATCH.cour_tapis_sauge }] },
+    { id: "manoir_regarnie", room: "Manoir", name: "Regarnir la pelouse", short: "Pelouse", verb: "Regarnir", cost: 10, icon: "broom", need: ["manoir_pelouse"], at: z4([780, 850]),
+      desc: "Il reste des plaques de terre dans la pelouse : on ressème.", patch: PATCH.manoir_regarnie },
+    { id: "manoir_jardinieres", room: "Manoir", name: "Fleurir les fenêtres", short: "Jardinières", verb: "Fleurir", cost: 13, icon: "plus", need: ["manoir_fenetres"], at: z4([1075, 800]),
+      desc: "Une jardinière sous chaque fenêtre de la façade.",
+      styles: [{ name: "Géraniums", sw: "#D8343A", patch: PATCH.manoir_jardinieres_geraniums }, { name: "Lavande et marguerites", sw: "#8E7BD0", patch: PATCH.manoir_jardinieres_lavande }] },
+    { id: "manoir_haie", room: "Manoir", name: "Planter le long de la façade", short: "Pied de façade", verb: "Planter", cost: 15, icon: "plus", need: ["manoir_pelouse"], at: z4([640, 640]),
+      desc: "Les buissons secs au pied des murs laissent la place à une vraie bordure.",
+      styles: [{ name: "Buis taillé", sw: "#4F7A35", patch: PATCH.manoir_haie_buis }, { name: "Hortensias", sw: "#8FA6E0", patch: PATCH.manoir_haie_hortensias }] },
+    { id: "manoir_banc", room: "Manoir", name: "Installer un banc", short: "Banc", verb: "Installer", cost: 13, icon: "plus", need: ["manoir_pelouse"], at: z4([1100, 1170]),
+      desc: "Un banc sur la pelouse, face au chemin. Parfait pour une sieste au soleil.",
+      poi: [[p4(1090, 1180, "dort", 1, 5068)], [p4(1065, 1210, "dort", 1, 5052)]],
+      styles: [{ name: "Bois vert", sw: "#2F5A3E", patch: PATCH.manoir_banc_bois }, { name: "Fer blanc", sw: "#F1F0EC", patch: PATCH.manoir_banc_fer }],
+      parts: [[{ patch: PATCH.manoir_banc_bois_p0, depth: 5067 }], [{ patch: PATCH.manoir_banc_fer_p0, depth: 5051 }]] },
+    { id: "manoir_vasques", room: "Manoir", name: "Poser deux grands pots", short: "Grands pots", verb: "Poser", cost: 15, icon: "plus", need: ["manoir_pelouse"], at: z4([380, 660]),
+      desc: "Un de chaque côté de la pelouse.",
+      styles: [{ name: "Vasques de buis", sw: "#A9A6A0", patch: PATCH.manoir_vasques_pierre }, { name: "Citronniers", sw: "#F2D33A", patch: PATCH.manoir_vasques_citronniers }],
+      parts: [[{ patch: PATCH.manoir_vasques_pierre_p0, depth: 4510 }, { patch: PATCH.manoir_vasques_pierre_p1, depth: 4648 }], [{ patch: PATCH.manoir_vasques_citronniers_p0, depth: 4414 }, { patch: PATCH.manoir_vasques_citronniers_p1, depth: 4662 }]] },
+    { id: "manoir_niche", room: "Manoir", name: "Construire une maison pour chat", short: "Maison pour chat", verb: "Construire", cost: 13, icon: "hammer", need: ["manoir_pelouse"], at: z4([1630, 1120]),
+      desc: "Une petite maison au coin du salon. Les chats montent la garde devant.",
+      poi: [p4(1752, 1249, "assis", -1)],
+      styles: [{ name: "Bois", sw: "#B98552", patch: PATCH.manoir_niche_bois }, { name: "Bleu pâle", sw: "#B9D0E4", patch: PATCH.manoir_niche_bleue }],
+      parts: [[{ patch: PATCH.manoir_niche_bois_p0, depth: 4942 }], [{ patch: PATCH.manoir_niche_bleue_p0, depth: 4942 }]] },
+    { id: "manoir_arbre", room: "Manoir", name: "Planter un petit arbre", short: "Petit arbre", verb: "Planter", cost: 16, icon: "plus", need: ["manoir_pelouse"], at: z4([2510, 1230]),
+      desc: "Un arbre au bord du chemin, en bas de la pelouse.",
+      styles: [{ name: "Érable du Japon", sw: "#B8382E", patch: PATCH.manoir_arbre_erable }, { name: "Magnolia", sw: "#F2C4CF", patch: PATCH.manoir_arbre_magnolia }],
+      parts: [[{ patch: PATCH.manoir_arbre_erable_p0, depth: 5136 }], [{ patch: PATCH.manoir_arbre_magnolia_p0, depth: 5167 }]] },
+    { id: "manoir_plante", room: "Manoir", name: "Poser un figuier en pot", short: "Figuier", verb: "Poser", cost: 14, icon: "plus", need: ["manoir_pelouse"], at: z4([2090, 760]),
+      desc: "Un grand figuier lyre dans un pot émaillé, contre le mur du salon.", patch: PATCH.manoir_plante_figuier,
+      parts: [[{ patch: PATCH.manoir_plante_figuier_p0, depth: 4695 }]] },
+    { id: "cour_bistro", room: "Cour", name: "Installer une table de bistrot", short: "Table de bistrot", verb: "Installer", cost: 15, icon: "plus", need: ["cour_dallage"], at: z5([1060, 1010]),
+      desc: "Une petite table et deux chaises près de la fontaine.",
+      styles: [{ name: "Fer noir", sw: "#2B2B2E", patch: PATCH.cour_bistro_terre }, { name: "Blanc et bleu", sw: "#4C7DC4", patch: PATCH.cour_bistro_blanc }],
+      parts: [[{ patch: PATCH.cour_bistro_terre_p0, depth: 3679 }], [{ patch: PATCH.cour_bistro_blanc_p0, depth: 3646 }]] },
+    { id: "cour_pots", room: "Cour", name: "Fleurir la fontaine", short: "Pots de fleurs", verb: "Fleurir", cost: 10, icon: "plus", need: ["cour_fontaine"], at: z5([1570, 740]),
+      desc: "Trois pots de géraniums autour du bassin.",
+      styles: [{ name: "Terre cuite", sw: "#C8613E", patch: PATCH.cour_pots_terre }, { name: "Faïence bleue", sw: "#3A6FB8", patch: PATCH.cour_pots_blanc }],
+      parts: [[{ patch: PATCH.cour_pots_terre_p0, depth: 3445 }, { patch: PATCH.cour_pots_terre_p1, depth: 3315 }, { patch: PATCH.cour_pots_terre_p2, depth: 3147 }], [{ patch: PATCH.cour_pots_blanc_p0, depth: 3432 }, { patch: PATCH.cour_pots_blanc_p1, depth: 3289 }, { patch: PATCH.cour_pots_blanc_p2, depth: 3449 }]] },
+    { id: "cour_panier", room: "Cour", name: "Poser un panier pour chat", short: "Panier", verb: "Poser", cost: 9, icon: "plus", need: ["cour_dallage"], at: z5([1990, 790]),
+      desc: "Un panier au soleil, dans un coin de la cour.",
+      poi: [[p5(1999, 818, "dort", -1)], [p5(1992, 842, "dort", -1)]],
+      styles: [{ name: "Osier", sw: "#C49A5A", patch: PATCH.cour_panier_osier }, { name: "Blanc rayé", sw: "#7FA3D6", patch: PATCH.cour_panier_blanc }] },
+    { id: "cour_lanternes", room: "Cour", name: "Accrocher des lanternes", short: "Lanternes", verb: "Accrocher", cost: 13, icon: "plus", need: ["cour_arcades"], at: z5([1150, 250]),
+      desc: "Une lanterne sous chaque arche.",
+      styles: [{ name: "Fer noir", sw: "#2B2B2E", patch: PATCH.cour_lanternes_fer }, { name: "Blanches", sw: "#F2F2EE", patch: PATCH.cour_lanternes_blanc }] },
+    { id: "cour_jardiniere", room: "Cour", name: "Planter une jardinière", short: "Jardinière", verb: "Planter", cost: 12, icon: "plus", need: ["cour_dallage"], at: z5([890, 540]),
+      desc: "Une longue jardinière au pied du mur du fond.",
+      styles: [{ name: "Lavande", sw: "#8E7BD0", patch: PATCH.cour_jardiniere_lavande }, { name: "Agapanthes", sw: "#4F6FD0", patch: PATCH.cour_jardiniere_agapanthes }],
+      parts: [[{ patch: PATCH.cour_jardiniere_lavande_p0, depth: 3140 }], [{ patch: PATCH.cour_jardiniere_agapanthes_p0, depth: 3237 }]] },
+    { id: "cour_fauteuil", room: "Cour", name: "Installer un fauteuil", short: "Fauteuil", verb: "Installer", cost: 13, icon: "plus", need: ["cour_dallage"], at: z5([1450, 500]),
+      desc: "Un fauteuil confortable près de la fontaine. Il ne restera pas libre longtemps.",
+      poi: [[p5c(1435, 540, "dort", -1, 3106)], [p5c(1465, 545, "dort", -1, 3102)]],
+      styles: [{ name: "Rotin", sw: "#C49A5A", patch: PATCH.cour_fauteuil_rotin }, { name: "Bois blanc", sw: "#F2F1EC", patch: PATCH.cour_fauteuil_blanc }],
+      parts: [[{ patch: PATCH.cour_fauteuil_rotin_p0, depth: 3105 }], [{ patch: PATCH.cour_fauteuil_blanc_p0, depth: 3101 }]] }
   ];
   const SLOT = {}; SLOTS.forEach(s => { SLOT[s.id] = s; });
 
@@ -1986,7 +2063,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.19." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.20." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
