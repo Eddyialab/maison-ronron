@@ -58,11 +58,12 @@
 
   // Zones : on part de chaque chat et on étend de proche en proche.
   // « even » proche de 1 donne des zones de tailles voisines (plus dur), proche de 0 des zones très inégales.
-  function growRegions(n, sol, rnd, even) {
+  function growRegions(n, sol, rnd, even, block) {
     const g = new Int8Array(n * n).fill(-1);
     const size = new Array(n).fill(1);
     for (let r = 0; r < n; r++) g[r * n + sol[r]] = r;
     let left = n * n - n;
+    if (block) for (let i = 0; i < n * n; i++) if (block[i]) { g[i] = -2; left--; }   // trous : hors de toute zone
     const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
     while (left > 0) {
       // cases libres voisines de chaque zone
@@ -76,7 +77,7 @@
           const rr = r + dr, cc = c + dc;
           if (rr < 0 || cc < 0 || rr >= n || cc >= n) continue;
           const z = g[rr * n + cc];
-          if (z !== -1 && !seen.has(z)) { seen.add(z); front[z].push(i); }
+          if (z >= 0 && !seen.has(z)) { seen.add(z); front[z].push(i); }
         }
       }
       let total = 0; const w = [];
@@ -84,6 +85,7 @@
         const wz = front[z].length ? (1 - even) * size[z] + even / size[z] : 0;
         w.push(wz); total += wz;
       }
+      if (total <= 0) return null;          // cases coupées de toutes les zones
       let pick = rnd() * total, z = 0;
       for (; z < n - 1; z++) { pick -= w[z]; if (pick <= 0 && w[z] > 0) break; }
       while (!front[z].length) z = (z + 1) % n;
@@ -98,12 +100,29 @@
      2. k zones enfermées dans k lignes (ou colonnes) : ces lignes leur sont réservées, et inversement ;
      3. une case qui, occupée, viderait une ligne, une colonne ou une zone est impossible.
      Renvoie { solved, score } : le score mesure la difficulté. */
-  function logicSolve(n, g) {
+  // opt.clues : pelotes [[case, nombre de chats autour]] ; une pelote ou un trou (zone < 0) ne reçoit jamais de chat.
+  function logicSolve(n, g, opt) {
     const N = n * n;
     const cand = new Uint8Array(N).fill(1);
     const rowDone = new Uint8Array(n), colDone = new Uint8Array(n), regDone = new Uint8Array(n);
-    const cats = new Int8Array(n).fill(-1);
+    const cats = new Int8Array(n).fill(-1), catAt = new Uint8Array(N);
     let placed = 0, score = 0, hard = 0;
+    for (let i = 0; i < N; i++) if (g[i] < 0) cand[i] = 0;
+    const CL = opt && opt.clues ? opt.clues.map(q => { cand[q[0]] = 0; return [q[0], q[1], around(n, q[0])]; }) : null;
+
+    // Règle des pelotes : autour d'une pelote, juste le nombre de chats indiqué.
+    function clueStep() {
+      if (!CL) return 0;
+      for (const [, v, nb] of CL) {
+        let have = 0, free = 0;
+        for (const j of nb) { if (catAt[j]) have++; else if (cand[j]) free++; }
+        if (have > v || have + free < v) return -1;
+        if (!free) continue;
+        if (have === v) { for (const j of nb) cand[j] = 0; score += 1; return 1; }
+        if (have + free === v) { for (const j of nb) if (cand[j]) { place(j); score += 1; return 1; } }
+      }
+      return 0;
+    }
 
     function place(i) {
       const r = (i / n) | 0, c = i % n, z = g[i];
@@ -113,7 +132,7 @@
         const rr = r + dr, cc = c + dc;
         if (rr >= 0 && cc >= 0 && rr < n && cc < n) cand[rr * n + cc] = 0;
       }
-      rowDone[r] = 1; colDone[c] = 1; regDone[z] = 1; cats[r] = c; placed++;
+      rowDone[r] = 1; colDone[c] = 1; regDone[z] = 1; cats[r] = c; catAt[i] = 1; placed++;
     }
 
     // Compte les cases possibles de chaque unité ; renvoie false s'il y a une contradiction.
@@ -208,6 +227,11 @@
           if (!colDone[u] && u !== c && k.cc[u] === 0) dead = true;
           if (!regDone[u] && u !== z && k.zc[u] === 0) dead = true;
         }
+        if (!dead && CL) for (const [, v, nb] of CL) {
+          let have = 0, free = 0;
+          for (const j of nb) { if (catAt[j] || j === i) have++; else if (cd[j]) free++; }
+          if (have > v || have + free < v) { dead = true; break; }
+        }
         if (dead) { cand[i] = 0; score += 3; hard++; return true; }
       }
       return false;
@@ -218,6 +242,9 @@
       const s = singles();
       if (s === -1) return { solved: false, score: score, hard: hard, left: 9999 };
       if (s === 1) continue;
+      const q = clueStep();
+      if (q === -1) return { solved: false, score: score, hard: hard, left: 9999 };
+      if (q === 1) continue;
       if (confine(true) || confine(false)) continue;
       if (lookahead()) continue;
       break;
@@ -227,8 +254,23 @@
     return { solved: placed === n, score: score, hard: hard, cats: cats, left: left + (n - placed) * 2 };
   }
 
-  // Nombre de solutions (plafonné à 2), utilisé seulement par les tests.
-  function countSolutions(n, g) {
+  // Les 8 cases autour d'une case.
+  function around(n, i) {
+    const r = (i / n) | 0, c = i % n, out = [];
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      const rr = r + dr, cc = c + dc;
+      if ((dr || dc) && rr >= 0 && cc >= 0 && rr < n && cc < n) out.push(rr * n + cc);
+    }
+    return out;
+  }
+
+  // Nombre de solutions (plafonné à 2), utilisé seulement par les tests. opt : comme pour logicSolve.
+  function countSolutions(n, g, opt) {
+    const CL = opt && opt.clues ? opt.clues.map(q => [q[0], q[1], around(n, q[0])]) : [];
+    const banned = new Uint8Array(n * n); CL.forEach(q => { banned[q[0]] = 1; });
+    const at = new Uint8Array(n * n);
+    const clueOk = full => CL.every(([, v, nb]) => { let h = 0, f = 0; nb.forEach(j => { if (at[j]) h++; else if (!full && ((j / n) | 0) >= rowNow) f++; }); return h <= v && h + f >= v && (!full || h === v); });
+    let rowNow = 0;
     let count = 0;
     const cols = new Uint8Array(n), regs = new Uint8Array(n), pos = [];
     (function rec(r) {
@@ -236,11 +278,11 @@
       if (r === n) { count++; return; }
       for (let c = 0; c < n; c++) {
         const z = g[r * n + c];
-        if (cols[c] || regs[z]) continue;
+        if (z < 0 || banned[r * n + c] || cols[c] || regs[z]) continue;
         if (r > 0 && Math.abs(pos[r - 1] - c) <= 1) continue;
-        cols[c] = 1; regs[z] = 1; pos.push(c);
-        rec(r + 1);
-        cols[c] = 0; regs[z] = 0; pos.pop();
+        cols[c] = 1; regs[z] = 1; pos.push(c); at[r * n + c] = 1; rowNow = r + 1;
+        if (clueOk(r + 1 === n)) rec(r + 1);
+        cols[c] = 0; regs[z] = 0; pos.pop(); at[r * n + c] = 0; rowNow = r;
       }
     })(0);
     return count;
@@ -264,10 +306,10 @@
   function mutate(n, g, sol, rnd) {
     for (let tries = 0; tries < 30; tries++) {
       const i = Math.floor(rnd() * n * n), r = (i / n) | 0, c = i % n;
-      if (sol[r] === c) continue;
+      if (sol[r] === c || g[i] < 0) continue;
       const nb = [r > 0 ? i - n : -1, r < n - 1 ? i + n : -1, c > 0 ? i - 1 : -1, c < n - 1 ? i + 1 : -1];
       const j = nb[Math.floor(rnd() * 4)];
-      if (j < 0 || g[j] === g[i]) continue;
+      if (j < 0 || g[j] < 0 || g[j] === g[i]) continue;
       if (!staysConnected(n, g, g[i], i)) continue;
       const old = g[i]; g[i] = g[j];
       return [i, old];
@@ -278,14 +320,26 @@
   /* Type de niveau : un mini-boss tous les 5 niveaux, un boss tous les 10, un boss géant à deux chats tous les 20.
      Entre les deux, la difficulté va en dents de scie : deux niveaux faciles, un moyen, un dur. */
   // Passé le niveau 200, le niveau « dur » de chaque cycle de 5 se joue lui aussi avec deux chats.
-  function kindOf(level) { return level % 20 === 0 ? "geant" : level % 10 === 0 ? "boss" : level % 5 === 0 ? "mini" : level > 200 && level % 5 === 4 ? "double" : "normal"; }
-  const REWARDS = { normal: 1, double: 1, mini: 3, boss: 5, geant: 10 };
+  /* Niveaux spéciaux : tous les 7 niveaux (sauf s'il tombe sur un mini-boss, un boss ou un boss géant), à tour de rôle.
+     rafale : 5 petites grilles 5 × 5 en 3 minutes ; trouee : des cases bloquées par des meubles ;
+     zero : un seul poisson, récompense triplée ; pelotes : des pelotes disent combien de chats les entourent. */
+  const SPECIALS = ["rafale", "trouee", "zero", "pelotes"];
+  function kindOf(level) {
+    if (level % 20 === 0) return "geant";
+    if (level % 10 === 0) return "boss";
+    if (level % 5 === 0) return "mini";
+    if (level % 7 === 0) return SPECIALS[(level / 7) % 4];
+    return level > 200 && level % 5 === 4 ? "double" : "normal";
+  }
+  const REWARDS = { normal: 1, double: 1, mini: 3, boss: 5, geant: 10, rafale: 3, trouee: 2, zero: 6, pelotes: 2 };
   function rewardFor(level) { return REWARDS[kindOf(level)]; }
   function sizeFor(level) {
     const t = tierFor(level), kind = kindOf(level);
     if (kind === "boss") return Math.min(10, t.n + 1);                 // le boss se joue sur la grille du palier suivant
     if (kind === "geant") return level < 100 ? 8 : level < 160 ? 9 : 10; // deux chats par ligne : il faut de la place
     if (kind === "double") return 10;
+    if (kind === "rafale") return 5;
+    if (kind === "pelotes" || kind === "trouee") return Math.max(6, Math.min(9, t.n));    // assez de place, pas trop long à fabriquer
     return t.n;
   }
 
@@ -300,20 +354,20 @@
     if (kind === "boss") return Math.round(baseTarget(Math.min(5, t.index + 1), t.p) * (t.index === 5 ? 1.5 : 1.25) * wobble);
     if (kind === "geant") return Math.round((42 + 40 * Math.min(1, level / 500)) * wobble);
     if (kind === "double") return Math.round((40 + 20 * Math.min(1, level / 600)) * wobble);
+    if (kind === "zero") return Math.round(baseTarget(t.index, t.p) * 0.95 * wobble);
+    const capped = t.index >= 5 ? baseTarget(4, 1) : baseTarget(t.index, t.p);          // grilles plafonnées à 9 × 9
+    if (kind === "trouee") return Math.round(capped * 1.3 * wobble);
+    if (kind === "pelotes") return Math.round(capped * 1.1 * wobble);
+    if (kind === "rafale") return 8;
     return Math.max(1, Math.round(baseTarget(t.index, t.p) * SAW[level % 5] * wobble));
   }
 
-  function makeLevel(level) {
-    if (kindOf(level) === "geant" || kindOf(level) === "double") return makeLevel2(level);
-    const t = tierFor(level), kind = kindOf(level);
-    const n = sizeFor(level), target = targetFor(level);
-    const even = Math.min(0.85, 0.1 + 0.55 * t.p + 0.04 * t.index + (kind === "normal" ? 0 : 0.15));
+  // Une grille à un chat de taille n, la plus proche possible de la difficulté visée. Même suite d'essais pour une même graine.
+  function makeBasic(seed, n, target, even, tries) {
     const tol = Math.max(2, Math.round(target * 0.15));
     let best = null, solved = 0;
-    // On fabrique plusieurs grilles et on garde celle dont la difficulté mesurée est la plus proche de la cible.
-    const tries = n >= 10 ? 6 : n >= 9 ? 7 : n >= 8 ? 9 : 10;   // moins d'essais sur les grandes grilles, longues à calculer
     for (let attempt = 0; attempt < 40 && solved < tries; attempt++) {
-      const rnd = mulberry32(level * 7919 + attempt * 104729 + 13);
+      const rnd = mulberry32(seed * 7919 + attempt * 104729 + 13);
       const sol = randomSolution(n, rnd);
       // une grille sur deux vise des zones plus régulières (plus dur), l'autre plus inégales (plus facile)
       const g = growRegions(n, sol, rnd, Math.max(0.05, Math.min(0.9, even + (attempt % 3 - 1) * 0.2)));
@@ -326,10 +380,110 @@
       }
       if (!res.solved) continue;
       solved++;
-      const cand = { n: n, k: 1, kind: kind, reward: REWARDS[kind], level: level, regions: Array.from(g), solution: sol,
-        stars: sol.map((c, r) => r * n + c), score: res.score, target: target };
+      const cand = { regions: Array.from(g), solution: sol, stars: sol.map((c, r) => r * n + c), score: res.score };
       if (!best || Math.abs(cand.score - target) < Math.abs(best.score - target)) best = cand;
       if (Math.abs(best.score - target) <= tol) break;
+    }
+    return best;
+  }
+
+  function makeLevel(level) {
+    const kind = kindOf(level);
+    if (kind === "geant" || kind === "double") return makeLevel2(level);
+    if (kind === "rafale") return makeRafale(level);
+    if (kind === "trouee" || kind === "pelotes") return makeSpecial(level);
+    const t = tierFor(level);
+    const n = sizeFor(level), target = targetFor(level);
+    const even = Math.min(0.85, 0.1 + 0.55 * t.p + 0.04 * t.index + (kind === "normal" ? 0 : 0.15));
+    // On fabrique plusieurs grilles et on garde celle dont la difficulté mesurée est la plus proche de la cible.
+    const tries = n >= 10 ? 6 : n >= 9 ? 7 : n >= 8 ? 9 : 10;   // moins d'essais sur les grandes grilles, longues à calculer
+    const b = makeBasic(level, n, target, even, tries);
+    return b ? Object.assign({ n: n, k: 1, kind: kind, reward: REWARDS[kind], level: level, target: target }, b) : null;
+  }
+
+  // Rafale : cinq grilles 5 × 5 à enchaîner, de plus en plus dures, en 3 minutes (2:30 passé le niveau 150).
+  function makeRafale(level) {
+    const grids = [];
+    for (let j = 0; j < 5; j++) {
+      const b = makeBasic(level * 131 + j * 977 + 5, 5, [5, 6, 7, 8, 10][j], 0.35 + 0.1 * j, 6);
+      if (!b) return null;
+      grids.push({ regions: b.regions, stars: b.stars });
+    }
+    return { n: 5, k: 1, kind: "rafale", reward: REWARDS.rafale, level: level, grids: grids, regions: grids[0].regions, stars: grids[0].stars,
+             limit: level > 150 ? 150 : 180 };
+  }
+
+  // Les cases libres (hors trous) restent-elles d'un seul tenant ?
+  function freeConnected(n, block) {
+    const N = n * n; let start = -1, total = 0;
+    for (let i = 0; i < N; i++) if (!block[i]) { total++; if (start < 0) start = i; }
+    const seen = new Uint8Array(N), stack = [start]; seen[start] = 1; let got = 1;
+    while (stack.length) {
+      const i = stack.pop(), r = (i / n) | 0, c = i % n;
+      const nb = [r > 0 ? i - n : -1, r < n - 1 ? i + n : -1, c > 0 ? i - 1 : -1, c < n - 1 ? i + 1 : -1];
+      for (const j of nb) if (j >= 0 && !seen[j] && !block[j]) { seen[j] = 1; got++; stack.push(j); }
+    }
+    return got === total;
+  }
+
+  // Grille trouée (des meubles bloquent des cases) ou grille à pelotes (des indices remplacent une partie du raisonnement).
+  function makeSpecial(level) {
+    const kind = kindOf(level), n = sizeFor(level), target = targetFor(level), N = n * n;
+    const tries = n >= 9 ? 3 : n >= 8 ? 4 : 6;
+    let best = null, solved = 0;
+    for (let attempt = 0; attempt < 30 && solved < tries; attempt++) {
+      const rnd = mulberry32(level * 7919 + attempt * 104729 + (kind === "trouee" ? 41 : 53));
+      const sol = randomSolution(n, rnd);
+      const isSol = new Uint8Array(N); sol.forEach((c, r) => { isSol[r * n + c] = 1; });
+      const others = shuffle([...Array(N).keys()].filter(i => !isSol[i]), rnd);
+      let block = null, clues = null, res;
+      if (kind === "trouee") {
+        block = new Uint8Array(N);
+        const want = Math.round(N * (0.13 + 0.05 * rnd()));
+        let got = 0;
+        for (const i of others) {
+          if (got >= want) break;
+          block[i] = 1;
+          if (freeConnected(n, block)) got++; else block[i] = 0;
+        }
+      }
+      const g = growRegions(n, sol, rnd, 0.25 + 0.5 * rnd(), block);
+      if (!g) continue;
+      if (kind === "trouee") {
+        res = logicSolve(n, g);
+        for (let it = 0; !res.solved && it < 40 * n; it++) {
+          const m = mutate(n, g, sol, rnd);
+          if (!m) break;
+          const res2 = logicSolve(n, g);
+          if (res2.left <= res.left) res = res2; else g[m[0]] = m[1];
+        }
+      } else {
+        clues = [];
+        res = logicSolve(n, g, { clues: clues });
+        if (res.solved) continue;                         // les pelotes doivent servir à quelque chose
+        const count = i => around(n, i).reduce((a, j) => a + isSol[j], 0);
+        let pool = others.slice();
+        while (!res.solved && clues.length < n + 2 && pool.length) {
+          let pick = -1, pickRes = null;
+          for (const q of pool.slice(0, 14)) {
+            clues.push([q, count(q)]);
+            const r2 = logicSolve(n, g, { clues: clues });
+            clues.pop();
+            if (r2.left < 9999 && (!pickRes || r2.left < pickRes.left)) { pick = q; pickRes = r2; }
+          }
+          if (pick < 0) break;
+          clues.push([pick, count(pick)]); res = pickRes;
+          pool = shuffle(pool.filter(q => q !== pick), rnd);
+        }
+      }
+      if (!res.solved) continue;
+      solved++;
+      const cand = { n: n, k: 1, kind: kind, reward: REWARDS[kind], level: level, regions: Array.from(g), solution: sol,
+        stars: sol.map((c, r) => r * n + c), score: res.score, target: target };
+      if (block) cand.block = [...Array(N).keys()].filter(i => block[i]);
+      if (clues) cand.clues = clues.slice().sort((a, b) => a[0] - b[0]);
+      if (!best || Math.abs(cand.score - target) < Math.abs(best.score - target)) best = cand;
+      if (Math.abs(best.score - target) <= Math.max(2, target * 0.2)) break;
     }
     return best;
   }
@@ -539,7 +693,7 @@
     return count;
   }
 
-  const api = { makeLevel, logicSolve, logicSolve2, countSolutions, countSolutions2, tierFor, targetFor, sizeFor, kindOf, rewardFor, mulberry32 };
+  const api = { makeLevel, logicSolve, around, SPECIALS, logicSolve2, countSolutions, countSolutions2, tierFor, targetFor, sizeFor, kindOf, rewardFor, mulberry32 };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.RonronGen = api;
   // Utilisé comme tâche de fond : on reçoit un numéro de niveau, on renvoie le niveau.

@@ -601,6 +601,19 @@
       parts: [[{ patch: PATCH.etang_peche_naturel_p0, depth: 2447 }], [{ patch: PATCH.etang_peche_blanc_p0, depth: 2449 }]] }
   ];
   const SLOT = {}; SLOTS.forEach(s => { SLOT[s.id] = s; });
+  /* Décorations de Noël, débloquées par le calendrier de l'Avent : posées sur le domaine du 1er décembre au 6 janvier.
+     DECOS_START (liste écrite par art/noel_app.py) */
+  const DECOS = [
+    { id: "grille", day: 6, name: "Couronnes de la grille", at: [4114, 5676], patch: PATCH.noel_grille, parts: [],
+      block: [] },
+    { id: "entree", day: 12, name: "L'entrée du manoir en fête", at: [4600, 3980], patch: PATCH.noel_entree, parts: [{ patch: PATCH.noel_entree_p0, depth: 4162 }, { patch: PATCH.noel_entree_p1, depth: 4550 }],
+      block: [164457, 164458, 164459, 164460, 164461, 164462, 164463, 165174, 165175, 165176, 165177, 165178, 165179, 165180, 165892, 165893, 165894, 165895, 165896, 166609, 166610, 166611, 166612, 166613, 180982, 180983, 180984, 180985, 180986, 180987, 180988, 181699, 181700, 181701, 181702, 181703, 181704, 181705, 181706, 182416, 182417, 182418, 182419, 182420, 182421, 182422, 182423, 182424, 183133, 183134, 183135, 183136, 183137, 183138, 183139, 183140, 183141, 183851, 183852, 183853, 183854, 183855, 183856, 183857, 184569, 184571, 184572] },
+    { id: "gardien", day: 18, name: "Le sapin du gardien", at: [760, 5900], patch: PATCH.noel_gardien, parts: [{ patch: PATCH.noel_gardien_p0, depth: 6084 }],
+      block: [245968, 245969, 245970, 245971, 245972, 245973, 245974, 245975, 245976, 245977, 245978, 245979, 245980, 245981, 245982, 245983, 245984, 245985, 246685, 246686, 246687, 246688, 246689, 246690, 246691, 246692, 246693, 246694, 246695, 246696, 246697, 246698, 246699, 246700, 246701, 247403, 247404, 247405, 247406, 247407, 247408, 247409, 247410, 247411, 247412, 247413, 247414, 247415, 247416, 247417, 247418, 248121, 248122, 248123, 248124, 248125, 248126, 248127, 248128, 248129, 248130, 248131, 248132, 248133, 248134, 248135, 248837, 248838, 248839, 248840, 248841, 248842, 248843, 248844, 248845, 248846, 248847, 248848, 248849, 248850, 248851, 248852, 249554, 249555, 249556, 249557, 249558, 249559, 249560, 249561, 249562, 249563, 249564, 249565, 249566, 249567, 249568, 249569, 249570, 250271, 250272, 250273, 250274, 250275, 250276, 250277, 250278, 250279, 250280, 250281, 250282, 250283, 250284, 250285, 250286, 250287, 250989, 250990, 250991, 250992, 250993, 250994, 250995, 250996, 250997, 250998, 250999, 251000, 251001, 251002, 251709, 251710, 251711, 251712, 251713, 251714, 251715, 251716, 251717, 252428, 252430, 252431, 252432, 252433, 252434, 253149] },
+    { id: "cour", day: 24, name: "Le grand sapin de la cour", at: [6120, 3050], patch: PATCH.noel_cour, parts: [{ patch: PATCH.noel_cour_p0, depth: 3358 }],
+      block: [124415, 124416, 124417, 124418, 124419, 124420, 124421, 124422, 124423, 124424, 124425, 124426, 124427, 124428, 124429, 124430, 124431, 124432, 125132, 125133, 125134, 125135, 125136, 125137, 125138, 125139, 125140, 125141, 125142, 125143, 125144, 125145, 125146, 125147, 125148, 125149, 125849, 125850, 125851, 125852, 125853, 125854, 125855, 125856, 125857, 125858, 125859, 125860, 125861, 125862, 125863, 125864, 125865, 125866, 126566, 126567, 126568, 126569, 126570, 126571, 126572, 126573, 126574, 126575, 126576, 126577, 126578, 126579, 126580, 126581, 127283, 127284, 127285, 127286, 127287, 127288, 127289, 127290, 127291, 127292, 127293, 127294, 127295, 127296, 127297, 127298, 128000, 128001, 128002, 128003, 128004, 128005, 128006, 128007, 128008, 128009, 128010, 128011, 128012, 128013, 128014, 128015, 128016, 128717, 128718, 128719, 128720, 128721, 128722, 128723, 128724, 128725, 128726, 128727, 128728, 128729, 128730, 128731, 128732, 128733, 129434, 129435, 129436, 129437, 129438, 129439, 129440, 129441, 129442, 129443, 129444, 129445, 129446, 129447, 129448, 129449, 130155, 130156, 130157, 130159, 130160, 130161, 130162, 130163, 130164, 130877, 130878, 130879] }
+  ].filter(d => d.patch);
+  /* DECOS_END */
 
   /* Zones : chaque nouvelle zone du domaine se débloque pour 20 croquettes avant qu'on puisse y lancer des chantiers.
      La maison du gardien et son jardin sont ouverts d'office. */
@@ -706,7 +719,7 @@
 
   /* Thon : la deuxième monnaie. Elle ne se gagne qu'en finissant un niveau sans perdre de poisson,
      et sert à nourrir un chat pour qu'il ait un chaton. */
-  const TUNA_FOR = { normal: 1, double: 1, mini: 2, boss: 3, geant: 5 };
+  const TUNA_FOR = { normal: 1, double: 1, mini: 2, boss: 3, geant: 5, rafale: 2, trouee: 1, zero: 2, pelotes: 1 };
   const LITTER = 20;          // boîtes de thon pour un chaton
   const BIRTH_LEVELS = 3;     // il naît 3 niveaux réussis plus tard
   const GROW_LEVELS = 10;     // et devient grand 10 niveaux réussis après sa naissance
@@ -855,12 +868,15 @@
     if (name !== "home") setZen(false);
     if (pendingReload && name !== "level") { pendingReload = false; save(); location.reload(); return; }
     view = name;
-    ["home", "level", "shop"].forEach(v => { $("#screen-" + v).hidden = v !== name; });
+    ["home", "level", "shop", "cards"].forEach(v => { $("#screen-" + v).hidden = v !== name; });
     app.classList.toggle("inlevel", name === "level");
     $("#tab-home").setAttribute("aria-current", name === "home" ? "page" : "false");
     $("#tab-shop").setAttribute("aria-current", name === "shop" ? "page" : "false");
+    $("#tab-cards").setAttribute("aria-current", name === "cards" ? "page" : "false");
     if (name === "home") { renderHome(); announceBirth(); }
     if (name === "shop") renderShop();
+    if (name === "cards") renderCards();
+    renderAdventBtn(); startSnow(); updateCardBadge();
   }
 
   let sheetClose = null, sheetSticky = false;
@@ -1075,7 +1091,15 @@
   const board = $("#board");
   let L = null;          // partie en cours : { lv, n, k, sol, st, fish, placed, over, time }
   // Types de niveaux (calculés par gen.js) : nom affiché et récompense.
-  const KIND_NAME = { normal: "", double: "Deux chats", mini: "Mini-boss", boss: "Boss", geant: "Boss géant" };
+  const KIND_NAME = { normal: "", double: "Deux chats", mini: "Mini-boss", boss: "Boss", geant: "Boss géant", rafale: "Rafale", trouee: "Grille trouée", zero: "Zéro faute", pelotes: "Pelotes" };
+  const SPECIAL = { rafale: 1, trouee: 1, zero: 1, pelotes: 1 };
+  // Explication montrée la première fois qu'on tombe sur chaque niveau spécial (un tous les 7 niveaux).
+  const SPECIAL_RULES = {
+    rafale: ["Rafale", "Cinq petites grilles 5 × 5 à enchaîner avant la fin du compte à rebours. Tes 3 poissons servent pour les cinq grilles. Si le temps est écoulé, le niveau est perdu."],
+    trouee: ["Grille trouée", "Des pots de fleurs occupent certaines cases : aucun chat ne peut s'y installer. Toutes les autres règles restent les mêmes."],
+    zero: ["Zéro faute", "Un seul poisson : la moindre erreur fait perdre le niveau. En échange, la récompense est triplée."],
+    pelotes: ["Pelotes", "Chaque pelote de laine indique combien de chats sont posés dans les 8 cases qui l'entourent. Une pelote n'accueille jamais de chat."]
+  };
   const kindOf = level => (window.RonronGen ? window.RonronGen.kindOf(level) : "normal");
   const rewardOf = level => (window.RonronGen ? window.RonronGen.rewardFor(level) : 1);
   const levelName = level => "Niveau " + level + (KIND_NAME[kindOf(level)] ? " · " + KIND_NAME[kindOf(level)] : "");
@@ -1090,6 +1114,14 @@
     const el = $("#chrono"); if (!el) return;
     if (!L || !L.time) { el.hidden = true; return; }
     const sec = elapsed(); el.hidden = false;
+    if (L.limit) {                       // rafale : compte à rebours
+      const left = Math.max(0, L.limit - sec);
+      el.textContent = clockText(Math.ceil(left));
+      el.classList.remove("late"); el.classList.toggle("hurry", left < 30);
+      if (left <= 0 && !L.over) timeUp();
+      return;
+    }
+    el.classList.remove("hurry");
     el.textContent = clockText(sec);
     el.classList.toggle("late", sec >= L.fast);
   }
@@ -1102,10 +1134,11 @@
   setInterval(() => { if (L && L.time && !L.over && view === "level") renderChrono(); }, 250);
   // État d'une case : 0 vide, 1 croix du joueur, 3 chat, 4 erreur (2, ancienne croix automatique, n'est plus utilisé).
 
-  function renderFishes(left) {
+  function renderFishes(left, max) {
+    max = max || (L && L.fishMax) || 3;
     let h = "";
-    for (let k = 0; k < 3; k++) h += '<svg viewBox="0 0 28 20"' + (k >= left ? ' class="lost"' : "") + '><use href="#i-fish"/></svg>';
-    const f = $("#fishes"); f.innerHTML = h; f.setAttribute("aria-label", plural(left, "poisson") + " sur 3");
+    for (let k = 0; k < max; k++) h += '<svg viewBox="0 0 28 20"' + (k >= left ? ' class="lost"' : "") + '><use href="#i-fish"/></svg>';
+    const f = $("#fishes"); f.innerHTML = h; f.setAttribute("aria-label", plural(left, "poisson") + " sur " + max);
   }
 
   function startLevel() {
@@ -1132,38 +1165,81 @@
 
   function initLevel(lv) {
     const n = lv.n;
-    const k = lv.k || 1;
-    L = { lv: lv, n: n, k: k, fast: fastFor(n, k), sol: new Set(lv.stars || lv.solution.map((c, r) => r * n + c)), st: new Uint8Array(n * n), fish: 3, placed: 0, over: false,
+    const k = lv.k || 1, kind = lv.kind || "normal";
+    const fishMax = kind === "zero" ? 1 : 3;
+    L = { lv: lv, n: n, k: k, fast: fastFor(n, k), sol: new Set(lv.stars || lv.solution.map((c, r) => r * n + c)), st: new Uint8Array(n * n), fish: fishMax, fishMax: fishMax,
+          placed: 0, over: false, grid: 0, limit: kind === "rafale" ? lv.limit || 180 : 0,
           time: { acc: 0, from: document.hidden ? 0 : performance.now() } };
     S.inLevel = { level: lv.level, fishLost: 0 }; save();
-    const reward = lv.reward || rewardOf(lv.level);
-    $("#level-size").textContent = (KIND_NAME[lv.kind] ? KIND_NAME[lv.kind] + " · " : "") + plural(reward, "croquette");
+    sizeLine();
     renderChrono();
-    // couleurs mélangées selon le niveau
-    const rnd = window.RonronGen.mulberry32(lv.level * 31 + 7);
-    const cols = ZONE_COLORS.slice();
-    for (let i = cols.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const t = cols[i]; cols[i] = cols[j]; cols[j] = t; }
-    board.className = "board";
-    board.style.setProperty("--n", n);
-    board.style.setProperty("--gap", (n <= 6 ? 7 : n <= 8 ? 5 : 3) + "px");
-    board.style.setProperty("--rc", (n <= 6 ? 11 : n <= 8 ? 8 : 6) + "px");
-    let h = "";
-    for (let i = 0; i < n * n; i++) {
-      h += '<div class="cell" data-i="' + i + '" data-s="0" style="--zone:' + cols[lv.regions[i]] + '">' +
-        '<svg class="c"><use href="#i-cat"/></svg><svg class="x"><use href="#i-cross"/></svg></div>';
-    }
-    board.innerHTML = h;
-    L.cells = $$(".cell", board);
-    renderFishes(3);
+    drawBoard(lv);
+    renderFishes(fishMax, fishMax);
     $("#level-hint").textContent = k === 2
       ? "Deux chats par zone, par ligne et par colonne, jamais côte à côte. En moins de " + clockText(L.fast) + ", une croquette en plus."
+      : kind === "rafale" ? "Cinq grilles 5 × 5 à finir avant la fin du compte à rebours."
+      : kind === "trouee" ? "Pas de chat dans les pots de fleurs. En moins de " + clockText(L.fast) + ", une croquette en plus."
+      : kind === "zero" ? "Un seul poisson : pas le droit à l'erreur. Récompense triplée."
+      : kind === "pelotes" ? "Chaque pelote dit combien de chats l'entourent (8 cases autour)."
       : lv.level <= 2
       ? "Un chat par zone, par ligne et par colonne, jamais côte à côte. Un tap : croix. Deux taps : chat."
       : "Un tap : une croix. Deux taps rapides : un chat. En moins de " + clockText(L.fast) + ", une croquette en plus.";
     if (k === 2 && !S.seenGeant) {         // premier boss géant : on explique la règle avant de lancer le chrono
       S.seenGeant = true; save(); L.time.from = 0;
       const cur = L; showRules(() => { if (L === cur && !L.over && !document.hidden) L.time.from = performance.now(); });
+    } else if (SPECIAL[kind] && !(S.seenSpecial && S.seenSpecial[kind])) {     // premier niveau spécial de ce type
+      S.seenSpecial = Object.assign({}, S.seenSpecial, { [kind]: true }); save(); L.time.from = 0;
+      const cur = L; showSpecial(kind, () => { if (L === cur && !L.over && !document.hidden) L.time.from = performance.now(); });
     }
+  }
+  function sizeLine() {
+    const lv = L.lv, reward = lv.reward || rewardOf(lv.level);
+    $("#level-size").textContent = (KIND_NAME[lv.kind] ? KIND_NAME[lv.kind] + " · " : "") +
+      (lv.kind === "rafale" ? "grille " + (L.grid + 1) + " sur 5 · " : "") + plural(reward, "croquette");
+  }
+  // Dessine la grille : couleurs mélangées selon le niveau, pots de fleurs (grille trouée) et pelotes.
+  function drawBoard(lv) {
+    const n = lv.n, g = lv.grids ? lv.grids[L.grid] : lv;
+    const rnd = window.RonronGen.mulberry32(lv.level * 31 + 7 + L.grid * 101);
+    const cols = ZONE_COLORS.slice();
+    for (let i = cols.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const t = cols[i]; cols[i] = cols[j]; cols[j] = t; }
+    const block = new Set(lv.block || []), clue = {};
+    (lv.clues || []).forEach(q => { clue[q[0]] = q[1]; });
+    board.className = "board";
+    board.style.setProperty("--n", n);
+    board.style.setProperty("--gap", (n <= 6 ? 7 : n <= 8 ? 5 : 3) + "px");
+    board.style.setProperty("--rc", (n <= 6 ? 11 : n <= 8 ? 8 : 6) + "px");
+    let h = "";
+    for (let i = 0; i < n * n; i++) {
+      if (block.has(i)) { h += '<div class="cell block" data-i="' + i + '" data-s="5"><svg class="pot"><use href="#i-pot"/></svg></div>'; continue; }
+      const z = '" style="--zone:' + cols[g.regions[i]] + '">';
+      if (clue[i] !== undefined) { h += '<div class="cell clue" data-i="' + i + '" data-s="5' + z + '<svg class="yarn"><use href="#i-yarn"/></svg><b>' + clue[i] + "</b></div>"; continue; }
+      h += '<div class="cell" data-i="' + i + '" data-s="0' + z + '<svg class="c"><use href="#i-cat"/></svg><svg class="x"><use href="#i-cross"/></svg></div>';
+    }
+    board.innerHTML = h;
+    L.cells = $$(".cell", board);
+    L.st = new Uint8Array(n * n); L.placed = 0;
+    for (let i = 0; i < n * n; i++) if (block.has(i) || clue[i] !== undefined) L.st[i] = 5;     // 5 : case sans chat possible
+    L.sol = new Set(g.stars);
+  }
+  // Rafale : grille suivante, ou fin du niveau.
+  function nextGrid() {
+    L.grid++;
+    sizeLine();
+    board.classList.add("swap");
+    setTimeout(() => { if (!L || L.over) return; drawBoard(L.lv); }, 260);
+    toast("Grille " + (L.grid + 1) + " sur 5");
+  }
+  function timeUp() {
+    if (!L || L.over) return;
+    lose("time");
+  }
+  function showSpecial(kind, then) {
+    const r = SPECIAL_RULES[kind];
+    openSheet('<span class="tag">Niveau spécial</span><h2>' + r[0] + "</h2><p>" + r[1] + "</p>" +
+      "<p>Un niveau spécial arrive tous les 7 niveaux, chacun son tour : Rafale, Grille trouée, Zéro faute et Pelotes. Il rapporte aussi une pochette de cartes.</p>" +
+      '<button class="btn block" id="sp-ok" type="button">C\'est parti</button>', { sticky: true });
+    $("#sp-ok").onclick = () => { closeSheet(); if (then) then(); };
   }
 
   function setCell(i, s) { L.st[i] = s; L.cells[i].dataset.s = s; }
@@ -1174,7 +1250,7 @@
     if (s >= 2) return;
     if (L.sol.has(i)) {
       setCell(i, 3); L.placed++; buzz(12); sfx("cat");      // les croix restent à la main du joueur : rien n'est rempli à sa place
-      if (L.placed === L.n * L.k) win();
+      if (L.placed === L.n * L.k) { if (L.limit && L.grid < 4) nextGrid(); else win(); }
     } else {
       setCell(i, 4);
       const el = L.cells[i]; el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake");
@@ -1188,42 +1264,57 @@
     const sec = elapsed();
     if (L.time && L.time.from) { L.time.acc += performance.now() - L.time.from; L.time.from = 0; }
     L.over = true; renderChrono();
-    const done = S.level, kind = L.lv.kind || kindOf(done), base = L.lv.reward || rewardOf(done), fast = sec < L.fast ? 1 : 0;
+    const done = S.level, kind = L.lv.kind || kindOf(done), base = L.lv.reward || rewardOf(done), fast = !L.limit && sec < L.fast ? 1 : 0;
     const perfect = S.inLevel ? S.inLevel.fishLost === 0 : L.fish >= 3, tuna = perfect ? TUNA_FOR[kind] || 1 : 0;
     S.kibble += base + fast; S.tuna += tuna; S.level++; S.inLevel = null;
-    const fam = growFamily();
+    const fam = growFamily(), pack = PACK_FOR[kind] || 0;
+    if (pack) addPack(pack, KIND_NAME[kind] || "Niveau", { rare: kind === "geant" });
+    fam.born.forEach(b => addPack(1, "Naissance de " + b.kid.name));
+    const packCards = pack + fam.born.length;
     save(); updateHud();
     setTimeout(() => sfx("win"), 260);
     setTimeout(() => {
       if (view !== "level") return;
-      const title = { mini: "Mini-boss battu !", boss: "Boss battu !", geant: "Boss géant battu !" }[kind];
+      const title = { mini: "Mini-boss battu !", boss: "Boss battu !", geant: "Boss géant battu !", rafale: "Rafale réussie !", trouee: "Grille trouée réussie !",
+        zero: "Zéro faute !", pelotes: "Pelotes démêlées !" }[kind];
       openSheet(
         '<span class="tag">Niveau ' + done + " réussi</span>" + (title ? "<h2>" + title + "</h2>" : "") +
         '<div class="big">' + ico("kibble") + "+" + plural(base + fast, "croquette") + "</div>" +
         '<p class="timeline">Temps : <strong>' + clockText(sec) + "</strong>" +
-          (fast ? " · bonus de rapidité <strong>+1</strong>" : " · moins de " + clockText(L.fast) + " = une croquette en plus") + "</p>" +
+          (L.limit ? "" : fast ? " · bonus de rapidité <strong>+1</strong>" : " · moins de " + clockText(L.fast) + " = une croquette en plus") + "</p>" +
         (tuna ? '<div class="big tuna">' + ico("tuna") + "Perfect : +" + plural(tuna, "boîte") + " de thon</div>"
               : '<p class="timeline">Finis sans perdre de poisson pour gagner une boîte de thon.</p>') +
         fam.born.map(b => "<p class=\"family\">" + ico("paw") + "<span><strong>" + esc(b.mom.name) + " a eu un chaton !</strong> Va le voir dans la maison.</span></p>").join("") +
         fam.grown.map(c => "<p class=\"family\">" + ico("paw") + "<span>" + esc(c.name) + " est devenu grand.</span></p>").join("") +
+        (packCards ? '<p class="family pack">' + ico("cards") + "<span><strong>" + (packCards > 1 ? plural(packCards, "carte") + " à ouvrir" : "Une carte à ouvrir") +
+          '</strong></span><button class="btn small" id="w-pack" type="button">Ouvrir</button></p>' : "") +
         "<p>Tu as maintenant <strong>" + plural(S.kibble, "croquette") + "</strong> à dépenser dans la maison.</p>" +
         '<div class="row"><button class="btn ghost" id="w-home" type="button">La maison</button>' +
         '<button class="btn" id="w-next" type="button">Niveau suivant</button></div>',
         { sticky: true });
       $("#w-next").onclick = () => startLevel();
       $("#w-home").onclick = () => { closeSheet(); show("home"); };
+      if ($("#w-pack")) $("#w-pack").onclick = () => openPacks(afterWin);
     }, 550);
   }
 
-  function lose() {
-    L.over = true;
+  // Après avoir ouvert les cartes gagnées à la fin d'un niveau : on repart d'ici.
+  function afterWin() {
+    if (view !== "level") return;
+    openSheet('<h2>Et maintenant ?</h2><div class="row"><button class="btn ghost" id="w-home" type="button">La maison</button>' +
+      '<button class="btn" id="w-next" type="button">Niveau suivant</button></div>', { sticky: true });
+    $("#w-next").onclick = () => startLevel();
+    $("#w-home").onclick = () => { closeSheet(); show("home"); };
+  }
+  function lose(why) {
+    L.over = true; renderChrono();
     loseLife(); S.inLevel = null; save(); updateHud();
     setTimeout(() => sfx("lose"), 320);
     setTimeout(() => {
       if (view !== "level") return;
       const none = S.lives <= 0;
       openSheet(
-        '<span class="tag">' + levelName(S.level) + "</span><h2>Plus de poissons</h2>" +
+        '<span class="tag">' + levelName(S.level) + "</span><h2>" + (why === "time" ? "Temps écoulé" : "Plus de poissons") + "</h2>" +
         "<p>Le niveau est perdu et te coûte une vie. " +
         (none ? "Tu n'as plus de vie : la prochaine arrive dans <strong>" + clock(nextLifeIn()) + "</strong>."
               : "Il te reste <strong>" + plural(S.lives, "vie") + "</strong>.") + "</p>" +
@@ -1292,8 +1383,9 @@
   board.addEventListener("contextmenu", e => e.preventDefault());
 
   function showRules(then) {
-    const two = L && L.k === 2;
+    const two = L && L.k === 2, sp = L && L.lv && SPECIAL_RULES[L.lv.kind];
     openSheet(
+      (sp ? '<span class="tag">Niveau spécial</span><h2>' + sp[0] + "</h2><p>" + sp[1] + "</p>" : "") +
       "<h2>Règles" + (two ? " à deux chats" : "") + "</h2><ul>" +
       (two ? "<li>Place <strong>deux chats dans chaque zone</strong> de couleur.</li><li>Deux chats par ligne et deux par colonne.</li>"
            : "<li>Place <strong>un chat dans chaque zone</strong> de couleur.</li><li>Un seul chat par ligne et par colonne.</li>") +
@@ -1301,6 +1393,7 @@
       "<li>Un chat mal placé te coûte un poisson. À zéro poisson, le niveau est perdu et tu perds une vie.</li>" +
       "<li>Tous les 5 niveaux, un mini-boss (3 croquettes) ; tous les 10, un boss (5) ; tous les 20, un boss géant à deux chats (10). " +
       "Passé le niveau 200, le niveau le plus dur de chaque série se joue aussi à deux chats.</li>" +
+      "<li>Tous les 7 niveaux, un niveau spécial, chacun son tour : Rafale, Grille trouée, Zéro faute et Pelotes.</li>" +
       "<li>Finis vite pour une croquette en plus : de 30 s sur une grille 5 × 5 à 1:30 sur une 10 × 10, le double avec deux chats.</li>" +
       "<li>Finis sans perdre de poisson pour gagner du thon : une boîte, 2 sur un mini-boss, 3 sur un boss, 5 sur un boss géant. " +
       "Dans l'onglet Chats, 20 boîtes de thon données à un chat lui font avoir un chaton.</li>" +
@@ -1551,6 +1644,7 @@
     Object.keys(NAV.blocks).forEach(id => {
       if (isDone(id)) (NAV.blocks[id][S.house[id].style | 0] || NAV.blocks[id][0] || []).forEach(i => { navFree[i] = 0; });
     });
+    DECOS.forEach(d => { if (decoShown(d)) d.block.forEach(i => { navFree[i] = 0; }); });      // pied des sapins de Noël
     // tunnel, bacs du potager, cabane : on passe dedans ou derrière, caché (case de passage, jamais une destination)
     Object.keys(NAV.hide || {}).forEach(id => {
       if (isDone(id)) (NAV.hide[id][S.house[id].style | 0] || NAV.hide[id][0] || []).forEach(i => { if (navFree[i]) navFree[i] = 4; });
@@ -1923,6 +2017,7 @@
       const more = s.extra && s.extra(effStyle);
       if (more) shown.push(more);
     });
+    DECOS.forEach(d => { if (decoShown(d)) shown.push(d.patch); });
     // les calques ne changent pas à chaque passage ici : on ne refait les images que si la liste a changé
     const key = shown.map(p => p.src + "@" + p.x + "," + p.y).join("|");
     if (key !== layersKey) {
@@ -1942,20 +2037,21 @@
     if (!layer) return;
     Array.from(layer.querySelectorAll(".obj")).forEach(n => n.remove());
     let h = "";
-    SLOTS.forEach(s => {
-      const k = effStyle(s.id);
-      if (k == null) return;
-      // un objet rangé dans une planche (p.fw : taille de la planche) est cadré par une vue sur sa partie de la planche
-      const img = (p, dp) => {
+    // un objet rangé dans une planche (p.fw : taille de la planche) est cadré par une vue sur sa partie de la planche
+    const img = (p, dp) => {
         if (!p) return;
         if (p.fw) h += '<svg class="obj" data-depth="' + dp + '" x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '" viewBox="' + p.sx + " " + p.sy + " " + p.w + " " + p.h +
           '" preserveAspectRatio="none"><image href="' + p.src + '" width="' + p.fw + '" height="' + p.fh + '"/></svg>';
         else h += '<image class="obj" data-depth="' + dp + '" href="' + p.src + '" x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '"/>';
-      };
+    };
+    SLOTS.forEach(s => {
+      const k = effStyle(s.id);
+      if (k == null) return;
       // « parts » : morceaux d'un chantier posé à plat, redessinés un par un à leur profondeur
       if (s.parts) (s.parts[k] || []).forEach(o => img(o.patch, o.depth));
       if (s.depth) img(patchOf(s, k), Array.isArray(s.depth) ? s.depth[k] : s.depth);
     });
+    DECOS.forEach(d => { if (decoShown(d)) d.parts.forEach(o => img(o.patch, o.depth)); });
     if (h) layer.insertAdjacentHTML("beforeend", h);
     sortCats();
   }
@@ -2035,10 +2131,12 @@
         if (S.kibble < slot.cost) return;
         S.kibble -= slot.cost;
         S.house[slot.id] = { done: true, style: sel };
+        addPack(1, slot.short || slot.name, { album: ALB[zoneOf(slot) || "gardien"] ? zoneOf(slot) || "gardien" : null });
       }
       buildNav(); settleCats();
       save(); closeSheet(); buzz(15); sfx(restyle ? "wear" : "build");
-      if (!restyle) toast(slot.name + " : c'est fait !");
+      if (!restyle) toast(slot.name + " : c'est fait ! Une carte à ouvrir.");
+      updateCardBadge();
     };
   }
 
@@ -2203,10 +2301,11 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.25." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.26." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
+      (adventDay() >= 1 ? '<label class="toggle"><span>Neige sur le domaine</span><input id="v-snow" type="checkbox"' + (S.snowOff ? "" : " checked") + "></label>" : "") +
       '<span class="tag">Sauvegarde</span>' +
       '<p>Copie ce code et garde-le quelque part (une note, un message) : il permet de retrouver ta partie sur un autre téléphone ou après une réinstallation.</p>' +
       '<textarea class="code" id="b-code" rows="3" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Code de sauvegarde"></textarea>' +
@@ -2222,6 +2321,7 @@
     $("#v-music").oninput = e => { setAudio("music", e.target.value / 100); $("#o-music").textContent = e.target.value; };
     $("#v-sfx").oninput = e => { setAudio("sfx", e.target.value / 100); $("#o-sfx").textContent = e.target.value; };
     $("#v-sfx").onchange = () => sfx("cat");               // un exemple à entendre quand on relâche le curseur
+    if ($("#v-snow")) $("#v-snow").onchange = e => { S.snowOff = !e.target.checked; save(); startSnow(); };
     const mine = saveCode();
     $("#b-code").value = mine;
     $("#b-copy").onclick = () => {
@@ -2236,7 +2336,7 @@
       if (!next) { toast($("#b-code").value.trim() === mine ? "Colle d'abord le code d'une autre partie" : "Ce code n'est pas valide"); return; }
       if ($("#b-code").value.trim() === mine) { toast("Colle d'abord le code d'une autre partie"); return; }
       if (!loadArmed) { loadArmed = true; e.currentTarget.textContent = "Confirmer : remplacer ma partie"; return; }
-      S = next; migrateAlbum(); Object.keys(catRT).forEach(k => delete catRT[k]); buildNav();
+      S = next; migrateAlbum(); migrateCards(); Object.keys(catRT).forEach(k => delete catRT[k]); buildNav();
       syncLives(); save(); closeSheet(); show("home"); toast("Partie restaurée : niveau " + S.level);
     };
     $("#t-kibble").onclick = () => { S.kibble += 10; save(); refresh(); toast("+10 croquettes"); };
@@ -2249,7 +2349,7 @@
     let armed = false;
     $("#t-reset").onclick = e => {
       if (!armed) { armed = true; e.currentTarget.textContent = "Confirmer : tout effacer"; return; }
-      S = freshSave(); Object.keys(catRT).forEach(k => delete catRT[k]); buildNav();
+      S = freshSave(); migrateCards(); Object.keys(catRT).forEach(k => delete catRT[k]); buildNav();
       save(); closeSheet(); show("home"); toast("Partie remise à zéro");
     };
   }
@@ -2257,13 +2357,342 @@
     updateHud();
     if (view === "home") renderHome();
     if (view === "shop") renderShop();
+    if (view === "cards") renderCards();
   }
+
+  /* ================= 9. Cartes à collectionner et calendrier de l'Avent ================= */
+  /* Chaque carte est une scène du domaine avec un chat (images : assets/k, liste : assets/cards.js). Un album par zone,
+     « Hiver au domaine » (calendrier de l'Avent) et les cartes uniques (jauge des doublons). On gagne des pochettes
+     aux mini-boss, boss, boss géants et niveaux spéciaux, à chaque chantier et à chaque naissance. */
+  const CARDS = window.RONRON_CARDS || { w: 330, h: 440, albums: [] };
+  const ALB = {}, CARD = {};
+  CARDS.albums.forEach(a => { ALB[a.id] = a; a.rows = Math.ceil(a.cards.length / a.cols); a.cards.forEach((c, i) => { c.i = i; c.album = a.id; CARD[c.id] = c; }); });
+  const RARITY = ["Commune", "Rare", "Dorée", "Unique"];
+  const DUP_POINTS = [10, 25, 50, 50];             // points de jauge d'un doublon, selon sa rareté
+  const PACK_FOR = { mini: 1, boss: 2, geant: 3, rafale: 3, trouee: 3, zero: 3, pelotes: 3 };
+  const ALBUM_GIFT = { gardien: { kibble: 40 }, grille: { kitten: "creme" }, allee: { tuna: 20 }, manoir: { kitten: "chocolat" }, cour: { kitten: "rose" },
+    aile: { kibble: 60 }, est: { kitten: "lavande" }, perron: { kitten: "menthe" }, etang: { kitten: "nuage" }, hiver: { kitten: "bengalneige" }, uniques: { kitten: "or" } };
+  const giftText = g => g.kitten ? "un chaton à la robe " + (BREED[g.kitten] ? BREED[g.kitten].name : "rare") : g.kibble ? plural(g.kibble, "croquette") : plural(g.tuna, "boîte") + " de thon";
+
+  function migrateCards() {
+    if (S.cards && typeof S.cards === "object" && S.cards.have) return;
+    S.cards = { have: {}, packs: [], gauge: 0, pity: 0, miss: 0, fresh: {}, done: {} };
+    // une pochette de bienvenue pour chaque zone où l'on a déjà rénové quelque chose
+    CARDS.albums.forEach(a => {
+      if (a.season || a.unique) return;
+      if (SLOTS.some(s => (zoneOf(s) || "gardien") === a.id && isDone(s.id))) S.cards.packs.push({ n: 3, album: a.id, why: "Bienvenue" });
+    });
+  }
+  const albumOpen = a => !a.season && !a.unique && (a.zone ? zoneOpen(a.zone) : true);
+  const owned = id => (S.cards.have[id] || 0) > 0;
+  const albumCount = a => a.cards.filter(c => owned(c.id)).length;
+  function addPack(n, why, opts) { S.cards.packs.push(Object.assign({ n: n, why: why }, opts || {})); }
+
+  // Une carte au hasard : 70 % commune, 25 % rare, 5 % dorée (une dorée garantie après 12 pochettes sans).
+  // Plus on enchaîne les doublons, plus une carte manquante a de chances de sortir.
+  function drawOne(pool, rare) {
+    let r;
+    if (S.cards.pity >= 12 && pool.some(c => c.r === 2)) r = 2;
+    else { const x = Math.random(); r = x < 0.05 ? 2 : x < 0.3 ? 1 : 0; }
+    if (rare && r < 1) r = 1;
+    let cand = pool.filter(c => c.r === r);
+    for (let k = r; !cand.length && k >= 0; k--) cand = pool.filter(c => c.r === k);
+    if (!cand.length) cand = pool;
+    const missing = cand.filter(c => !owned(c.id)), pNew = Math.min(0.9, 0.35 + 0.1 * S.cards.miss);
+    const pick = missing.length && Math.random() < pNew ? missing : cand;
+    const c = pick[Math.floor(Math.random() * pick.length)];
+    if (c.r === 2) S.cards.pity = 0;
+    return c;
+  }
+  function gainCard(c) {
+    const isNew = !owned(c.id);
+    S.cards.have[c.id] = (S.cards.have[c.id] || 0) + 1;
+    let points = 0;
+    if (isNew) { S.cards.fresh[c.id] = 1; S.cards.miss = 0; }
+    else { points = DUP_POINTS[c.r]; S.cards.gauge += points; S.cards.miss++; }
+    return { card: c, isNew: isNew, points: points };
+  }
+  function openPack(p) {
+    let pool = [];
+    if (p.album && ALB[p.album]) pool = ALB[p.album].cards;
+    else CARDS.albums.forEach(a => { if (albumOpen(a)) pool = pool.concat(a.cards); });
+    if (!pool.length) return [];
+    S.cards.pity++;
+    const out = [];
+    for (let k = 0; k < p.n; k++) out.push(gainCard(drawOne(pool, p.rare && k === 0)));
+    return out;
+  }
+  // Chaton offert (album complet) ; s'il n'y a plus de place, 20 boîtes de thon à la place.
+  function giveKitten(breed) {
+    if (catsSoon() >= MAX_CATS) { S.tuna += 20; return null; }
+    const used = S.cats.map(o => o.name);
+    const name = CAT_NAMES.find(n => used.indexOf(n) < 0) || "Chaton " + S.nextCat;
+    const kid = { id: S.nextCat++, breed: breed, name: name, owned: [], wears: {}, kitten: S.level + GROW_LEVELS, fresh: true };
+    S.cats.push(kid); S.album[breed] = true;
+    return kid;
+  }
+  // Albums qui viennent d'être complétés : leur cadeau est donné une seule fois.
+  function checkAlbums() {
+    const done = [];
+    CARDS.albums.forEach(a => {
+      if (S.cards.done[a.id] || albumCount(a) < a.cards.length) return;
+      S.cards.done[a.id] = true;
+      const g = ALBUM_GIFT[a.id] || { tuna: 10 };
+      if (g.kibble) S.kibble += g.kibble;
+      if (g.tuna) S.tuna += g.tuna;
+      const kid = g.kitten ? giveKitten(g.kitten) : null;
+      done.push({ album: a, gift: g, kid: kid, full: !!g.kitten && !kid });
+    });
+    return done;
+  }
+
+  function cardArt(c) {
+    const a = ALB[c.album], col = c.i % a.cols, row = Math.floor(c.i / a.cols);
+    return '<span class="art" style="background-image:url(' + a.src + ");background-size:" + a.cols * 100 + "% " + a.rows * 100 + "%;background-position:" +
+      (a.cols > 1 ? col / (a.cols - 1) * 100 : 0) + "% " + (a.rows > 1 ? row / (a.rows - 1) * 100 : 0) + '%"></span>';
+  }
+  function cardHtml(c, o) {
+    o = o || {};
+    if (o.back) return '<div class="tcard back r' + c.r + '"><span class="q">' + ico("paw") + '</span><span class="nm"><b>?</b><i>' + RARITY[c.r] + "</i></span></div>";
+    return '<div class="tcard r' + c.r + (o.big ? " big" : "") + '" data-card="' + c.id + '">' + cardArt(c) +
+      '<span class="nm"><b>' + esc(c.n) + "</b><i>" + (c.r === 3 ? "Carte unique" : esc(c.s) + " · " + RARITY[c.r]) + "</i></span>" +
+      (o.count > 1 ? '<span class="cnt">×' + o.count + "</span>" : "") + (o.fresh ? '<span class="new">Nouvelle</span>' : "") + "</div>";
+  }
+  const PACK_BACK = '<div class="tcard cover"><span class="q">' + ico("cards") + '</span><span class="nm"><b>Maison Ronron</b><i>Carte à collectionner</i></span></div>';
+  function updateCardBadge() {
+    const n = S.cards ? S.cards.packs.length : 0, t = $("#tab-cards");
+    if (!t) return;
+    t.classList.toggle("badge", n > 0); t.dataset.n = n > 9 ? "9+" : n;
+  }
+
+  function renderCards() {
+    const el = $("#screen-cards");
+    const all = CARDS.albums.reduce((n, a) => n + a.cards.length, 0), have = CARDS.albums.reduce((n, a) => n + albumCount(a), 0);
+    const packs = S.cards.packs.length, cardsIn = S.cards.packs.reduce((n, p) => n + p.n, 0), g = S.cards.gauge, uniqLeft = ALB.uniques ? ALB.uniques.cards.some(c => !owned(c.id)) : false;
+    let h = '<div class="cardshead"><h2>Mes cartes</h2><span class="count">' + have + " / " + all + "</span></div>";
+    if (packs) h += '<button class="btn block packbtn" id="c-open" type="button">' + ico("cards") + "Ouvrir " + (packs > 1 ? packs + " pochettes" : "la pochette") +
+      " · " + plural(cardsIn, "carte") + "</button>";
+    else h += '<p class="hint">Gagne des pochettes aux mini-boss, aux boss, aux niveaux spéciaux, à chaque chantier et à chaque naissance.</p>';
+    h += '<div class="gauge"><div class="gl"><b>Jauge des doublons</b><span>' + Math.min(100, g) + " / 100</span></div>" +
+      '<div class="bar"><i style="width:' + Math.min(100, g) + '%"></i></div>' +
+      "<p>Chaque doublon remplit la jauge : 10 points pour une commune, 25 pour une rare, 50 pour une dorée. À 100, une carte unique se débloque.</p>" +
+      (g >= 100 ? '<button class="btn small block" id="c-unique" type="button">' + (uniqLeft ? "Débloquer une carte unique" : "Échanger contre 10 boîtes de thon") + "</button>" : "") + "</div>";
+    h += '<div class="albums">' + CARDS.albums.map(a => {
+      const n = albumCount(a), open = albumOpen(a) || a.season || a.unique, first = a.cards.slice().reverse().find(c => owned(c.id));
+      const fresh = a.cards.some(c => S.cards.fresh[c.id]);
+      const note = a.season ? "Calendrier de l'Avent" : a.unique ? "Jauge des doublons" : !open ? "Zone à débloquer" : S.cards.done[a.id] ? "Album complet" : "Complet : " + giftText(ALBUM_GIFT[a.id] || {});
+      return '<button class="albtile' + (open ? "" : " locked") + (S.cards.done[a.id] ? " full" : "") + '" type="button" data-album="' + a.id + '">' +
+        '<span class="cover">' + (first ? cardArt(first) : ico(open ? "cards" : "lock")) + (fresh ? '<span class="dot"></span>' : "") + "</span>" +
+        "<b>" + esc(a.name) + "</b><span class=\"prog\">" + n + " / " + a.cards.length + '</span><span class="bar"><i style="width:' + Math.round(n / a.cards.length * 100) + '%"></i></span>' +
+        '<span class="note">' + esc(note) + "</span></button>";
+    }).join("") + "</div>";
+    el.innerHTML = h;
+    if ($("#c-open")) $("#c-open").onclick = () => openPacks();
+    if ($("#c-unique")) $("#c-unique").onclick = claimUnique;
+    $$(".albtile", el).forEach(b => { b.onclick = () => openAlbumCards(b.dataset.album); });
+    updateCardBadge();
+  }
+  function openAlbumCards(id) {
+    const a = ALB[id]; if (!a) return;
+    const n = albumCount(a), gift = ALBUM_GIFT[a.id];
+    openSheet('<span class="tag">Album</span><h2>' + esc(a.name) + "</h2><p>" + n + " carte" + (n > 1 ? "s" : "") + " sur " + a.cards.length + "." +
+      (a.season ? " Une carte par jour du calendrier de l'Avent." : a.unique ? " Elles se gagnent avec la jauge des doublons." : "") +
+      (gift ? (S.cards.done[a.id] ? " Album complet : tu as gagné " : " Complet, il rapporte ") + "<strong>" + giftText(gift) + "</strong>." : "") + "</p>" +
+      '<div class="cardgrid">' + a.cards.map(c => owned(c.id) ? cardHtml(c, { count: S.cards.have[c.id], fresh: S.cards.fresh[c.id] }) : cardHtml(c, { back: true })).join("") + "</div>" +
+      '<button class="btn ghost block" id="a-close" type="button">Fermer</button>', { noFocus: true });
+    a.cards.forEach(c => { delete S.cards.fresh[c.id]; }); save();
+    $("#a-close").onclick = () => { closeSheet(); if (view === "cards") renderCards(); };
+    $$(".cardgrid .tcard[data-card]", sheet).forEach(t => { t.onclick = () => zoomCard(CARD[t.dataset.card], () => openAlbumCards(id)); });
+  }
+  function zoomCard(c, back) {
+    openSheet('<div class="reveal">' + cardHtml(c, { big: true }) + "</div><p class=\"revtxt\">" + esc(ALB[c.album].name) +
+      (S.cards.have[c.id] > 1 ? " · tu l'as en " + S.cards.have[c.id] + " exemplaires" : "") + "</p>" +
+      '<button class="btn block" id="z-back" type="button">Retour</button>');
+    $("#z-back").onclick = () => back ? back() : closeSheet();
+  }
+  // Ouvre les pochettes en attente, carte par carte (ou toutes d'un coup), puis annonce les albums complétés.
+  function openPacks(after) {
+    if (!S.cards.packs.length) return;
+    const p = S.cards.packs.shift(), got = openPack(p), done = checkAlbums();
+    save(); updateHud(); updateCardBadge();
+    let k = 0;
+    const next = () => {
+      if (done.length) return showAlbumDone(done.splice(0), next);
+      if (S.cards.packs.length) return openPacks(after);
+      closeSheet(); if (after) after(); else if (view === "cards") renderCards();
+    };
+    const step = () => {
+      if (k >= got.length) return next();
+      const g = got[k], last = k + 1 >= got.length;
+      openSheet('<span class="tag">' + esc(p.why || "Pochette") + " · carte " + (k + 1) + " sur " + got.length + "</span>" +
+        '<div class="reveal"><div class="flip"><div class="face backf">' + PACK_BACK + '</div><div class="face frontf">' + cardHtml(g.card, { big: true }) + "</div></div></div>" +
+        '<p class="revtxt">' + (g.isNew ? "<strong>Nouvelle carte !</strong> " + esc(ALB[g.card.album].name) : "Doublon : <strong>+" + g.points + " points</strong> dans la jauge") + "</p>" +
+        '<div class="row">' + (got.length - k > 1 || S.cards.packs.length ? '<button class="btn ghost" id="rv-all" type="button">Tout ouvrir</button>' : "") +
+        '<button class="btn" id="rv-next" type="button">' + (!last ? "Carte suivante" : S.cards.packs.length ? "Pochette suivante" : "Terminer") + "</button></div>", { sticky: true });
+      const f = $(".flip", sheet);
+      setTimeout(() => { if (f) f.classList.add("on"); sfx(g.isNew ? "buy" : "tap"); }, reducedMotion ? 0 : 280);
+      $("#rv-next").onclick = () => { k++; step(); };
+      if ($("#rv-all")) $("#rv-all").onclick = () => revealAll(got.slice(k + 1), done, after);
+    };
+    step();
+  }
+  function revealAll(rest, done, after) {
+    while (S.cards.packs.length) { const p = S.cards.packs.shift(); rest = rest.concat(openPack(p)); }
+    done = done.concat(checkAlbums()); save(); updateHud(); updateCardBadge();
+    const nNew = rest.filter(g => g.isNew).length, pts = rest.reduce((n, g) => n + g.points, 0);
+    openSheet('<span class="tag">Pochettes ouvertes</span><h2>' + plural(rest.length, "carte") + "</h2><p>" + (nNew ? "<strong>" + plural(nNew, "nouvelle carte") + "</strong>" : "Pas de nouvelle carte") +
+      (pts ? " · doublons : <strong>+" + pts + " points</strong> dans la jauge" : "") + ".</p>" +
+      '<div class="cardgrid">' + rest.map(g => cardHtml(g.card, { fresh: g.isNew })).join("") + "</div>" +
+      '<button class="btn block" id="rv-ok" type="button">Super</button>', { sticky: true });
+    sfx("buy");
+    $("#rv-ok").onclick = () => {
+      const fin = () => { closeSheet(); if (after) after(); else if (view === "cards") renderCards(); };
+      done.length ? showAlbumDone(done, fin) : fin();
+    };
+  }
+  function showAlbumDone(list, then) {
+    const d = list.shift();
+    if (!d) return then();
+    openSheet('<span class="tag">Album complet</span><h2>' + esc(d.album.name) + "</h2>" +
+      "<p>Les " + d.album.cards.length + " cartes sont réunies ! Ton cadeau : <strong>" + giftText(d.gift) + "</strong>" +
+      (d.full ? ". Tu as déjà 30 chats : tu reçois 20 boîtes de thon à la place." : d.kid ? ". Il t'attend dans la maison." : ".") + "</p>" +
+      '<button class="btn block" id="ad-ok" type="button">Merci !</button>', { sticky: true });
+    sfx("win"); updateHud();
+    $("#ad-ok").onclick = () => showAlbumDone(list, then);
+  }
+  function claimUnique() {
+    if (S.cards.gauge < 100) return;
+    S.cards.gauge -= 100;
+    const left = ALB.uniques ? ALB.uniques.cards.filter(c => !owned(c.id)) : [];
+    if (!left.length) { S.tuna += 10; save(); updateHud(); toast("+10 boîtes de thon"); renderCards(); return; }
+    const c = left[Math.floor(Math.random() * left.length)];
+    gainCard(c); const done = checkAlbums(); save(); updateHud();
+    openSheet('<span class="tag">Carte unique</span><div class="reveal"><div class="flip"><div class="face backf">' + PACK_BACK + '</div><div class="face frontf">' + cardHtml(c, { big: true }) +
+      '</div></div></div><p class="revtxt"><strong>' + esc(c.n) + "</strong> rejoint ta collection.</p>" +
+      '<button class="btn block" id="u-ok" type="button">Génial</button>', { sticky: true });
+    const f = $(".flip", sheet); setTimeout(() => { if (f) f.classList.add("on"); sfx("win"); }, reducedMotion ? 0 : 280);
+    $("#u-ok").onclick = () => showAlbumDone(done, () => { closeSheet(); renderCards(); });
+  }
+
+  /* ----- Calendrier de l'Avent : une case par jour du 1er au 24 décembre ; on rattrape les cases oubliées jusqu'au 6 janvier.
+     Il donne les 12 cartes « Hiver au domaine », du thon, des croquettes, des pochettes et 4 décorations du domaine. ----- */
+  const ADVENT = [{ kibble: 10, snow: true }, { card: "hiver-1" }, { tuna: 3 }, { card: "hiver-2" }, { pack: 3 }, { deco: "grille", card: "hiver-3" },
+    { kibble: 15 }, { card: "hiver-5" }, { tuna: 5 }, { card: "hiver-6" }, { pack: 3 }, { deco: "entree", card: "hiver-4" },
+    { kibble: 20 }, { card: "hiver-8" }, { tuna: 5 }, { card: "hiver-9" }, { pack: 3 }, { deco: "gardien", card: "hiver-7" },
+    { kibble: 25 }, { card: "hiver-10" }, { tuna: 8 }, { card: "hiver-11" }, { pack: 3, rare: true }, { deco: "cour", card: "hiver-12" }];
+  const ADVENT_ORDER = [7, 15, 2, 20, 11, 24, 5, 18, 13, 1, 22, 9, 16, 4, 23, 10, 3, 19, 12, 6, 21, 14, 8, 17];   // cases mélangées, comme un vrai calendrier
+  const DECO = {}; DECOS.forEach(d => { DECO[d.id] = d; });
+  // Jour du calendrier : 0 en novembre (bientôt), 1 à 31 en décembre, 31 jusqu'au 6 janvier, -1 le reste de l'année.
+  function adventDay() {
+    const t = new Date(), m = t.getMonth(), d = t.getDate();
+    return m === 11 ? d : m === 0 && d <= 6 ? 31 : m === 10 ? 0 : -1;
+  }
+  function advent() {
+    const t = new Date(), y = t.getMonth() === 0 ? t.getFullYear() - 1 : t.getFullYear();
+    if (!S.advent || S.advent.year !== y) S.advent = { year: y, open: {}, deco: {} };
+    return S.advent;
+  }
+  const decoShown = d => adventDay() >= 1 && !!(S.advent && S.advent.deco && S.advent.deco[d.id]) && S.advent.year === advent().year;
+  const snowOn = () => adventDay() >= 1 && !!(S.advent && S.advent.open && S.advent.open[1]) && !S.snowOff;
+  const adventWaiting = () => { const day = adventDay(); if (day < 1) return 0; const A = advent(); let n = 0; for (let k = 1; k <= Math.min(24, day); k++) if (!A.open[k]) n++; return n; };
+  function adventText(r) {
+    const parts = [];
+    if (r.deco && DECO[r.deco]) parts.push("Décoration : " + DECO[r.deco].name);
+    if (r.card) parts.push("une carte Hiver au domaine");
+    if (r.snow) parts.push("la neige sur le domaine");
+    if (r.tuna) parts.push(plural(r.tuna, "boîte") + " de thon");
+    if (r.kibble) parts.push(plural(r.kibble, "croquette"));
+    if (r.pack) parts.push("une pochette de " + r.pack + " cartes" + (r.rare ? " (une rare au moins)" : ""));
+    return parts.join(" + ");
+  }
+  function adventIcon(r) { return r.deco ? "gift" : r.card ? "cards" : r.pack ? "cards" : r.tuna ? "tuna" : r.kibble ? "kibble" : "gift"; }
+  function renderAdventBtn() {
+    const b = $("#btn-advent"); if (!b) return;
+    const day = adventDay();
+    b.hidden = day < 0;
+    if (day < 0) return;
+    const wait = adventWaiting();
+    b.classList.toggle("badge", wait > 0); b.dataset.n = wait;
+    $("#advent-sub").textContent = day === 0 ? "J-" + Math.max(1, Math.ceil((new Date(new Date().getFullYear(), 11, 1) - new Date()) / 86400000)) : wait ? "À ouvrir" : "Avent";
+  }
+  function openAdvent() {
+    const day = adventDay(), A = advent();
+    const cells = ADVENT_ORDER.map(k => {
+      const r = ADVENT[k - 1], opened = !!A.open[k], can = day >= k && !opened;
+      return '<button class="adv' + (opened ? " opened" : can ? " can" : " shut") + (r.deco ? " big" : "") + '" type="button" data-day="' + k + '"' + (can || opened ? "" : " disabled") +
+        ' aria-label="' + k + " décembre" + (opened ? ", ouverte : " + esc(adventText(r)) : can ? ", à ouvrir" : ", fermée") + '"><b>' + k + "</b>" + (opened ? ico(adventIcon(r)) : "") + "</button>";
+    }).join("");
+    openSheet('<span class="tag">Calendrier de l\'Avent</span><h2>' + (day === 0 ? "Il ouvre le 1er décembre" : "Une case par jour") + "</h2>" +
+      "<p>" + (day === 0 ? "Chaque jour du 1er au 24 décembre, une case à ouvrir : les 12 cartes « Hiver au domaine », du thon, des croquettes, des pochettes et 4 décorations de Noël pour le domaine."
+        : "Les cases oubliées se rattrapent jusqu'au 6 janvier. Les 6, 12, 18 et 24, une décoration de Noël apparaît sur le domaine.") + "</p>" +
+      '<div class="advgrid">' + cells + "</div>" +
+      '<button class="btn ghost block" id="adv-close" type="button">Fermer</button>', { noFocus: true });
+    $("#adv-close").onclick = () => closeSheet();
+    $$(".adv", sheet).forEach(b => { b.onclick = () => { const k = +b.dataset.day; if (A.open[k]) toast(k + " décembre : " + adventText(ADVENT[k - 1])); else openAdventDay(k); }; });
+  }
+  function openAdventDay(k) {
+    const A = advent(), r = ADVENT[k - 1];
+    if (A.open[k] || adventDay() < k) return;
+    A.open[k] = true;
+    if (r.tuna) S.tuna += r.tuna;
+    if (r.kibble) S.kibble += r.kibble;
+    if (r.deco) { A.deco[r.deco] = true; buildNav(); settleCats(); renderLayers(); }
+    const got = r.card && CARD[r.card] ? gainCard(CARD[r.card]) : null;
+    if (r.pack) addPack(r.pack, k + " décembre", { rare: !!r.rare });
+    const done = checkAlbums();
+    save(); updateHud(); updateCardBadge(); renderAdventBtn(); startSnow();
+    const d = r.deco ? DECO[r.deco] : null;
+    openSheet('<span class="tag">' + k + " décembre</span><h2>" + (d ? esc(d.name) : got ? esc(got.card.n) : r.pack ? "Une pochette de cartes" : "Un petit cadeau") + "</h2>" +
+      (got ? '<div class="reveal"><div class="flip"><div class="face backf">' + PACK_BACK + '</div><div class="face frontf">' + cardHtml(got.card, { big: true }) + "</div></div></div>" : "") +
+      "<p>" + esc(adventText(r)) + (r.snow ? ". Il neige sur le domaine jusqu'au 6 janvier (réglable dans les réglages)." : d ? ". Va la voir sur le domaine !" : ".") + "</p>" +
+      '<div class="row">' + (d ? '<button class="btn ghost" id="ad-see" type="button">Voir sur le domaine</button>' : "") +
+      (r.pack ? '<button class="btn ghost" id="ad-pack" type="button">Ouvrir la pochette</button>' : "") +
+      '<button class="btn" id="ad-ok" type="button">' + (got || r.pack ? "Super" : "Merci") + "</button></div>", { sticky: true });
+    const f = $(".flip", sheet); setTimeout(() => { if (f) f.classList.add("on"); }, reducedMotion ? 0 : 280);
+    sfx("buy");
+    const fin = () => showAlbumDone(done, () => { closeSheet(); if (view === "home") renderHome(); });
+    $("#ad-ok").onclick = fin;
+    if ($("#ad-see")) $("#ad-see").onclick = () => showAlbumDone(done, () => { closeSheet(); show("home"); const l = camLimits(); if (l.vw) centerOn(d.at[0], d.at[1], 0.45); });
+    if ($("#ad-pack")) $("#ad-pack").onclick = () => showAlbumDone(done, () => openPacks(() => { if (view === "home") renderHome(); }));
+  }
+
+  /* Neige : des flocons qui tombent sur la carte en décembre, une fois la case du 1er ouverte. */
+  let snowRaf = 0, snowFlakes = null, snowLast = 0;
+  function startSnow() {
+    const cv = $("#snow"); if (!cv) return;
+    const on = snowOn() && view === "home" && !document.hidden && !reducedMotion;
+    cv.hidden = !on;
+    if (!on) { if (snowRaf) cancelAnimationFrame(snowRaf); snowRaf = 0; return; }
+    if (snowRaf) return;
+    const tick = t => {
+      snowRaf = requestAnimationFrame(tick);
+      if (t - snowLast < 33) return;                     // 30 images par seconde suffisent
+      const dt = Math.min(0.1, (t - (snowLast || t)) / 1000); snowLast = t;
+      const w = cv.clientWidth, h = cv.clientHeight, dpr = Math.min(2, window.devicePixelRatio || 1);
+      if (!w || !h) return;
+      if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+      if (!snowFlakes) snowFlakes = Array.from({ length: 90 }, () => ({ x: Math.random() * w, y: Math.random() * h, r: 1 + Math.random() * 2.6, v: 18 + Math.random() * 30, p: Math.random() * 6.28 }));
+      const ctx = cv.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      snowFlakes.forEach(f => {
+        f.y += f.v * dt * (0.6 + f.r / 3); f.p += dt; f.x += Math.sin(f.p) * 12 * dt;
+        if (f.y > h + 4) { f.y = -4; f.x = Math.random() * w; }
+        if (f.x < -4) f.x = w + 4; else if (f.x > w + 4) f.x = -4;
+        ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 6.283); ctx.fill();
+      });
+    };
+    snowRaf = requestAnimationFrame(tick);
+  }
+  document.addEventListener("visibilitychange", startSnow);
 
   /* ================= 10. Démarrage ================= */
 
   load();
   $("#tab-home").onclick = () => show("home");
   $("#tab-shop").onclick = () => show("shop");
+  $("#tab-cards").onclick = () => show("cards");
+  $("#btn-advent").onclick = () => openAdvent();
   $("#tab-play").onclick = () => startLevel();
   $("#btn-settings").onclick = () => openSettings();
   $("#btn-quit").onclick = () => quitLevel();
@@ -2272,6 +2701,7 @@
 
   migrateZones();
   migrateAlbum();
+  migrateCards();
   buildNav();
   let abandoned = false;
   if (S.inLevel) {            // l'appli a été fermée en plein niveau
@@ -2315,9 +2745,10 @@
         if (s.depth) effs.forEach(e => { let p = patchOf(s, k); if (typeof p === "function") p = p(e); if (p) out.add(p); });
       }
     });
+    DECOS.forEach(d => d.parts.forEach(o => { if (o.patch) out.add(o.patch); }));
     return Object.keys(PATCH).filter(k => out.has(PATCH[k]));
   }
-  window.__ronron = { objKeys: objKeys, state: () => S, level: () => L, nav: () => navFree, look: look, layers: () => layerNodes.map(n => [n._p.src, n.getAttribute("src") || ""]), far: () => [farKey === layersKey, farEl ? !farEl.hidden : false], path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
+  window.__ronron = { objKeys: objKeys, slots: () => SLOTS.map(x => ({ id: x.id, name: x.name, short: x.short, room: x.room, zone: zoneOf(x) || "gardien", poi: x.poi, at: x.at, styles: (x.styles || []).length })), state: () => S, level: () => L, nav: () => navFree, look: look, layers: () => layerNodes.map(n => [n._p.src, n.getAttribute("src") || ""]), far: () => [farKey === layersKey, farEl ? !farEl.hidden : false], path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
     navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length, navManoir.length, navSalon.length, navCour.length, navHall.length, navChats.length, navAile.length, navBiblio.length, navEst.length, navEstIn.length, navPerron.length, navEtang.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
     audio: () => ({ ctx: AC ? AC.state : null, playing: !!(musicSrc && !musicSrc.pending), track: musicIdx % MUSIC.length, pref: audioPref }), sfx: sfx, sfxNames: () => Object.keys(SFX), sfxRaw: name => SFX[name](),
     walls: () => (WALLS ? WALLS.strips.filter(st => st.node && st.node.parentNode).length : -1), wallsReady: () => !!wallCanvas };
