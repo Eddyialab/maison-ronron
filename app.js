@@ -41,6 +41,8 @@
   const p6 = (x, y, pose, dir, depth) => ({ x: x + 2184, y: y + 2458, pose: pose, dir: dir, depth: depth, min: 12000, max: 30000 });
   const z7 = p => [p[0] + 6552, p[1] + 2458];       // zone de l'aile est, derrière la salle des chats
   const p7 = (x, y, pose, dir) => ({ x: x + 6552, y: y + 2458, pose: pose, dir: dir, min: 12000, max: 30000 });
+  const z8 = p => [p[0] + 6552, p[1] + 3687];       // zone du perron est, sous l'aile est
+  const p8 = (x, y, pose, dir, depth) => ({ x: x + 6552, y: y + 3687, pose: pose, dir: dir, depth: depth, min: 12000, max: 30000 });
   WORLD.start = g([1380, 640]);
 
   /* Chantiers. « at » : position de la bulle sur la carte. « need » : chantiers à terminer avant.
@@ -351,7 +353,83 @@
     { id: "est_bain", room: "Aile est", name: "Aménager la salle de bain", short: "Salle de bain", verb: "Aménager", cost: 24, icon: "plus", need: ["est_deblai"], at: z7([600, 1110]),
       desc: "Une baignoire à pattes de lion. Quand elle est vide, les chats adorent s'y rouler en boule.",
       poi: [[p7(507, 1140, "dort", 1), p7(618, 1205, "dort", -1)], [p7(498, 1136, "dort", 1), p7(700, 1160, "assis", -1)]],
-      styles: [{ name: "Noir et blanc", sw: "#2E2E33", patch: PATCH.est_bain_noir }, { name: "Cuivre et zellige", sw: "#2F7D5B", patch: PATCH.est_bain_cuivre }] }
+      styles: [{ name: "Noir et blanc", sw: "#2E2E33", patch: PATCH.est_bain_noir }, { name: "Cuivre et zellige", sw: "#2F7D5B", patch: PATCH.est_bain_cuivre }] },
+    /* ----- Zone 8 : le perron est, sous l'aile est. Zone « complète » : 7 grands chantiers et 12 détails (×1,5).
+       Les objets debout ont un calque à plat (avec leur ombre) et sont redessinés seuls, triés avec les chats. ----- */
+    { id: "perron_debrousse", room: "Perron est", name: "Débroussailler le jardin du perron", short: "Débroussailler", verb: "Débroussailler", cost: 12, icon: "broom", need: ["est_debrousse"], at: z8([1900, 560]),
+      desc: "Herbes sèches, buisson mort et cailloux : on dégage tout devant l'entrée est.", patch: PATCH.perron_debrousse },
+    { id: "perron_pelouse", room: "Perron est", name: "Semer la pelouse du perron", short: "Pelouse", verb: "Semer", cost: 15, icon: "plus", need: ["perron_debrousse"], at: z8([760, 1250]),
+      desc: "Une pelouse bien tondue de part et d'autre des allées.", patch: PATCH.perron_pelouse },
+    { id: "perron_chemin", room: "Perron est", name: "Refaire les allées du perron", short: "Allées", verb: "Refaire", cost: 18, icon: "hammer", need: ["perron_pelouse", "allee_chemin"], at: z8([1150, 760]),
+      desc: "Les allées qui partent du perron, dans le revêtement choisi à la grille.",
+      patch: eff => PATCH["perron_chemin_" + (eff("grille_chemin") ? "gravier" : "paves")] },
+    { id: "perron_porte", room: "Perron est", name: "Restaurer le perron", short: "Perron", verb: "Restaurer", cost: 27, icon: "hammer", need: ["perron_debrousse"], at: z8([520, 330]),
+      desc: "Colonnes, fronton, marches et une porte neuve, avec une plante en pot au pied des marches.",
+      styles: [{ name: "Porte verte", sw: "#1F5E3B", patch: PATCH.perron_porte_verte }, { name: "Porte bordeaux", sw: "#7A1F45", patch: PATCH.perron_porte_bordeaux }] },
+    { id: "perron_statues", room: "Perron est", name: "Sculpter des statues de chats", short: "Statues", verb: "Sculpter", cost: 24, icon: "hammer", need: ["perron_chemin"], at: z8([1460, 560]),
+      desc: "Les deux vieilles statues usées laissent la place à deux chats assis.",
+      styles: [{ name: "Marbre blanc", sw: "#EDEAE2", patch: eff => PATCH["perron_statues_marbre_" + (eff("grille_chemin") ? "gravier" : "paves")] },
+               { name: "Bronze", sw: "#A8692E", patch: eff => PATCH["perron_statues_bronze_" + (eff("grille_chemin") ? "gravier" : "paves")] }],
+      parts: [[{ patch: PATCH.perron_statues_marbre_p0, depth: 4842 }, { patch: PATCH.perron_statues_marbre_p1, depth: 4553 }], [{ patch: PATCH.perron_statues_bronze_p0, depth: 4842 }, { patch: PATCH.perron_statues_bronze_p1, depth: 4553 }]] },
+    { id: "perron_banc", room: "Perron est", name: "Changer le banc", short: "Banc", verb: "Installer", cost: 18, icon: "plus", need: ["perron_pelouse"], at: z8([1180, 330]),
+      desc: "Un beau banc à la place du vieux banc de bois. Les chats y font la sieste.",
+      poi: [[p8(1170, 455, "dort", -1, 4270), p8(1255, 420, "assis", -1, 4270)], [p8(1180, 446, "dort", -1, 4264), p8(1110, 478, "assis", 1, 4264)]],
+      styles: [{ name: "Fer forgé blanc", sw: "#F1F0EC", patch: PATCH.perron_banc_fer }, { name: "Teck et coussins", sw: "#D49A3A", patch: PATCH.perron_banc_teck }],
+      parts: [[{ patch: PATCH.perron_banc_fer_p0, depth: 4269 }], [{ patch: PATCH.perron_banc_teck_p0, depth: 4263 }]] },
+    { id: "perron_oiseaux", room: "Perron est", name: "Installer un bain d'oiseaux", short: "Bain d'oiseaux", verb: "Installer", cost: 21, icon: "plus", need: ["perron_pelouse"], at: z8([2230, 330]),
+      desc: "De l'eau claire pour les oiseaux. Les chats viennent s'asseoir à côté pour les guetter.",
+      poi: [p8(2140, 572, "assis", 1), p8(2115, 572, "assis", 1)],
+      styles: [{ name: "Pierre", sw: "#CFCBC0", patch: PATCH.perron_oiseaux_pierre }, { name: "Céramique bleue", sw: "#3A6FB8", patch: PATCH.perron_oiseaux_ceramique }],
+      parts: [[{ patch: PATCH.perron_oiseaux_pierre_p0, depth: 4247 }], [{ patch: PATCH.perron_oiseaux_ceramique_p0, depth: 4247 }]] },
+    { id: "perron_lampadaires", room: "Perron est", name: "Poser des lampadaires", short: "Lampadaires", verb: "Poser", cost: 18, icon: "plus", need: ["perron_chemin"], at: z8([1420, 200]),
+      desc: "Quelques lampadaires le long de l'allée, pour les soirées au jardin.",
+      styles: [{ name: "Fer noir", sw: "#2B2B2E", patch: PATCH.perron_lampadaires_naturel }, { name: "Vert sauge", sw: "#6F8F6A", patch: PATCH.perron_lampadaires_vert }],
+      parts: [[{ patch: PATCH.perron_lampadaires_naturel_p0, depth: 4568 }, { patch: PATCH.perron_lampadaires_naturel_p1, depth: 4347 }, { patch: PATCH.perron_lampadaires_naturel_p2, depth: 4105 }, { patch: PATCH.perron_lampadaires_naturel_p3, depth: 3926 }], [{ patch: PATCH.perron_lampadaires_vert_p0, depth: 4333 }, { patch: PATCH.perron_lampadaires_vert_p1, depth: 4099 }, { patch: PATCH.perron_lampadaires_vert_p2, depth: 3944 }]] },
+    { id: "perron_treillage", room: "Perron est", name: "Planter un rosier grimpant", short: "Rosier grimpant", verb: "Planter", cost: 15, icon: "plus", need: ["perron_pelouse"], at: z8([230, 470]),
+      desc: "Un treillage contre le mur du manoir, couvert de roses.",
+      styles: [{ name: "Roses roses", sw: "#E88AA6", patch: PATCH.perron_treillage_naturel }, { name: "Roses blanches", sw: "#F4F2EA", patch: PATCH.perron_treillage_vert }] },
+    { id: "perron_nichoir", room: "Perron est", name: "Accrocher un nichoir", short: "Nichoir", verb: "Accrocher", cost: 12, icon: "plus", need: ["perron_pelouse"], at: z8([1930, 380]),
+      desc: "Un nichoir sur un grand piquet. Les chats le surveillent de près.",
+      poi: [[p8(1805, 708, "assis", 1)], [p8(1900, 676, "assis", 1)]],
+      styles: [{ name: "Bois naturel", sw: "#9A6B3E", patch: PATCH.perron_nichoir_naturel }, { name: "Bleu ciel", sw: "#8CC4EA", patch: PATCH.perron_nichoir_vert }],
+      parts: [[{ patch: PATCH.perron_nichoir_naturel_p0, depth: 4410 }], [{ patch: PATCH.perron_nichoir_vert_p0, depth: 4374 }]] },
+    { id: "perron_pots", room: "Perron est", name: "Fleurir le pied des statues", short: "Pots de fleurs", verb: "Fleurir", cost: 12, icon: "plus", need: ["perron_statues"], at: z8([1000, 1110]),
+      desc: "Un pot de fleurs au pied de chaque statue.",
+      styles: [{ name: "Géraniums", sw: "#D8343A", patch: PATCH.perron_pots_naturel }, { name: "Marguerites", sw: "#F7F5EE", patch: PATCH.perron_pots_vert }],
+      parts: [[{ patch: PATCH.perron_pots_naturel_p0, depth: 4555 }, { patch: PATCH.perron_pots_naturel_p1, depth: 4862 }], [{ patch: PATCH.perron_pots_vert_p0, depth: 4561 }, { patch: PATCH.perron_pots_vert_p1, depth: 4851 }]] },
+    { id: "perron_brouette", room: "Perron est", name: "Garer une brouette fleurie", short: "Brouette", verb: "Installer", cost: 15, icon: "plus", need: ["perron_pelouse"], at: z8([1620, 760]),
+      desc: "Une vieille brouette pleine de fleurs. Devine qui va dormir dedans.",
+      poi: [[p8(1590, 830, "dort", -1, 4667)], [p8(1580, 838, "dort", -1, 4665)]],
+      styles: [{ name: "Bois et fleurs jaunes", sw: "#E9C238", patch: PATCH.perron_brouette_naturel }, { name: "Bleue et fleurs blanches", sw: "#5E86C2", patch: PATCH.perron_brouette_vert }],
+      parts: [[{ patch: PATCH.perron_brouette_naturel_p0, depth: 4666 }], [{ patch: PATCH.perron_brouette_vert_p0, depth: 4664 }]] },
+    { id: "perron_arbre", room: "Perron est", name: "Monter un arbre à chat d'extérieur", short: "Arbre à chat", verb: "Monter", cost: 18, icon: "plus", need: ["perron_pelouse"], at: z8([650, 1130]),
+      desc: "Un arbre à chat avec un petit toit, pour faire la sieste au jardin.",
+      poi: [[p8(603, 1258, "dort", -1, 5117)], [p8(1318, 1368, "dort", -1, 5189)]],
+      styles: [{ name: "Bois et sisal", sw: "#B98552", patch: PATCH.perron_arbre_naturel }, { name: "Blanc et bleu", sw: "#F2F2F0", patch: PATCH.perron_arbre_vert }],
+      parts: [[{ patch: PATCH.perron_arbre_naturel_p0, depth: 5116 }], [{ patch: PATCH.perron_arbre_vert_p0, depth: 5188 }]] },
+    { id: "perron_jardiniere", room: "Perron est", name: "Accrocher une jardinière", short: "Jardinière", verb: "Accrocher", cost: 12, icon: "plus", need: ["perron_porte"], at: z8([150, 560]),
+      desc: "Des fleurs sous la fenêtre, à gauche du perron.",
+      styles: [{ name: "Géraniums", sw: "#E46C8A", patch: PATCH.perron_jardiniere_naturel }, { name: "Lavande", sw: "#8E7BD0", patch: PATCH.perron_jardiniere_bleu }] },
+    { id: "perron_paillasson", room: "Perron est", name: "Poser un paillasson", short: "Paillasson", verb: "Poser", cost: 9, icon: "plus", need: ["perron_porte"], at: z8([560, 520]),
+      desc: "Un paillasson devant la porte. Le coin préféré des chats pour attendre qu'on ouvre.",
+      poi: [p8(560, 575, "dort", -1)],
+      styles: [{ name: "Fibre de coco", sw: "#C8A15C", patch: PATCH.perron_paillasson_naturel }, { name: "Rayé noir et blanc", sw: "#2E2E33", patch: PATCH.perron_paillasson_bleu }] },
+    { id: "perron_gamelles", room: "Perron est", name: "Poser des gamelles", short: "Gamelles", verb: "Poser", cost: 9, icon: "plus", need: ["perron_porte"], at: z8([560, 870]),
+      desc: "De l'eau et des croquettes au pied du perron.",
+      poi: [[p8(652, 866, "assis", -1)], [p8(690, 905, "assis", -1)]],
+      styles: [{ name: "Céramique crème", sw: "#EFE3C8", patch: PATCH.perron_gamelles_naturel }, { name: "Émail bleu", sw: "#3F6FB5", patch: PATCH.perron_gamelles_bleu }] },
+    { id: "perron_arrosoir", room: "Perron est", name: "Ranger l'arrosoir et les pots", short: "Arrosoir", verb: "Ranger", cost: 12, icon: "plus", need: ["perron_porte"], at: z8([930, 470]),
+      desc: "Un arrosoir et une pile de pots à côté des marches.",
+      styles: [{ name: "Zinc et terre cuite", sw: "#B9BCC0", patch: PATCH.perron_arrosoir_naturel }, { name: "Émail bleu", sw: "#4C7DC4", patch: PATCH.perron_arrosoir_bleu }],
+      parts: [[{ patch: PATCH.perron_arrosoir_naturel_p0, depth: 4347 }], [{ patch: PATCH.perron_arrosoir_bleu_p0, depth: 4340 }]] },
+    { id: "perron_gueridon", room: "Perron est", name: "Poser un guéridon", short: "Guéridon", verb: "Poser", cost: 12, icon: "plus", need: ["perron_banc"], at: z8([1380, 280]),
+      desc: "Une petite table à côté du banc, pour le thé ou la citronnade.",
+      styles: [{ name: "Teck", sw: "#A87444", patch: PATCH.perron_gueridon_naturel }, { name: "Fer blanc", sw: "#F1F0EC", patch: PATCH.perron_gueridon_bleu }],
+      parts: [[{ patch: PATCH.perron_gueridon_naturel_p0, depth: 4119 }], [{ patch: PATCH.perron_gueridon_bleu_p0, depth: 4125 }]] },
+    { id: "perron_olivier", room: "Perron est", name: "Planter un arbre en pot", short: "Arbre en pot", verb: "Planter", cost: 15, icon: "plus", need: ["perron_porte"], at: z8([340, 640]),
+      desc: "Un grand pot au coin du perron.",
+      styles: [{ name: "Olivier", sw: "#8FA889", patch: PATCH.perron_olivier_naturel }, { name: "Citronnier", sw: "#E8D23A", patch: PATCH.perron_olivier_bleu }],
+      parts: [[{ patch: PATCH.perron_olivier_naturel_p0, depth: 4531 }], [{ patch: PATCH.perron_olivier_bleu_p0, depth: 4521 }]] }
   ];
   const SLOT = {}; SLOTS.forEach(s => { SLOT[s.id] = s; });
 
@@ -364,7 +442,8 @@
     manoir: { name: "L'aile d'entrée du manoir", desc: "La façade, le grand salon et le bureau." },
     cour: { name: "La cour d'honneur", desc: "La cour à la fontaine, le hall et la salle des chats." },
     aile: { name: "L'aile ouest", desc: "Son jardin, la bibliothèque et la salle à manger." },
-    est: { name: "L'aile est", desc: "Son jardin, une cuisine, une chambre et une salle de bain." }
+    est: { name: "L'aile est", desc: "Son jardin, une cuisine, une chambre et une salle de bain." },
+    perron: { name: "Le perron est", desc: "L'entrée est du manoir et son jardin : 19 chantiers, plein de détails." }
   };
   const zoneCost = z => ZONE_STEP * (Object.keys(ZONES).indexOf(z) + 1);
   const zoneOf = s => { const p = s.id.split("_")[0]; return ZONES[p] ? p : null; };
@@ -1219,7 +1298,7 @@
   // cases libres (1 maison, 2 jardin du gardien, 3 entrée du domaine, 4 passage caché dans la haie),
   // recalculées quand un meuble est posé ou qu'un chantier se termine
   let navFree = null;
-  let navHouse = [], navGarden = [], navGate = [], navAllee = [], navManoir = [], navSalon = [], navCour = [], navHall = [], navChats = [], navAile = [], navBiblio = [], navEst = [], navEstIn = [];
+  let navHouse = [], navGarden = [], navGate = [], navAllee = [], navManoir = [], navSalon = [], navCour = [], navHall = [], navChats = [], navAile = [], navBiblio = [], navEst = [], navEstIn = [], navPerron = [];
   // passages où le chat se faufile sans être vu : haie, sous la grille, porte du manoir, hall vers la cour, arche de la salle des chats
   const HIDDEN = v => v === 4 || v === 6 || v === 9 || v === 13 || v === 14 || v === 18 || v === 24 || v === 25;
   function buildNav() {
@@ -1234,12 +1313,13 @@
     const aile = allee && isDone("aile_debrousse");      // le jardin de l'aile ouest, à gauche du perron
     const biblio = aile && isDone("aile_biblio"), salle = aile && isDone("aile_salle"), atelier = biblio && isDone("aile_atelier");
     const est = chats && isDone("est_debrousse"), estIn = chats && isDone("est_deblai");   // l'aile est, par la salle des chats
+    const perron = manoir && isDone("perron_debrousse");     // le jardin du perron est, à côté du devant du manoir
     for (let r = 0; r < NAV.h; r++) for (let c = 0; c < NAV.w; c++) {
       const v = NAV.rows[r].charCodeAt(c) - 48;
       navFree[r * NAV.w + c] = v === 1 || (v === 2 && garden) || ((v === 3 || v === 4) && gate) || ((v === 5 || v === 6) && allee) ||
         (v === 7 && manoir) || ((v === 8 || v === 9) && salon) || ((v === 10 || v === 11 || v === 13) && hall) || ((v === 12 || v === 14) && chats) ||
         ((v === 15 || v === 18) && aile) || (v === 16 && biblio) || (v === 17 && salle) || (v === 19 && atelier) ||
-        ((v === 20 || v === 24) && est) || (((v >= 21 && v <= 23) || v === 25) && estIn) ? v : 0;
+        ((v === 20 || v === 24) && est) || (((v >= 21 && v <= 23) || v === 25) && estIn) || (v === 26 && perron) ? v : 0;
     }
     Object.keys(NAV.blocks).forEach(id => {
       if (isDone(id)) (NAV.blocks[id][S.house[id].style | 0] || NAV.blocks[id][0] || []).forEach(i => { navFree[i] = 0; });
@@ -1258,7 +1338,7 @@
       }
       if (size > bestSize) { bestSize = size; best = id; }
     }
-    navHouse = []; navGarden = []; navGate = []; navAllee = []; navManoir = []; navSalon = []; navCour = []; navHall = []; navChats = []; navAile = []; navBiblio = []; navEst = []; navEstIn = [];
+    navHouse = []; navGarden = []; navGate = []; navAllee = []; navManoir = []; navSalon = []; navCour = []; navHall = []; navChats = []; navAile = []; navBiblio = []; navEst = []; navEstIn = []; navPerron = [];
     for (let i = 0; i < navFree.length; i++) {
       if (comp[i] !== best) navFree[i] = 0;
       else if (navFree[i] === 1) navHouse.push(i);
@@ -1274,6 +1354,7 @@
       else if (navFree[i] === 16) navBiblio.push(i);          // la salle à manger (17) n'est qu'un passage : les chats y vont pour sauter sur la table
       else if (navFree[i] === 20) navEst.push(i);
       else if (navFree[i] >= 21 && navFree[i] <= 23) navEstIn.push(i);
+      else if (navFree[i] === 26) navPerron.push(i);
     }
   }
   function neighbours(i) {
@@ -1289,7 +1370,7 @@
   const cellXY = i => [NAV.x0 + (i % NAV.w + 0.5) * NAV.cell, NAV.y0 + (((i / NAV.w) | 0) + 0.5) * NAV.cell];
   function randomCell() {
     // on tire d'abord l'endroit, pour que les chats restent visibles un peu partout : maison, jardin, entrée
-    const pools = [[navHouse, 0.22], [navGarden, 0.14], [navGate, 0.08], [navAllee, 0.09], [navManoir, 0.07], [navSalon, 0.11], [navCour, 0.11], [navHall, 0.02], [navChats, 0.06], [navAile, 0.07], [navBiblio, 0.03], [navEst, 0.06], [navEstIn, 0.06]].filter(p => p[0].length);
+    const pools = [[navHouse, 0.22], [navGarden, 0.14], [navGate, 0.08], [navAllee, 0.09], [navManoir, 0.07], [navSalon, 0.11], [navCour, 0.11], [navHall, 0.02], [navChats, 0.06], [navAile, 0.07], [navBiblio, 0.03], [navEst, 0.06], [navEstIn, 0.06], [navPerron, 0.08]].filter(p => p[0].length);
     if (!pools.length) return 0;
     let k = Math.random() * pools.reduce((t, p) => t + p[1], 0);
     for (const p of pools) { k -= p[1]; if (k <= 0) return p[0][Math.floor(Math.random() * p[0].length)]; }
@@ -1846,7 +1927,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.17." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.18." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -1949,7 +2030,7 @@
   const look = (x, y, sc) => { const l = camLimits(); cam.s = sc; cam.x = l.vw / 2 - x * sc; cam.y = l.vh / 2 - y * sc;
     worldEl.style.transform = "translate(" + cam.x + "px," + cam.y + "px) scale(" + sc + ")"; markersEl.style.setProperty("--inv", 1 / sc); updateView(); };
   window.__ronron = { state: () => S, level: () => L, nav: () => navFree, look: look, layers: () => layerNodes.map(n => [n._p.src, n.getAttribute("src") || ""]), far: () => [farKey === layersKey, farEl ? !farEl.hidden : false], path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
-    navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length, navManoir.length, navSalon.length, navCour.length, navHall.length, navChats.length, navAile.length, navBiblio.length, navEst.length, navEstIn.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
+    navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length, navManoir.length, navSalon.length, navCour.length, navHall.length, navChats.length, navAile.length, navBiblio.length, navEst.length, navEstIn.length, navPerron.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
     audio: () => ({ ctx: AC ? AC.state : null, playing: !!(musicSrc && !musicSrc.pending), track: musicIdx % MUSIC.length, pref: audioPref }), sfx: sfx, sfxNames: () => Object.keys(SFX), sfxRaw: name => SFX[name](),
     walls: () => (WALLS ? WALLS.strips.filter(st => st.node && st.node.parentNode).length : -1), wallsReady: () => !!wallCanvas };
 })();
