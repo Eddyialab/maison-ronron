@@ -1041,7 +1041,7 @@
   /* Mémoire des images : sur un téléphone, la carte entière en pleine définition (dalles + calques des chantiers) ne tient pas
      (sinon le téléphone efface des images et l'écran clignote). Près de l'écran : pleine définition. Au-delà : rien.
      En vue éloignée : le domaine au quart (image de fond) et tous les calques au quart, dessinés une fois dans une toile.
-     Cette toile reste sous les calques en pleine définition : un calque pas encore chargé y est déjà visible, en flou. */
+     De près, cette toile (placée sous les calques) ne sert qu'en attendant les calques en pleine définition : on la cache dès qu'ils sont tous chargés. */
   const tilesEl = $("#tiles"), tileNodes = {}, farEl = $("#farlayers"), LO = window.RONRON_LO || null;
   const FAR = 0.26;
   let layerNodes = [], farKey = null, farBusy = false, farSheets = null, farDrop = 0;
@@ -1066,9 +1066,17 @@
       ctx.clearRect(0, 0, farEl.width, farEl.height);
       shown.forEach(p => { const m = LO.map[p.src]; if (m && ims[m[0]]) ctx.drawImage(ims[m[0]], m[1], m[2], m[3], m[4], Math.round(p.x / q), Math.round(p.y / q), m[3], m[4]); });   // calé sur les pixels : pas de bord à demi transparent
       farKey = key; farEl.hidden = false;
-      updateView();
+      updateView(); farCheck();
     });
   }
+  // toile visible en vue éloignée, ou de près tant qu'un calque à l'écran se charge encore
+  function farCheck() {
+    if (!farEl || farKey !== layersKey) return;
+    const pending = cam.s < FAR || layerNodes.some(n => n.getAttribute("src") && !n.complete);
+    if (farEl.hidden === pending) farEl.hidden = !pending;
+  }
+  layersEl.addEventListener("load", farCheck, true);
+  layersEl.addEventListener("error", farCheck, true);
   function updateView() {
     viewAt = performance.now();
     const l = camLimits();
@@ -1094,6 +1102,7 @@
       if (want === cur) return;
       if (want) n.setAttribute("src", want); else n.removeAttribute("src");
     });
+    farCheck();
   }
   function centerOn(wx, wy, s) {
     const l = camLimits();
@@ -1837,7 +1846,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.16." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.17." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
