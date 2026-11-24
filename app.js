@@ -366,10 +366,21 @@
     { id: "or", name: "Chat d'or", price: 60, fur: "#E2B43A", dark: "#B9822A", belly: "#F4D27A", stripes: true, eye: "#1FA060" }
   ];
   const BREED = {}; BREEDS.forEach(b => { BREED[b.id] = b; });
+  /* Robes rares : on ne peut pas les adopter, elles n'arrivent qu'avec un chaton. Ce sont les poses du chat roux, recolorées. */
+  const RARES = [
+    { id: "creme", name: "Crème", fur: "#F1DEC0", dark: "#D6BE98", belly: "#FFF6E8", stripes: true },
+    { id: "chocolat", name: "Chocolat", fur: "#7A5440", dark: "#5A3B2C", belly: "#C9A58A", stripes: true },
+    { id: "rose", name: "Rose praline", fur: "#F2A6BE", dark: "#D9819E", belly: "#FDE3EB", stripes: true },
+    { id: "lavande", name: "Lavande", fur: "#BBA8E8", dark: "#9883CF", belly: "#EEE8FB", stripes: true },
+    { id: "menthe", name: "Menthe", fur: "#95DDC0", dark: "#6DBF9F", belly: "#E3F7EE", stripes: true },
+    { id: "nuage", name: "Bleu nuage", fur: "#9EC7EE", dark: "#77A6D6", belly: "#E6F1FC", stripes: true }
+  ];
+  RARES.forEach(r => { r.rare = true; BREED[r.id] = r; });
+  const COATS = BREEDS.concat(RARES);       // toutes les robes de l'album
   /* Chats peints : quatre poses par race (debout, marche, assis, dort), tournées vers la droite.
      Une race sans images retombe sur le chat dessiné en code. */
   const CATS = window.RONRON_CATS || {};
-  BREEDS.forEach(b => { if (CATS[b.id]) b.sprite = b.id; });
+  COATS.forEach(b => { if (CATS[b.id]) b.sprite = b.id; });
   const SPRITE_SCALE = 0.46;
   /* Vêtements : le roux et le Maine coon ont une image complète par accessoire (« race-accessoire ») ;
      les autres races, qui ont les mêmes poses que le roux, reçoivent l'accessoire seul par-dessus. */
@@ -389,13 +400,58 @@
     { id: "couronne", name: "Couronne", price: 6 }
   ];
   const CAT_NAMES = ["Mochi", "Caramel", "Pixel", "Noisette", "Gribouille", "Plume", "Biscotte", "Ziggy", "Pépite", "Olive", "Câlin", "Praline",
-    "Réglisse", "Nougat", "Filou", "Sushi", "Cannelle", "Moka"];
-  const MAX_CATS = 16;
+    "Réglisse", "Nougat", "Filou", "Sushi", "Cannelle", "Moka", "Pompon", "Miette", "Flocon", "Cookie", "Tofu", "Pistache", "Brioche",
+    "Chipie", "Sésame", "Truffe", "Kiwi", "Bulle", "Galette", "Mimosa", "Patate", "Choupette", "Grisou", "Doudou"];
+  const MAX_CATS = 30;
+
+  /* Thon : la deuxième monnaie. Elle ne se gagne qu'en finissant un niveau sans perdre de poisson,
+     et sert à nourrir un chat pour qu'il ait un chaton. */
+  const TUNA_FOR = { normal: 1, double: 1, mini: 2, boss: 3, geant: 5 };
+  const LITTER = 20;          // boîtes de thon pour un chaton
+  const BIRTH_LEVELS = 3;     // il naît 3 niveaux réussis plus tard
+  const GROW_LEVELS = 10;     // et devient grand 10 niveaux réussis après sa naissance
+  const KITTEN_SCALE = 0.62;
+  const catsSoon = () => S.cats.length + S.cats.filter(c => c.expect).length;   // les chatons attendus ont déjà leur place
+  // Robe du chaton, tirée quand on nourrit sa mère : souvent la sienne, sinon une autre race (les moins chères plus souvent),
+  // parfois une robe rare (de préférence une qu'on n'a pas encore).
+  function rollCoat(mom) {
+    const r = Math.random();
+    if (r < 0.4) return mom.breed;
+    if (r < 0.82) {
+      const w = BREEDS.map(b => 1 / b.price), tot = w.reduce((a, b) => a + b, 0);
+      let x = Math.random() * tot;
+      for (let i = 0; i < BREEDS.length; i++) { x -= w[i]; if (x <= 0) return BREEDS[i].id; }
+      return BREEDS[0].id;
+    }
+    const missing = RARES.filter(c => !S.album[c.id]), pool = missing.length ? missing : RARES;
+    return pool[Math.floor(Math.random() * pool.length)].id;
+  }
+  // Après chaque niveau réussi : les chatons attendus naissent, les chatons grandissent.
+  function growFamily() {
+    const born = [], grown = [];
+    S.cats.slice().forEach(c => {
+      if (c.kitten && S.level >= c.kitten) { delete c.kitten; grown.push(c); }
+      if (c.expect && S.level >= c.expect.due) {
+        const used = S.cats.map(o => o.name);
+        const name = CAT_NAMES.find(n => used.indexOf(n) < 0) || "Chaton " + S.nextCat;
+        const kid = { id: S.nextCat++, breed: BREED[c.expect.coat] ? c.expect.coat : c.breed, name: name, owned: [], wear: null,
+          kitten: S.level + GROW_LEVELS, mom: c.id, fresh: true };
+        S.cats.push(kid); S.album[kid.breed] = true; delete c.expect;
+        born.push({ mom: c, kid: kid });
+      }
+    });
+    return { born: born, grown: grown };
+  }
+  function migrateAlbum() {
+    if (!S.album || typeof S.album !== "object") S.album = {};
+    if (typeof S.tuna !== "number") S.tuna = 0;
+    S.cats.forEach(c => { S.album[c.breed] = true; });
+  }
 
   /* ================= 2. Sauvegarde et vies ================= */
 
   function freshSave() {
-    return { v: 1, level: 1, kibble: 0, lives: MAX_LIVES, lifeAt: 0, house: {}, zones: {}, cats: [], nextCat: 1, inLevel: null };
+    return { v: 1, level: 1, kibble: 0, lives: MAX_LIVES, lifeAt: 0, house: {}, zones: {}, cats: [], nextCat: 1, inLevel: null, tuna: 0, album: {} };
   }
   let S = freshSave();
   let memoryOnly = false;
@@ -455,6 +511,7 @@
   const app = $("#app"), sheet = $("#sheet"), backdrop = $("#backdrop"), toastEl = $("#toast");
   const ico = (name, cls) => '<svg class="ico' + (cls ? " " + cls : "") + '" aria-hidden="true"><use href="#i-' + name + '"/></svg>';
   const plural = (n, word) => n + " " + word + (n > 1 ? "s" : "");
+  const levelsText = n => n + (n > 1 ? " niveaux" : " niveau");
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -466,7 +523,7 @@
     app.classList.toggle("inlevel", name === "level");
     $("#tab-home").setAttribute("aria-current", name === "home" ? "page" : "false");
     $("#tab-shop").setAttribute("aria-current", name === "shop" ? "page" : "false");
-    if (name === "home") renderHome();
+    if (name === "home") { renderHome(); announceBirth(); }
     if (name === "shop") renderShop();
   }
 
@@ -622,7 +679,7 @@
     if (b && !b.disabled && !(b.closest && b.closest("#board"))) sfx("tap");
   }, true);
 
-  let lastKibble = -1;
+  let lastKibble = -1, lastTuna = -1;
   function updateHud() {
     syncLives();
     $("#kibble-count").textContent = S.kibble;
@@ -630,6 +687,11 @@
       const p = $("#hud-kibble"); p.classList.remove("bump"); void p.offsetWidth; p.classList.add("bump");
     }
     lastKibble = S.kibble;
+    $("#tuna-count").textContent = S.tuna;
+    if (lastTuna !== -1 && lastTuna !== S.tuna) {
+      const p = $("#hud-tuna"); p.classList.remove("bump"); void p.offsetWidth; p.classList.add("bump");
+    }
+    lastTuna = S.tuna;
     $("#lives-count").textContent = S.lives;
     $("#lives-timer").textContent = S.lives < MAX_LIVES ? "+1 dans " + clock(nextLifeIn()) : "";
     const play = $("#tab-play");
@@ -791,7 +853,10 @@
     if (L.time && L.time.from) { L.time.acc += performance.now() - L.time.from; L.time.from = 0; }
     L.over = true; renderChrono();
     const done = S.level, kind = L.lv.kind || kindOf(done), base = L.lv.reward || rewardOf(done), fast = sec < L.fast ? 1 : 0;
-    S.kibble += base + fast; S.level++; S.inLevel = null; save(); updateHud();
+    const perfect = S.inLevel ? S.inLevel.fishLost === 0 : L.fish >= 3, tuna = perfect ? TUNA_FOR[kind] || 1 : 0;
+    S.kibble += base + fast; S.tuna += tuna; S.level++; S.inLevel = null;
+    const fam = growFamily();
+    save(); updateHud();
     setTimeout(() => sfx("win"), 260);
     setTimeout(() => {
       if (view !== "level") return;
@@ -801,6 +866,10 @@
         '<div class="big">' + ico("kibble") + "+" + plural(base + fast, "croquette") + "</div>" +
         '<p class="timeline">Temps : <strong>' + clockText(sec) + "</strong>" +
           (fast ? " · bonus de rapidité <strong>+1</strong>" : " · moins de " + clockText(L.fast) + " = une croquette en plus") + "</p>" +
+        (tuna ? '<div class="big tuna">' + ico("tuna") + "Perfect : +" + plural(tuna, "boîte") + " de thon</div>"
+              : '<p class="timeline">Finis sans perdre de poisson pour gagner une boîte de thon.</p>') +
+        fam.born.map(b => "<p class=\"family\">" + ico("paw") + "<span><strong>" + esc(b.mom.name) + " a eu un chaton !</strong> Va le voir dans la maison.</span></p>").join("") +
+        fam.grown.map(c => "<p class=\"family\">" + ico("paw") + "<span>" + esc(c.name) + " est devenu grand.</span></p>").join("") +
         "<p>Tu as maintenant <strong>" + plural(S.kibble, "croquette") + "</strong> à dépenser dans la maison.</p>" +
         '<div class="row"><button class="btn ghost" id="w-home" type="button">La maison</button>' +
         '<button class="btn" id="w-next" type="button">Niveau suivant</button></div>',
@@ -897,6 +966,8 @@
       "<li>Tous les 5 niveaux, un mini-boss (3 croquettes) ; tous les 10, un boss (5) ; tous les 20, un boss géant à deux chats (10). " +
       "Passé le niveau 200, le niveau le plus dur de chaque série se joue aussi à deux chats.</li>" +
       "<li>Finis vite pour une croquette en plus : de 30 s sur une grille 5 × 5 à 1:30 sur une 10 × 10, le double avec deux chats.</li>" +
+      "<li>Finis sans perdre de poisson pour gagner du thon : une boîte, 2 sur un mini-boss, 3 sur un boss, 5 sur un boss géant. " +
+      "Dans l'onglet Chats, 20 boîtes de thon données à un chat lui font avoir un chaton.</li>" +
       "</ul><p><strong>Un tap</strong> pose ou retire une croix ; tu peux glisser le doigt pour en tracer plusieurs. " +
       "<strong>Deux taps rapides</strong> sur une case y posent un chat.</p>" +
       '<button class="btn block" id="r-ok" type="button">Compris</button>', then ? { sticky: true } : undefined);
@@ -1234,21 +1305,21 @@
       ? '<g class="cat idle" data-cat="' + c.id + '"><ellipse class="sh" cx="0" cy="-3" rx="30" ry="8" fill="#1E1A14" opacity=".3"/><image class="spr"/><image class="acc"/></g>'
       : '<g class="cat idle" data-cat="' + c.id + '"><ellipse cx="1" cy="0" rx="14" ry="3.6" fill="#1E1A14" opacity=".28"/>' + catSprite(c.breed, c.wear) + "</g>").join("");
   }
-  function putImage(im, src, q) {
-    const w = q.w * SPRITE_SCALE, h = q.h * SPRITE_SCALE;
+  function putImage(im, src, q, k) {
+    const w = q.w * SPRITE_SCALE * (k || 1), h = q.h * SPRITE_SCALE * (k || 1);
     im.setAttribute("href", src);
     im.setAttribute("x", (-w * q.ax).toFixed(1)); im.setAttribute("y", (-h * q.ay).toFixed(1));
     im.setAttribute("width", w.toFixed(1)); im.setAttribute("height", h.toFixed(1));
     im.removeAttribute("display");
   }
   function setPose(cat, r, pose) {
-    const tag = pose + "|" + (cat.wear || "");
+    const kid = cat.kitten ? KITTEN_SCALE : 1, tag = pose + "|" + (cat.wear || "") + "|" + kid;
     if (r.shown === tag) return;
     r.shown = tag;
     const L = catLook(cat.breed, cat.wear, pose), acc = r.node.querySelector(".acc");
-    putImage(r.node.querySelector(".spr"), L.src, L.q);
-    if (L.k) putImage(acc, L.accSrc, L.k); else acc.setAttribute("display", "none");
-    r.node.querySelector(".sh").setAttribute("rx", pose === "dort" ? 34 : pose === "assis" ? 24 : 30);
+    putImage(r.node.querySelector(".spr"), L.src, L.q, kid);
+    if (L.k) putImage(acc, L.accSrc, L.k, kid); else acc.setAttribute("display", "none");
+    r.node.querySelector(".sh").setAttribute("rx", (pose === "dort" ? 34 : pose === "assis" ? 24 : 30) * kid);
   }
   function placeCat(cat, t) {
     const r = rt(cat);
@@ -1261,7 +1332,7 @@
       setPose(cat, r, pose);
       return;
     }
-    const sc = CAT_SCALE * (BREED[cat.breed] && BREED[cat.breed].big ? 1.18 : 1);
+    const sc = CAT_SCALE * (BREED[cat.breed] && BREED[cat.breed].big ? 1.18 : 1) * (cat.kitten ? KITTEN_SCALE : 1);
     r.node.setAttribute("transform", "translate(" + r.x.toFixed(1) + "," + r.y.toFixed(1) + ") scale(" + (r.dir * sc).toFixed(2) + "," + sc.toFixed(2) + ")");
     const cls = "cat " + r.state;
     if (r.node.getAttribute("class") !== cls) r.node.setAttribute("class", cls);
@@ -1554,7 +1625,7 @@
   /* ================= 8. Boutique ================= */
 
   function renderShop() {
-    const full = S.cats.length >= MAX_CATS;
+    const full = catsSoon() >= MAX_CATS;
     $("#shop-breeds").innerHTML = BREEDS.map(b => {
       const poor = S.kibble < b.price;
       return '<div class="card">' + portrait(b.id, null) + '<div class="name">' + esc(b.name) + "</div>" +
@@ -1562,33 +1633,91 @@
         (full ? "Maison pleine" : "Adopter · " + b.price + " " + ico("kibble")) + "</button></div>";
     }).join("");
     $("#mycats-title").textContent = "Mes chats (" + S.cats.length + ")";
+    const have = COATS.filter(c => S.album[c.id]).length;
+    $("#shop-tuna").innerHTML = '<div class="tunabox">' + ico("tuna") + "<p><strong>" + plural(S.tuna, "boîte") + " de thon.</strong> " +
+      "Gagne-en en finissant un niveau sans perdre de poisson. Donne " + LITTER + " boîtes à un chat : un chaton naîtra " + BIRTH_LEVELS + " niveaux plus tard.</p></div>" +
+      '<button class="btn ghost small block" id="b-album" type="button">Album des robes · ' + have + " / " + COATS.length + "</button>";
+    $("#b-album").onclick = openAlbum;
     $("#shop-cats").innerHTML = S.cats.length ? S.cats.map(c => {
-      const owned = c.owned || [];
-      return '<div class="catrow" data-cat="' + c.id + '">' + portrait(c.breed, c.wear) +
+      const owned = c.owned || [], coat = BREED[c.breed] || {}, mom = c.mom ? S.cats.find(o => o.id === c.mom) : null;
+      let line = esc(coat.name || "") + (coat.rare ? " · robe rare" : "");
+      if (c.kitten) line = "Chaton " + (mom ? "de " + esc(mom.name) + " " : "") + "· " + esc(coat.name || "") + (coat.rare ? " (rare)" : "") +
+        " · grand dans " + levelsText(Math.max(1, c.kitten - S.level));
+      else if (c.expect) line += ' · <span class="soon">un chaton dans ' + levelsText(Math.max(1, c.expect.due - S.level)) + "</span>";
+      let chips = "";
+      if (!c.kitten && !c.expect) chips += '<button class="chip feed" type="button" data-feed="1"' + (S.tuna < LITTER || full ? " disabled" : "") + ">" +
+        (full ? "Maison pleine" : "Nourrir · " + LITTER + " " + ico("tuna")) + "</button>";
+      if (!c.kitten) chips += ACCS.map(a => {
+        const has = owned.indexOf(a.id) >= 0;
+        return '<button class="chip" type="button" data-acc="' + a.id + '" aria-pressed="' + (c.wear === a.id) + '"' +
+          (!has && S.kibble < a.price ? " disabled" : "") + ">" + esc(a.name) + (has ? "" : " · " + a.price + " " + ico("kibble")) + "</button>";
+      }).join("");
+      return '<div class="catrow' + (c.kitten ? " kid" : "") + '" data-cat="' + c.id + '">' + portrait(c.breed, c.wear) +
         '<div><input id="cat-name-' + c.id + '" type="text" maxlength="14" value="' + esc(c.name) + '" aria-label="Nom du chat">' +
-        '<div class="breed">' + esc((BREED[c.breed] || {}).name || "") + "</div></div>" +
-        '<div class="chips">' + ACCS.map(a => {
-          const has = owned.indexOf(a.id) >= 0;
-          return '<button class="chip" type="button" data-acc="' + a.id + '" aria-pressed="' + (c.wear === a.id) + '"' +
-            (!has && S.kibble < a.price ? " disabled" : "") + ">" + esc(a.name) + (has ? "" : " · " + a.price + " " + ico("kibble")) + "</button>";
-        }).join("") + "</div></div>";
-    }).join("") : '<p class="empty">Aucun chat pour l\'instant. Le premier coûte 3 croquettes : il viendra se promener dans la maison.</p>';
+        '<div class="breed">' + line + "</div></div>" +
+        '<div class="chips">' + (chips || '<span class="small">Trop petit pour les accessoires.</span>') + "</div></div>";
+    }).join("") : '<p class="empty">Aucun chat pour l\'instant. Le premier coûte 3 croquettes : adopte-le juste en dessous, il viendra se promener dans la maison.</p>';
     updateHud();
+  }
+
+  function openAlbum() {
+    const have = COATS.filter(c => S.album[c.id]).length;
+    openSheet("<h2>Album des robes</h2><p>" + have + " robes sur " + COATS.length + ". Les robes rares n'arrivent qu'avec un chaton.</p>" +
+      '<div class="album">' + COATS.map(c => {
+        const got = !!S.album[c.id];
+        return '<div class="robe' + (got ? "" : " missing") + (c.rare ? " rare" : "") + '">' + portrait(c.id, null) +
+          "<span>" + (got || !c.rare ? esc(c.name) : "???") + "</span>" + (c.rare ? "<em>Rare</em>" : "") + "</div>";
+      }).join("") + "</div>" +
+      '<button class="btn block" id="al-ok" type="button">Fermer</button>', { noFocus: true });
+    $("#al-ok").onclick = () => closeSheet();
+  }
+
+  // Un chaton est né pendant les niveaux : on le présente en revenant à la maison, et on peut lui choisir un nom.
+  function announceBirth() {
+    const kid = S.cats.find(c => c.fresh);
+    if (!kid || !sheet.hidden || view !== "home") return;
+    const mom = S.cats.find(c => c.id === kid.mom), coat = BREED[kid.breed] || {};
+    // le chaton apparaît à côté de sa mère, et on va les voir
+    const r = rt(kid), m = mom ? catRT[mom.id] : null;
+    if (m && !m.poi) { r.x = m.x; r.y = m.y; r.path = []; r.state = "idle"; r.until = 0; r.dir = -m.dir; placeCat(kid, 0); }
+    const l = camLimits();
+    if (l.vw) centerOn(r.x, r.y + l.vh * 0.22 / Math.max(cam.s, 0.5), 0.5);
+    openSheet('<span class="tag">Un chaton est né</span><h2>' + (mom ? esc(mom.name) + " a eu un chaton !" : "Un chaton est né !") + "</h2>" +
+      '<div class="newborn' + (coat.rare ? " rare" : "") + '">' + portrait(kid.breed, null) + "</div>" +
+      "<p>Robe <strong>" + esc(coat.name || "") + "</strong>" + (coat.rare ? ", une robe rare !" : ".") + " Il deviendra grand dans " + GROW_LEVELS + " niveaux.</p>" +
+      '<input class="namefield" id="k-name" type="text" maxlength="14" value="' + esc(kid.name) + '" aria-label="Nom du chaton">' +
+      '<button class="btn block" id="k-ok" type="button">Bienvenue, petit chat !</button>', { sticky: true, noFocus: true });
+    sfx("cat");
+    $("#k-ok").onclick = () => {
+      kid.name = $("#k-name").value.trim() || kid.name; delete kid.fresh; save();
+      closeSheet(); renderHome(); announceBirth();
+    };
   }
 
   $("#shop-breeds").addEventListener("click", e => {
     const b = e.target.closest ? e.target.closest("button[data-breed]") : null;
     if (!b || b.disabled) return;
     const breed = BREED[b.dataset.breed];
-    if (S.kibble < breed.price || S.cats.length >= MAX_CATS) return;
+    if (S.kibble < breed.price || catsSoon() >= MAX_CATS) return;
     S.kibble -= breed.price;
     const used = S.cats.map(c => c.name);
     const name = CAT_NAMES.find(n => used.indexOf(n) < 0) || "Chat " + S.nextCat;
     S.cats.push({ id: S.nextCat++, breed: breed.id, name: name, owned: [], wear: null });
+    S.album[breed.id] = true;
     save(); renderShop(); buzz(15); sfx("buy");
     toast(name + " a rejoint la maison.");
   });
   $("#shop-cats").addEventListener("click", e => {
+    const f = e.target.closest ? e.target.closest("button[data-feed]") : null;
+    if (f) {
+      if (f.disabled) return;
+      const cat = S.cats.find(c => c.id === +f.closest(".catrow").dataset.cat);
+      if (!cat || cat.kitten || cat.expect || S.tuna < LITTER || catsSoon() >= MAX_CATS) return;
+      S.tuna -= LITTER; cat.expect = { due: S.level + BIRTH_LEVELS, coat: rollCoat(cat) };
+      save(); renderShop(); buzz(15); sfx("buy");
+      toast(cat.name + " se régale. Un chaton naîtra dans " + BIRTH_LEVELS + " niveaux.");
+      return;
+    }
     const b = e.target.closest ? e.target.closest("button[data-acc]") : null;
     if (!b || b.disabled) return;
     const cat = S.cats.find(c => c.id === +b.closest(".catrow").dataset.cat), acc = ACCS.find(a => a.id === b.dataset.acc);
@@ -1609,7 +1738,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.14." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.15." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -1620,7 +1749,8 @@
       '<button class="btn ghost small" id="b-load" type="button">Restaurer ce code</button></div>' +
       '<span class="tag">Outils de test</span>' +
       '<div class="row"><button class="btn ghost small" id="t-kibble" type="button">+10 croquettes</button>' +
-      '<button class="btn ghost small" id="t-lives" type="button">Recharger les vies</button></div>' +
+      '<button class="btn ghost small" id="t-lives" type="button">Recharger les vies</button>' +
+      '<button class="btn ghost small" id="t-tuna" type="button">+20 boîtes de thon</button></div>' +
       '<div class="field"><input id="t-level" type="number" min="1" max="99999" inputmode="numeric" value="' + S.level + '" aria-label="Numéro de niveau">' +
       '<button class="btn ghost small" id="t-go" type="button">Aller à ce niveau</button></div>' +
       '<button class="btn danger small" id="t-reset" type="button">Tout recommencer</button>');
@@ -1641,11 +1771,12 @@
       if (!next) { toast($("#b-code").value.trim() === mine ? "Colle d'abord le code d'une autre partie" : "Ce code n'est pas valide"); return; }
       if ($("#b-code").value.trim() === mine) { toast("Colle d'abord le code d'une autre partie"); return; }
       if (!loadArmed) { loadArmed = true; e.currentTarget.textContent = "Confirmer : remplacer ma partie"; return; }
-      S = next; Object.keys(catRT).forEach(k => delete catRT[k]); buildNav();
+      S = next; migrateAlbum(); Object.keys(catRT).forEach(k => delete catRT[k]); buildNav();
       syncLives(); save(); closeSheet(); show("home"); toast("Partie restaurée : niveau " + S.level);
     };
     $("#t-kibble").onclick = () => { S.kibble += 10; save(); refresh(); toast("+10 croquettes"); };
     $("#t-lives").onclick = () => { S.lives = MAX_LIVES; S.lifeAt = 0; save(); refresh(); toast("Vies rechargées"); };
+    $("#t-tuna").onclick = () => { S.tuna += 20; save(); refresh(); toast("+20 boîtes de thon"); };
     $("#t-go").onclick = () => {
       const v = Math.max(1, Math.min(99999, parseInt($("#t-level").value, 10) || 1));
       S.level = v; save(); refresh(); toast("Prochain niveau : " + v);
@@ -1675,6 +1806,7 @@
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !sheetSticky) closeSheet(); });
 
   migrateZones();
+  migrateAlbum();
   buildNav();
   let abandoned = false;
   if (S.inLevel) {            // l'appli a été fermée en plein niveau

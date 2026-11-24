@@ -438,3 +438,32 @@ h2 {
 
 /* un chat qui traverse la haie s'efface le temps du passage */
 #objects .cat { transition: opacity 0.22s linear; }
+
+/* ---------- Thon, chatons et album ---------- */
+.tunawrap { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.tunabox { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: #EEF5FC; border: 1px solid #C9DDF0; border-radius: var(--r); }
+.tunabox .ico { width: 34px; height: 34px; }
+.tunabox p { margin: 0; font-size: 0.88rem; line-height: 1.35; color: var(--ink-soft); }
+.tunabox strong { color: var(--ink); }
+.chip.feed { background: #EEF5FC; border-color: #A9C8E6; }
+.chip.feed .ico { width: 16px; height: 16px; }
+.catrow .soon { color: #2E6799; font-weight: 800; }
+.catrow .small { font-size: 0.8rem; color: var(--ink-soft); }
+.catrow.kid svg.portrait.sp { transform: scale(0.72); transform-origin: 50% 85%; }
+.sheet .big.tuna { font-size: 1.15rem; }
+.sheet .big.tuna .ico { width: 28px; height: 28px; }
+.sheet .family { display: flex; align-items: center; gap: 8px; margin: 0; padding: 8px 10px; background: #FFF4E2; border-radius: 12px; font-size: 0.92rem; }
+.sheet .family .ico { width: 18px; height: 18px; color: #D9812A; }
+.album { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-height: 52vh; overflow-y: auto; padding: 2px; }
+.robe { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px 6px; background: var(--page); border: 1px solid var(--edge); border-radius: 12px; text-align: center; }
+.robe svg.portrait.sp, .robe svg.portrait { height: 62px; width: auto; max-width: 100%; }
+.robe span { font-size: 0.74rem; font-weight: 800; line-height: 1.15; }
+.robe em { position: absolute; top: 4px; right: 4px; font-style: normal; font-size: 0.62rem; font-weight: 800; padding: 1px 6px; border-radius: 999px; background: #F6C453; color: #5A3B0C; }
+.robe.missing svg { filter: brightness(0) opacity(0.16); }
+.robe.missing span { color: var(--ink-soft); }
+.newborn { display: flex; justify-content: center; padding: 6px 0 2px; }
+.newborn svg.portrait.sp, .newborn svg.portrait { height: 96px; width: auto; }
+.newborn.rare { background: radial-gradient(closest-side, #FFF1C9, transparent); }
+.namefield { font: inherit; font-weight: 800; font-size: 1.05rem; color: var(--ink); padding: 10px 12px; border: 1px solid var(--edge); border-radius: 12px; background: var(--page); width: 100%; box-sizing: border-box; }
+.namefield:focus { outline: 2px solid var(--ink); outline-offset: 1px; }
+@media (max-width: 370px) { .hud { gap: 6px; padding-left: 12px; padding-right: 12px; } .pill { padding: 0 10px 0 6px; } }
