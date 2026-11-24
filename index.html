@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=aca0bd8650">
+<link rel="stylesheet" href="style.css?v=3c7a123b21">
 </head>
 <body>
 
@@ -63,6 +63,15 @@
   </symbol>
   <symbol id="i-plus" viewBox="0 0 24 24">
     <path d="M12 5 V19 M5 12 H19" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24">
+    <path d="M1.8 12 C4.4 7.2 8 5 12 5 s7.6 2.2 10.2 7 C19.6 16.8 16 19 12 19 S4.4 16.8 1.8 12 Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+    <circle cx="12" cy="12" r="3.6" fill="currentColor"/>
+  </symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24">
+    <path d="M1.8 12 C4.4 7.2 8 5 12 5 s7.6 2.2 10.2 7 C19.6 16.8 16 19 12 19 S4.4 16.8 1.8 12 Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+    <circle cx="12" cy="12" r="3.6" fill="currentColor"/>
+    <path d="M4 3.5 L20 20.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
   </symbol>
   <symbol id="i-lock" viewBox="0 0 24 24">
     <path d="M7.5 10 V7.5 a4.5 4.5 0 0 1 9 0 V10" stroke="currentColor" stroke-width="2.4" fill="none"/>
@@ -117,6 +126,7 @@
         <button class="btn ghost small mapbtn" id="btn-styles" type="button" hidden>Changer un style</button>
         <p class="maphint" id="room-hint"></p>
       </div>
+      <button class="iconbtn zenbtn" id="btn-zen" type="button" aria-pressed="false" aria-label="Masquer l'interface pour regarder les chats"><svg class="ico"><use href="#i-eye-off"/></svg></button>
     </section>
 
     <!-- Niveau -->
@@ -155,13 +165,13 @@
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </div>
 
-<script src="assets/tiles.js?v=aca0bd8650"></script>
-<script src="assets/patches.js?v=aca0bd8650"></script>
-<script src="assets/lo.js?v=aca0bd8650"></script>
-<script src="assets/cats.js?v=aca0bd8650"></script>
-<script src="assets/nav.js?v=aca0bd8650"></script>
-<script src="assets/walls.js?v=aca0bd8650"></script>
-<script src="gen.js?v=aca0bd8650"></script>
-<script src="app.js?v=aca0bd8650"></script>
+<script src="assets/tiles.js?v=3c7a123b21"></script>
+<script src="assets/patches.js?v=3c7a123b21"></script>
+<script src="assets/lo.js?v=3c7a123b21"></script>
+<script src="assets/cats.js?v=3c7a123b21"></script>
+<script src="assets/nav.js?v=3c7a123b21"></script>
+<script src="assets/walls.js?v=3c7a123b21"></script>
+<script src="gen.js?v=3c7a123b21"></script>
+<script src="app.js?v=3c7a123b21"></script>
 </body>
 </html>

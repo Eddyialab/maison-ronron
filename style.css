@@ -151,6 +151,18 @@ h2 {
 .mk:focus-visible .bob { outline: 3px solid #fff; outline-offset: 2px; }
 @keyframes bob { 50% { transform: translateY(-5px); } }
 .mapbtn { position: absolute; left: 12px; top: 62px; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3); }
+/* Mode contemplation : l'interface s'efface, il ne reste que le domaine, les chats et ce petit bouton pour revenir. */
+.zenbtn {
+  position: absolute; right: 12px; top: 12px; z-index: 2;
+  width: 42px; height: 42px;
+  background: rgba(255, 252, 246, 0.9);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  transition: opacity 0.4s ease;
+}
+.zenbtn .ico { width: 22px; height: 22px; }
+#app.zen .hud, #app.zen .tabs, #app.zen #markers, #app.zen .mapbtn, #app.zen .maphint, #app.zen .toast { display: none !important; }
+#app.zen .zenbtn { top: calc(12px + env(safe-area-inset-top, 0px)); opacity: 0.45; }
+#app.zen .zenbtn.awake, #app.zen .zenbtn:focus-visible { opacity: 1; }
 .maphint {
   position: absolute; left: 12px; right: 12px; bottom: 12px;
   margin: 0; padding: 9px 14px;

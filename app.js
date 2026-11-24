@@ -781,7 +781,34 @@
   const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   let view = "home", pendingReload = false;
+  /* Mode contemplation : on cache tout (bandeau, onglets, bulles, indications) pour ne garder que le domaine et les chats.
+     La carte s'agrandit à tout l'écran ; on garde le même endroit au centre. Le bouton reste, discret, pour revenir. */
+  let zen = false, zenTimer = 0;
+  function setZen(on) {
+    if (on === zen) return;
+    const l0 = camLimits(), wx = (l0.vw / 2 - cam.x) / cam.s, wy = (l0.vh / 2 - cam.y) / cam.s;
+    zen = on;
+    app.classList.toggle("zen", on);
+    const b = $("#btn-zen");
+    b.setAttribute("aria-pressed", String(on));
+    b.setAttribute("aria-label", on ? "Afficher l'interface" : "Masquer l'interface pour regarder les chats");
+    b.firstChild.firstChild.setAttribute("href", on ? "#i-eye" : "#i-eye-off");
+    if (on) toastEl.hidden = true;
+    if (l0.vw) centerOn(wx, wy, cam.s);
+    zenWake();
+  }
+  // en mode contemplation, le bouton s'estompe ; il se réveille dès qu'on touche l'écran
+  function zenWake() {
+    const b = $("#btn-zen");
+    b.classList.add("awake"); clearTimeout(zenTimer);
+    if (zen) zenTimer = setTimeout(() => b.classList.remove("awake"), 2500);
+  }
+  $("#btn-zen").addEventListener("click", () => setZen(!zen));      // le son du bouton est joué par le gestionnaire commun
+  $("#screen-home").addEventListener("pointerdown", () => { if (zen) zenWake(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && zen && sheet.hidden) setZen(false); });
+
   function show(name) {
+    if (name !== "home") setZen(false);
     if (pendingReload && name !== "level") { pendingReload = false; save(); location.reload(); return; }
     view = name;
     ["home", "level", "shop"].forEach(v => { $("#screen-" + v).hidden = v !== name; });
@@ -2124,7 +2151,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.22." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.23." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
