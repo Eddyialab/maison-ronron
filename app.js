@@ -653,7 +653,7 @@
     const mc = breed === "mainecoon", T = mc ? ACC_MC : ACC_IMG;
     // une image par chat (ou par accessoire) : ses 4 poses côte à côte, q.sx dit où commence la pose
     return { src: "assets/c/" + breed + ".webp", q: CATS[breed][pose],
-             accs: (worn || []).filter(id => T[id] && T[id][pose]).map(id => ({ src: "assets/c/" + (mc ? "accm-" : "acc-") + id + ".webp", q: T[id][pose] })) };
+             accs: (worn || []).filter(id => T[id] && T[id][pose]).map(id => ({ src: "assets/c/" + (T[id][pose].f || (mc ? "accm-" : "acc-") + id) + ".webp", q: T[id][pose] })) };
   }
   const CAT_NAMES = ["Mochi", "Caramel", "Pixel", "Noisette", "Gribouille", "Plume", "Biscotte", "Ziggy", "Pépite", "Olive", "Câlin", "Praline",
     "Réglisse", "Nougat", "Filou", "Sushi", "Cannelle", "Moka", "Pompon", "Miette", "Flocon", "Cookie", "Tofu", "Pistache", "Brioche",
@@ -1675,12 +1675,12 @@
     const w = q.w * SPRITE_SCALE * (k || 1), h = q.h * SPRITE_SCALE * (k || 1), im = el.firstChild;
     im.setAttribute("href", src);
     im.setAttribute("width", q.sw || q.w); im.setAttribute("height", q.sh || q.h);
-    el.setAttribute("viewBox", (q.sx || 0) + " 0 " + q.w + " " + q.h);
+    el.setAttribute("viewBox", (q.sx || 0) + " " + (q.sy || 0) + " " + q.w + " " + q.h);
     el.setAttribute("x", (-w * q.ax).toFixed(1)); el.setAttribute("y", (-h * q.ay).toFixed(1));
     el.setAttribute("width", w.toFixed(1)); el.setAttribute("height", h.toFixed(1));
     el.removeAttribute("display");
   }
-  const poseSvg = (src, q, x, y) => '<svg x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + q.w + '" height="' + q.h + '" viewBox="' + (q.sx || 0) + " 0 " + q.w + " " + q.h +
+  const poseSvg = (src, q, x, y) => '<svg x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + q.w + '" height="' + q.h + '" viewBox="' + (q.sx || 0) + " " + (q.sy || 0) + " " + q.w + " " + q.h +
     '" preserveAspectRatio="none"><image href="' + src + '" width="' + (q.sw || q.w) + '" height="' + (q.sh || q.h) + '"/></svg>';
   function setPose(cat, r, pose) {
     const kid = cat.kitten ? KITTEN_SCALE : 1, worn = cat.kitten ? [] : wornIds(cat), tag = pose + "|" + worn.join(",") + "|" + kid;
@@ -1899,7 +1899,13 @@
     SLOTS.forEach(s => {
       const k = effStyle(s.id);
       if (k == null) return;
-      const img = (p, dp) => { if (p) h += '<image class="obj" data-depth="' + dp + '" href="' + p.src + '" x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '"/>'; };
+      // un objet rangé dans une planche (p.fw : taille de la planche) est cadré par une vue sur sa partie de la planche
+      const img = (p, dp) => {
+        if (!p) return;
+        if (p.fw) h += '<svg class="obj" data-depth="' + dp + '" x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '" viewBox="' + p.sx + " " + p.sy + " " + p.w + " " + p.h +
+          '" preserveAspectRatio="none"><image href="' + p.src + '" width="' + p.fw + '" height="' + p.fh + '"/></svg>';
+        else h += '<image class="obj" data-depth="' + dp + '" href="' + p.src + '" x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '"/>';
+      };
       // « parts » : morceaux d'un chantier posé à plat, redessinés un par un à leur profondeur
       if (s.parts) (s.parts[k] || []).forEach(o => img(o.patch, o.depth));
       if (s.depth) img(patchOf(s, k), Array.isArray(s.depth) ? s.depth[k] : s.depth);
@@ -2151,7 +2157,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.23." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.24." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -2253,7 +2259,19 @@
   // pour les tests : regarder un point de la carte à une échelle donnée (sans les limites du zoom), avec le chargement des images qui va avec
   const look = (x, y, sc) => { const l = camLimits(); cam.s = sc; cam.x = l.vw / 2 - x * sc; cam.y = l.vh / 2 - y * sc;
     worldEl.style.transform = "translate(" + cam.x + "px," + cam.y + "px) scale(" + sc + ")"; markersEl.style.setProperty("--inv", 1 / sc); updateView(); };
-  window.__ronron = { state: () => S, level: () => L, nav: () => navFree, look: look, layers: () => layerNodes.map(n => [n._p.src, n.getAttribute("src") || ""]), far: () => [farKey === layersKey, farEl ? !farEl.hidden : false], path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
+  // calques dessinés comme objets (triés avec les chats), tous styles confondus : meow/lowres.py les range dans des planches
+  function objKeys() {
+    const out = new Set(), effs = [() => 0, () => 1, () => null];
+    SLOTS.forEach(s => {
+      const n = s.styles ? s.styles.length : 1;
+      for (let k = 0; k < n; k++) {
+        ((s.parts && s.parts[k]) || []).forEach(o => { if (o.patch) out.add(o.patch); });
+        if (s.depth) effs.forEach(e => { let p = patchOf(s, k); if (typeof p === "function") p = p(e); if (p) out.add(p); });
+      }
+    });
+    return Object.keys(PATCH).filter(k => out.has(PATCH[k]));
+  }
+  window.__ronron = { objKeys: objKeys, state: () => S, level: () => L, nav: () => navFree, look: look, layers: () => layerNodes.map(n => [n._p.src, n.getAttribute("src") || ""]), far: () => [farKey === layersKey, farEl ? !farEl.hidden : false], path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
     navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length, navManoir.length, navSalon.length, navCour.length, navHall.length, navChats.length, navAile.length, navBiblio.length, navEst.length, navEstIn.length, navPerron.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
     audio: () => ({ ctx: AC ? AC.state : null, playing: !!(musicSrc && !musicSrc.pending), track: musicIdx % MUSIC.length, pref: audioPref }), sfx: sfx, sfxNames: () => Object.keys(SFX), sfxRaw: name => SFX[name](),
     walls: () => (WALLS ? WALLS.strips.filter(st => st.node && st.node.parentNode).length : -1), wallsReady: () => !!wallCanvas };
