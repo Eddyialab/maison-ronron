@@ -139,6 +139,9 @@
       desc: "Pour se faire les griffes ailleurs que sur le canapé.",
       poi: { x: 1150, y: 4916 + 860, pose: "griffe", dir: -1, min: 4000, max: 8000 },
       styles: [{ name: "Sisal", sw: "#D8C08A", patch: PATCH.griffoir_sisal }, { name: "Cactus", sw: "#4E9A45", patch: PATCH.griffoir_cactus }] },
+    { id: "gardien_tapis", room: "Maison du gardien", name: "Poser un tapis dans la cuisine", short: "Tapis de cuisine", verb: "Poser", cost: 8, icon: "plus", need: ["cuisine_sol"], at: g([1900, 900]),
+      desc: "Un petit tapis rond sous les gamelles.",
+      styles: [{ name: "Tressé", sw: "#C7A06A", patch: PATCH.gardien_tapis_naturel }, { name: "Rayé rouge et bleu", sw: "#C9504A", patch: PATCH.gardien_tapis_colore }] },
     { id: "objet_gamelles", room: "Maison du gardien", name: "Préparer les gamelles", short: "Gamelles", verb: "Préparer", cost: 5, icon: "plus", need: ["cuisine_sol"], at: g([1815, 870]),
       desc: "Croquettes et eau fraîche dans la cuisine. Les chats passeront manger.",
       poi: { x: 1705, y: 4916 + 915, pose: "assis", dir: 1, min: 5000, max: 10000 },
@@ -429,7 +432,53 @@
     { id: "perron_olivier", room: "Perron est", name: "Planter un arbre en pot", short: "Arbre en pot", verb: "Planter", cost: 15, icon: "plus", need: ["perron_porte"], at: z8([340, 640]),
       desc: "Un grand pot au coin du perron.",
       styles: [{ name: "Olivier", sw: "#8FA889", patch: PATCH.perron_olivier_naturel }, { name: "Citronnier", sw: "#E8D23A", patch: PATCH.perron_olivier_bleu }],
-      parts: [[{ patch: PATCH.perron_olivier_naturel_p0, depth: 4531 }], [{ patch: PATCH.perron_olivier_bleu_p0, depth: 4521 }]] }
+      parts: [[{ patch: PATCH.perron_olivier_naturel_p0, depth: 4531 }], [{ patch: PATCH.perron_olivier_bleu_p0, depth: 4521 }]] },
+    /* ----- Détails de la maison du gardien et de son jardin (ajoutés après coup, sans cadenas). Le tunnel, les bacs du potager
+       et la cabane ne bloquent pas les chats : ils passent dedans ou derrière, cachés le temps de traverser. ----- */
+    { id: "gardien_murs", room: "Maison du gardien", name: "Ravaler les murs extérieurs", short: "Murs extérieurs", verb: "Ravaler", cost: 21, icon: "hammer", need: ["jardin_debrousse"], at: g([700, 1000]),
+      desc: "Fissures, briques à nu et herbes sèches : on refait les murs de la maison en pierre blanchie.", patch: PATCH.gardien_murs_pierre },
+    { id: "gardien_etagere", room: "Maison du gardien", name: "Accrocher une étagère", short: "Étagère du salon", verb: "Accrocher", cost: 10, icon: "plus", need: ["salon_murs"], at: g([710, 620]),
+      desc: "Quelques livres et une plante au mur du salon.",
+      styles: [{ name: "Bois naturel", sw: "#B07A46", patch: PATCH.gardien_etagere_naturel }, { name: "Blanche et colorée", sw: "#F2F0EA", patch: PATCH.gardien_etagere_colore }] },
+    { id: "gardien_table", room: "Maison du gardien", name: "Poser une table basse", short: "Table basse", verb: "Poser", cost: 12, icon: "plus", need: ["salon_sol"], at: g([1380, 600]),
+      desc: "Devant le canapé. Les chats s'y assoient au milieu des tasses.",
+      poi: [[{ x: 1335, y: 4916 + 648, pose: "assis", dir: 1, depth: 4916 + 716, min: 8000, max: 20000 }], [{ x: 1425, y: 4916 + 660, pose: "assis", dir: -1, depth: 4916 + 716, min: 8000, max: 20000 }]],
+      styles: [{ name: "Bois rond", sw: "#A9774A", patch: PATCH.gardien_table_naturel }, { name: "Jaune moutarde", sw: "#E2B13C", patch: PATCH.gardien_table_colore }],
+      parts: [[{ patch: PATCH.gardien_table_naturel_p0, depth: 5630 }], [{ patch: PATCH.gardien_table_colore_p0, depth: 5631 }]] },
+    { id: "gardien_tunnel", room: "Maison du gardien", name: "Installer un tunnel pour chat", short: "Tunnel", verb: "Installer", cost: 9, icon: "plus", need: ["salon_sol"], at: g([980, 860]),
+      desc: "Un tunnel en tissu sur le parquet. Les chats passent dedans en courant.",
+      styles: [{ name: "Lin beige", sw: "#E3D5B8", patch: PATCH.gardien_tunnel_naturel }, { name: "Rayé rouge", sw: "#D5433F", patch: PATCH.gardien_tunnel_colore }],
+      parts: [[{ patch: PATCH.gardien_tunnel_naturel_p0, depth: 5854 }], [{ patch: PATCH.gardien_tunnel_colore_p0, depth: 5858 }]] },
+    { id: "gardien_etagerecuisine", room: "Maison du gardien", name: "Monter une étagère de cuisine", short: "Étagère de cuisine", verb: "Monter", cost: 10, icon: "plus", need: ["cuisine_murs"], at: g([1950, 560]),
+      desc: "Des bocaux et des herbes aromatiques au-dessus du plan de travail.",
+      styles: [{ name: "Bois et bocaux", sw: "#B48A55", patch: PATCH.gardien_etagerecuisine_naturel }, { name: "Bleue et faïence", sw: "#5A8FC9", patch: PATCH.gardien_etagerecuisine_colore }] },
+    { id: "gardien_portemanteau", room: "Maison du gardien", name: "Installer un porte-manteau", short: "Porte-manteau", verb: "Installer", cost: 9, icon: "plus", need: ["entree_sol"], at: g([1400, 1000]),
+      desc: "Pour les manteaux et le parapluie, près de la porte.",
+      styles: [{ name: "Bois", sw: "#9B7448", patch: PATCH.gardien_portemanteau_naturel }, { name: "Métal noir", sw: "#2E2E33", patch: PATCH.gardien_portemanteau_colore }],
+      parts: [[{ patch: PATCH.gardien_portemanteau_naturel_p0, depth: 6099 }], [{ patch: PATCH.gardien_portemanteau_colore_p0, depth: 6100 }]] },
+    { id: "gardien_mangeoire", room: "Jardin du gardien", name: "Suspendre une mangeoire", short: "Mangeoire", verb: "Suspendre", cost: 9, icon: "plus", need: ["jardin_arbre"], at: g([1000, 240]),
+      desc: "Une mangeoire pour les oiseaux, accrochée au grand arbre. Les chats lèvent le nez.",
+      styles: [{ name: "Bois", sw: "#9A6B3E", patch: PATCH.gardien_mangeoire_naturel }, { name: "Bleu ciel", sw: "#7FB8DE", patch: PATCH.gardien_mangeoire_colore }] },
+    { id: "gardien_tablejardin", room: "Jardin du gardien", name: "Installer une table de jardin", short: "Table de jardin", verb: "Installer", cost: 14, icon: "plus", need: ["jardin_pelouse"], at: g([300, 700]),
+      desc: "Une table et deux chaises sur la pelouse. Devine qui fera la sieste dessus.",
+      poi: [[{ x: 300, y: 4916 + 770, pose: "dort", dir: 1, depth: 4916 + 896, min: 15000, max: 35000 }], [{ x: 300, y: 4916 + 752, pose: "dort", dir: 1, depth: 4916 + 891, min: 15000, max: 35000 }]],
+      styles: [{ name: "Bois", sw: "#A87A4C", patch: PATCH.gardien_tablejardin_naturel }, { name: "Bistrot vert d'eau", sw: "#9ADBC3", patch: PATCH.gardien_tablejardin_colore }],
+      parts: [[{ patch: PATCH.gardien_tablejardin_naturel_p0, depth: 5810 }], [{ patch: PATCH.gardien_tablejardin_colore_p0, depth: 5805 }]] },
+    { id: "gardien_potager", room: "Jardin du gardien", name: "Faire un petit potager", short: "Potager", verb: "Planter", cost: 15, icon: "plus", need: ["jardin_pelouse"], at: g([2450, 700]),
+      desc: "Deux carrés de légumes à côté de la maison.",
+      styles: [{ name: "Laitues et tomates", sw: "#5FA34A", patch: PATCH.gardien_potager_naturel }, { name: "Laitues et fraises", sw: "#E0474C", patch: PATCH.gardien_potager_colore }],
+      parts: [[{ patch: PATCH.gardien_potager_naturel_p0, depth: 5723 }, { patch: PATCH.gardien_potager_naturel_p1, depth: 5822 }], [{ patch: PATCH.gardien_potager_colore_p0, depth: 5823 }, { patch: PATCH.gardien_potager_colore_p1, depth: 5789 }, { patch: PATCH.gardien_potager_colore_p2, depth: 5840 }]] },
+    { id: "gardien_cabane", room: "Jardin du gardien", name: "Construire une cabane à outils", short: "Cabane", verb: "Construire", cost: 18, icon: "hammer", need: ["jardin_pelouse"], at: g([2000, 230]),
+      desc: "Une petite cabane au fond du jardin, avec un pot de fleurs à la porte.",
+      styles: [{ name: "Bois brut", sw: "#8A6440", patch: PATCH.gardien_cabane_naturel }, { name: "Bleu pastel", sw: "#A9C9E2", patch: PATCH.gardien_cabane_colore }],
+      parts: [[{ patch: PATCH.gardien_cabane_naturel_p0, depth: 5344 }], [{ patch: PATCH.gardien_cabane_colore_p0, depth: 5475 }]] },
+    { id: "gardien_dalles", room: "Jardin du gardien", name: "Poser des pas japonais", short: "Pas japonais", verb: "Poser", cost: 10, icon: "plus", need: ["jardin_fontaine"], at: g([1700, 1380]),
+      desc: "Des pierres dans la pelouse, jusqu'à la fontaine.",
+      styles: [{ name: "Galets ronds", sw: "#BDB6A8", patch: PATCH.gardien_dalles_naturel }, { name: "Dalles carrées", sw: "#E6DCC3", patch: PATCH.gardien_dalles_colore }] },
+    { id: "gardien_lanternes", room: "Jardin du gardien", name: "Poser des lanternes", short: "Lanternes", verb: "Poser", cost: 12, icon: "plus", need: ["jardin_allee"], at: g([760, 1220]),
+      desc: "De petites lanternes le long de l'allée.",
+      styles: [{ name: "Noires", sw: "#2B2B2E", patch: PATCH.gardien_lanternes_naturel }, { name: "Blanches", sw: "#F2F2EE", patch: PATCH.gardien_lanternes_colore }],
+      parts: [[{ patch: PATCH.gardien_lanternes_naturel_p0, depth: 6096 }, { patch: PATCH.gardien_lanternes_naturel_p1, depth: 6196 }, { patch: PATCH.gardien_lanternes_naturel_p2, depth: 6344 }], [{ patch: PATCH.gardien_lanternes_colore_p0, depth: 6100 }, { patch: PATCH.gardien_lanternes_colore_p1, depth: 6201 }, { patch: PATCH.gardien_lanternes_colore_p2, depth: 6245 }, { patch: PATCH.gardien_lanternes_colore_p3, depth: 6354 }]] }
   ];
   const SLOT = {}; SLOTS.forEach(s => { SLOT[s.id] = s; });
 
@@ -1324,6 +1373,10 @@
     Object.keys(NAV.blocks).forEach(id => {
       if (isDone(id)) (NAV.blocks[id][S.house[id].style | 0] || NAV.blocks[id][0] || []).forEach(i => { navFree[i] = 0; });
     });
+    // tunnel, bacs du potager, cabane : on passe dedans ou derrière, caché (case de passage, jamais une destination)
+    Object.keys(NAV.hide || {}).forEach(id => {
+      if (isDone(id)) (NAV.hide[id][S.house[id].style | 0] || NAV.hide[id][0] || []).forEach(i => { if (navFree[i]) navFree[i] = 4; });
+    });
     // on ne garde que le plus grand ensemble de cases reliées entre elles, pour qu'aucun chat ne reste coincé
     const comp = new Int32Array(navFree.length); let best = 0, bestSize = 0, id = 0;
     for (let i = 0; i < navFree.length; i++) {
@@ -1927,7 +1980,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.18." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.19." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
