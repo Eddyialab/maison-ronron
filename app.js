@@ -548,8 +548,9 @@
   function catLook(breed, wear, pose) {
     const full = wear && CATS[breed + "-" + wear] ? breed + "-" + wear : breed;
     const over = wear && full === breed && ACC_IMG[wear] ? ACC_IMG[wear][pose] : null;
-    return { src: "assets/c/" + full + "-" + pose + ".webp", q: CATS[full][pose],
-             accSrc: over ? "assets/c/acc-" + wear + "-" + pose + ".webp" : null, k: over };
+    // une image par chat (ou par accessoire) : ses 4 poses côte à côte, q.sx dit où commence la pose
+    return { src: "assets/c/" + full + ".webp", q: CATS[full][pose],
+             accSrc: over ? "assets/c/acc-" + wear + ".webp" : null, k: over };
   }
 
   const ACCS = [
@@ -1331,10 +1332,10 @@
     if (BREED[breed] && BREED[breed].sprite) {
       const L = catLook(breed, wear, "assis"), q = L.q;
       let x0 = -q.ax * q.w, y0 = -q.ay * q.h, x1 = x0 + q.w, y1 = y0 + q.h;
-      let h = '<image href="' + L.src + '" x="' + x0.toFixed(1) + '" y="' + y0.toFixed(1) + '" width="' + q.w + '" height="' + q.h + '"/>';
+      let h = poseSvg(L.src, q, x0, y0);
       if (L.k) {
         const ax = -L.k.ax * L.k.w, ay = -L.k.ay * L.k.h;
-        h += '<image href="' + L.accSrc + '" x="' + ax.toFixed(1) + '" y="' + ay.toFixed(1) + '" width="' + L.k.w + '" height="' + L.k.h + '"/>';
+        h += poseSvg(L.accSrc, L.k, ax, ay);
         x0 = Math.min(x0, ax); y0 = Math.min(y0, ay); x1 = Math.max(x1, ax + L.k.w); y1 = Math.max(y1, ay + L.k.h);
       }
       return '<svg class="portrait sp" viewBox="' + [x0, y0, x1 - x0, y1 - y0].map(v => v.toFixed(1)).join(" ") + '" aria-hidden="true">' + h + "</svg>";
@@ -1534,16 +1535,21 @@
   const isSprite = cat => !!(BREED[cat.breed] && BREED[cat.breed].sprite);
   function catsSVG() {
     return S.cats.map(c => isSprite(c)
-      ? '<g class="cat idle" data-cat="' + c.id + '"><ellipse class="sh" cx="0" cy="-3" rx="30" ry="8" fill="#1E1A14" opacity=".3"/><image class="spr"/><image class="acc"/></g>'
+      ? '<g class="cat idle" data-cat="' + c.id + '"><ellipse class="sh" cx="0" cy="-3" rx="30" ry="8" fill="#1E1A14" opacity=".3"/><svg class="spr" preserveAspectRatio="none"><image/></svg><svg class="acc" preserveAspectRatio="none"><image/></svg></g>'
       : '<g class="cat idle" data-cat="' + c.id + '"><ellipse cx="1" cy="0" rx="14" ry="3.6" fill="#1E1A14" opacity=".28"/>' + catSprite(c.breed, c.wear) + "</g>").join("");
   }
-  function putImage(im, src, q, k) {
-    const w = q.w * SPRITE_SCALE * (k || 1), h = q.h * SPRITE_SCALE * (k || 1);
+  // el : un petit <svg> qui ne montre que la pose voulue de l'image (viewBox), l'<image> dedans porte l'image entière
+  function putImage(el, src, q, k) {
+    const w = q.w * SPRITE_SCALE * (k || 1), h = q.h * SPRITE_SCALE * (k || 1), im = el.firstChild;
     im.setAttribute("href", src);
-    im.setAttribute("x", (-w * q.ax).toFixed(1)); im.setAttribute("y", (-h * q.ay).toFixed(1));
-    im.setAttribute("width", w.toFixed(1)); im.setAttribute("height", h.toFixed(1));
-    im.removeAttribute("display");
+    im.setAttribute("width", q.sw || q.w); im.setAttribute("height", q.sh || q.h);
+    el.setAttribute("viewBox", (q.sx || 0) + " 0 " + q.w + " " + q.h);
+    el.setAttribute("x", (-w * q.ax).toFixed(1)); el.setAttribute("y", (-h * q.ay).toFixed(1));
+    el.setAttribute("width", w.toFixed(1)); el.setAttribute("height", h.toFixed(1));
+    el.removeAttribute("display");
   }
+  const poseSvg = (src, q, x, y) => '<svg x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + q.w + '" height="' + q.h + '" viewBox="' + (q.sx || 0) + " 0 " + q.w + " " + q.h +
+    '" preserveAspectRatio="none"><image href="' + src + '" width="' + (q.sw || q.w) + '" height="' + (q.sh || q.h) + '"/></svg>';
   function setPose(cat, r, pose) {
     const kid = cat.kitten ? KITTEN_SCALE : 1, tag = pose + "|" + (cat.wear || "") + "|" + kid;
     if (r.shown === tag) return;
