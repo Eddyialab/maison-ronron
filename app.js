@@ -619,24 +619,42 @@
   const CATS = window.RONRON_CATS || {};
   COATS.forEach(b => { if (CATS[b.id]) b.sprite = b.id; });
   const SPRITE_SCALE = 0.46;
-  /* Vêtements : le roux et le Maine coon ont une image complète par accessoire (« race-accessoire ») ;
-     les autres races, qui ont les mêmes poses que le roux, reçoivent l'accessoire seul par-dessus. */
-  const ACC_IMG = window.RONRON_ACC || {};
-  function catLook(breed, wear, pose) {
-    const full = wear && CATS[breed + "-" + wear] ? breed + "-" + wear : breed;
-    const over = wear && full === breed && ACC_IMG[wear] ? ACC_IMG[wear][pose] : null;
-    // une image par chat (ou par accessoire) : ses 4 poses côte à côte, q.sx dit où commence la pose
-    return { src: "assets/c/" + full + ".webp", q: CATS[full][pose],
-             accSrc: over ? "assets/c/acc-" + wear + ".webp" : null, k: over };
-  }
-
+  /* Accessoires : chacun est dessiné seul, posé par-dessus le chat. Ceux du roux vont à toutes les races (mêmes poses),
+     le Maine coon a les siens. Un chat en porte jusqu'à trois : un au cou, un sur les yeux, un sur la tête (dessinés dans cet ordre). */
+  const ACC_IMG = window.RONRON_ACC || {}, ACC_MC = window.RONRON_ACCM || {};
+  const WEAR_SLOTS = [["tete", "Sur la tête"], ["yeux", "Sur les yeux"], ["cou", "Au cou"]];
+  const DRAW_ORDER = ["cou", "yeux", "tete"];
   const ACCS = [
-    { id: "grelot", name: "Collier à grelot", price: 1 },
-    { id: "noeud", name: "Nœud papillon", price: 2 },
-    { id: "echarpe", name: "Écharpe", price: 2 },
-    { id: "bonnet", name: "Bonnet", price: 3 },
-    { id: "couronne", name: "Couronne", price: 6 }
-  ];
+    { id: "grelot", name: "Collier à grelot", slot: "cou", price: 1 },
+    { id: "noeud", name: "Nœud papillon", slot: "cou", price: 2 },
+    { id: "echarpe", name: "Écharpe", slot: "cou", price: 2 },
+    { id: "bonnet", name: "Bonnet", slot: "tete", price: 3 },
+    { id: "couronne", name: "Couronne", slot: "tete", price: 6 },
+    { id: "lunettes", name: "Lunettes rondes", slot: "yeux", price: 8 },
+    { id: "noeudrose", name: "Nœud rose", slot: "tete", price: 6 },
+    { id: "perles", name: "Collier de perles", slot: "cou", tuna: 4 },
+    { id: "bandana", name: "Bandana", slot: "cou", price: 7 },
+    { id: "soleil", name: "Lunettes de soleil", slot: "yeux", price: 9 },
+    { id: "paille", name: "Chapeau de paille", slot: "tete", price: 10 },
+    { id: "fleurs", name: "Couronne de fleurs", slot: "tete", tuna: 4 },
+    { id: "hawai", name: "Collier hawaïen", slot: "cou", price: 8 },
+    { id: "sorciere", name: "Chapeau de sorcière", slot: "tete", tuna: 5 },
+    { id: "pirate", name: "Chapeau de pirate", slot: "tete", tuna: 5 },
+    { id: "lapin", name: "Oreilles de lapin", slot: "tete", price: 10 },
+    { id: "cape", name: "Cape de super-héros", slot: "cou", tuna: 6 },
+    { id: "noel", name: "Bonnet de Noël", slot: "tete", price: 9 },
+    { id: "cacheoreilles", name: "Cache-oreilles", slot: "tete", price: 8 },
+    { id: "renne", name: "Bois de renne", slot: "tete", tuna: 4 },
+    { id: "cadeau", name: "Nœud de cadeau", slot: "cou", price: 7 }
+  ].filter(a => ACC_IMG[a.id]);                        // un accessoire n'apparaît qu'une fois ses images arrivées
+  const ACC = {}; ACCS.forEach(a => { ACC[a.id] = a; });
+  const wornIds = cat => DRAW_ORDER.map(k => cat && cat.wears && cat.wears[k]).filter(id => id && ACC[id]);
+  function catLook(breed, worn, pose) {
+    const mc = breed === "mainecoon", T = mc ? ACC_MC : ACC_IMG;
+    // une image par chat (ou par accessoire) : ses 4 poses côte à côte, q.sx dit où commence la pose
+    return { src: "assets/c/" + breed + ".webp", q: CATS[breed][pose],
+             accs: (worn || []).filter(id => T[id] && T[id][pose]).map(id => ({ src: "assets/c/" + (mc ? "accm-" : "acc-") + id + ".webp", q: T[id][pose] })) };
+  }
   const CAT_NAMES = ["Mochi", "Caramel", "Pixel", "Noisette", "Gribouille", "Plume", "Biscotte", "Ziggy", "Pépite", "Olive", "Câlin", "Praline",
     "Réglisse", "Nougat", "Filou", "Sushi", "Cannelle", "Moka", "Pompon", "Miette", "Flocon", "Cookie", "Tofu", "Pistache", "Brioche",
     "Chipie", "Sésame", "Truffe", "Kiwi", "Bulle", "Galette", "Mimosa", "Patate", "Choupette", "Grisou", "Doudou"];
@@ -672,7 +690,7 @@
       if (c.expect && S.level >= c.expect.due) {
         const used = S.cats.map(o => o.name);
         const name = CAT_NAMES.find(n => used.indexOf(n) < 0) || "Chaton " + S.nextCat;
-        const kid = { id: S.nextCat++, breed: BREED[c.expect.coat] ? c.expect.coat : c.breed, name: name, owned: [], wear: null,
+        const kid = { id: S.nextCat++, breed: BREED[c.expect.coat] ? c.expect.coat : c.breed, name: name, owned: [], wears: {},
           kitten: S.level + GROW_LEVELS, mom: c.id, fresh: true };
         S.cats.push(kid); S.album[kid.breed] = true; delete c.expect;
         born.push({ mom: c, kid: kid });
@@ -680,7 +698,16 @@
     });
     return { born: born, grown: grown };
   }
+  // un seul accessoire (« wear ») devient un par endroit (« wears ») ; un ancien accessoire disparu est simplement retiré
+  function migrateWears() {
+    (S.cats || []).forEach(c => {
+      if (!c.wears) c.wears = {};
+      if (c.wear) { const a = ACC[c.wear]; if (a) c.wears[a.slot] = a.id; }
+      delete c.wear;
+    });
+  }
   function migrateAlbum() {
+    migrateWears();
     if (!S.album || typeof S.album !== "object") S.album = {};
     if (typeof S.tuna !== "number") S.tuna = 0;
     S.cats.forEach(c => { S.album[c.breed] = true; });
@@ -1370,7 +1397,8 @@
   }
 
   // Chat vu de côté, tête tournée vers nous. Origine : entre les pattes, au sol.
-  function catSprite(breed, wear) {
+  function catSprite(breed, worn) {
+    const has = id => (worn || []).indexOf(id) >= 0;
     const b = BREED[breed] || BREEDS[0];
     const fur = b.fur, dk = b.dark, limb = b.points ? dk : fur, far = shade(limb, -14);
     const eye = b.eye || "#3A3340";
@@ -1397,27 +1425,27 @@
     s += '<g class="closed"><path d="M7.6 -17.8 q1.4 1.4 2.8 0 M13.2 -17.8 q1.4 1.4 2.8 0" stroke="#3A3340" stroke-width="1" fill="none" stroke-linecap="round"/></g>';
     s += '<path d="M10.9 -15.6 h1.8 l-0.9 1.1 Z" fill="#EE7F8E"/>';
     // accessoire
-    if (wear === "grelot") s += '<path d="M5.6 -12.6 Q10 -9.4 16.6 -11.8" stroke="#D8434B" stroke-width="1.8" fill="none" stroke-linecap="round"/><circle cx="10.6" cy="-9.4" r="1.7" fill="#F6C453"/>';
-    if (wear === "noeud") s += '<path d="M10.8 -10.4 L6.6 -13 V-7.8 Z M10.8 -10.4 L15 -13 V-7.8 Z" fill="#D8434B"/><circle cx="10.8" cy="-10.4" r="1.2" fill="#A82E36"/>';
-    if (wear === "echarpe") s += '<path d="M5.4 -12.4 Q10.6 -8.6 17 -11.6" stroke="#4FA6DC" stroke-width="3.2" fill="none" stroke-linecap="round"/><rect x="6" y="-11" width="3" height="6.4" rx="1.2" fill="#3F8FC2"/>';
-    if (wear === "bonnet") s += '<path d="M5.4 -22 Q11.8 -32.5 18.2 -22 Z" fill="#E5484D"/><rect x="4.8" y="-23" width="14" height="2.6" rx="1.3" fill="#fff"/><circle cx="11.8" cy="-29.6" r="2" fill="#fff"/>';
-    if (wear === "couronne") s += '<path d="M6.6 -23.4 L6 -28.6 L9.2 -26 L11.8 -30 L14.4 -26 L17.6 -28.6 L17 -23.4 Z" fill="#F6C453" stroke="#D99A22" stroke-width="0.5"/>';
+    if (has("grelot")) s += '<path d="M5.6 -12.6 Q10 -9.4 16.6 -11.8" stroke="#D8434B" stroke-width="1.8" fill="none" stroke-linecap="round"/><circle cx="10.6" cy="-9.4" r="1.7" fill="#F6C453"/>';
+    if (has("noeud")) s += '<path d="M10.8 -10.4 L6.6 -13 V-7.8 Z M10.8 -10.4 L15 -13 V-7.8 Z" fill="#D8434B"/><circle cx="10.8" cy="-10.4" r="1.2" fill="#A82E36"/>';
+    if (has("echarpe")) s += '<path d="M5.4 -12.4 Q10.6 -8.6 17 -11.6" stroke="#4FA6DC" stroke-width="3.2" fill="none" stroke-linecap="round"/><rect x="6" y="-11" width="3" height="6.4" rx="1.2" fill="#3F8FC2"/>';
+    if (has("bonnet")) s += '<path d="M5.4 -22 Q11.8 -32.5 18.2 -22 Z" fill="#E5484D"/><rect x="4.8" y="-23" width="14" height="2.6" rx="1.3" fill="#fff"/><circle cx="11.8" cy="-29.6" r="2" fill="#fff"/>';
+    if (has("couronne")) s += '<path d="M6.6 -23.4 L6 -28.6 L9.2 -26 L11.8 -30 L14.4 -26 L17.6 -28.6 L17 -23.4 Z" fill="#F6C453" stroke="#D99A22" stroke-width="0.5"/>';
     s += '<text class="zzz" x="20" y="-26">z</text></g>';
     return s;
   }
-  function portrait(breed, wear) {
+  function portrait(breed, worn) {
     if (BREED[breed] && BREED[breed].sprite) {
-      const L = catLook(breed, wear, "assis"), q = L.q;
+      const L = catLook(breed, worn, "assis"), q = L.q;
       let x0 = -q.ax * q.w, y0 = -q.ay * q.h, x1 = x0 + q.w, y1 = y0 + q.h;
       let h = poseSvg(L.src, q, x0, y0);
-      if (L.k) {
-        const ax = -L.k.ax * L.k.w, ay = -L.k.ay * L.k.h;
-        h += poseSvg(L.accSrc, L.k, ax, ay);
-        x0 = Math.min(x0, ax); y0 = Math.min(y0, ay); x1 = Math.max(x1, ax + L.k.w); y1 = Math.max(y1, ay + L.k.h);
-      }
+      L.accs.forEach(o => {
+        const k = o.q, ax = -k.ax * k.w, ay = -k.ay * k.h;
+        h += poseSvg(o.src, k, ax, ay);
+        x0 = Math.min(x0, ax); y0 = Math.min(y0, ay); x1 = Math.max(x1, ax + k.w); y1 = Math.max(y1, ay + k.h);
+      });
       return '<svg class="portrait sp" viewBox="' + [x0, y0, x1 - x0, y1 - y0].map(v => v.toFixed(1)).join(" ") + '" aria-hidden="true">' + h + "</svg>";
     }
-    return '<svg class="portrait" viewBox="-27 -36 56 40" aria-hidden="true">' + catSprite(breed, wear) + "</svg>";
+    return '<svg class="portrait" viewBox="-27 -36 56 40" aria-hidden="true">' + catSprite(breed, worn) + "</svg>";
   }
 
   const catRT = {};   // état d'animation de chaque chat, par identifiant
@@ -1612,8 +1640,8 @@
   const isSprite = cat => !!(BREED[cat.breed] && BREED[cat.breed].sprite);
   function catsSVG() {
     return S.cats.map(c => isSprite(c)
-      ? '<g class="cat idle" data-cat="' + c.id + '"><ellipse class="sh" cx="0" cy="-3" rx="30" ry="8" fill="#1E1A14" opacity=".3"/><svg class="spr" preserveAspectRatio="none"><image/></svg><svg class="acc" preserveAspectRatio="none"><image/></svg></g>'
-      : '<g class="cat idle" data-cat="' + c.id + '"><ellipse cx="1" cy="0" rx="14" ry="3.6" fill="#1E1A14" opacity=".28"/>' + catSprite(c.breed, c.wear) + "</g>").join("");
+      ? '<g class="cat idle" data-cat="' + c.id + '"><ellipse class="sh" cx="0" cy="-3" rx="30" ry="8" fill="#1E1A14" opacity=".3"/><svg class="spr" preserveAspectRatio="none"><image/></svg>' + '<svg class="acc" preserveAspectRatio="none"><image/></svg>'.repeat(3) + '</g>'
+      : '<g class="cat idle" data-cat="' + c.id + '"><ellipse cx="1" cy="0" rx="14" ry="3.6" fill="#1E1A14" opacity=".28"/>' + catSprite(c.breed, wornIds(c)) + "</g>").join("");
   }
   // el : un petit <svg> qui ne montre que la pose voulue de l'image (viewBox), l'<image> dedans porte l'image entière
   function putImage(el, src, q, k) {
@@ -1628,12 +1656,12 @@
   const poseSvg = (src, q, x, y) => '<svg x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + q.w + '" height="' + q.h + '" viewBox="' + (q.sx || 0) + " 0 " + q.w + " " + q.h +
     '" preserveAspectRatio="none"><image href="' + src + '" width="' + (q.sw || q.w) + '" height="' + (q.sh || q.h) + '"/></svg>';
   function setPose(cat, r, pose) {
-    const kid = cat.kitten ? KITTEN_SCALE : 1, tag = pose + "|" + (cat.wear || "") + "|" + kid;
+    const kid = cat.kitten ? KITTEN_SCALE : 1, worn = cat.kitten ? [] : wornIds(cat), tag = pose + "|" + worn.join(",") + "|" + kid;
     if (r.shown === tag) return;
     r.shown = tag;
-    const L = catLook(cat.breed, cat.wear, pose), acc = r.node.querySelector(".acc");
+    const L = catLook(cat.breed, worn, pose), accEls = r.node.querySelectorAll(".acc");
     putImage(r.node.querySelector(".spr"), L.src, L.q, kid);
-    if (L.k) putImage(acc, L.accSrc, L.k, kid); else acc.setAttribute("display", "none");
+    accEls.forEach((el, i) => { if (L.accs[i]) putImage(el, L.accs[i].src, L.accs[i].q, kid); else el.setAttribute("display", "none"); });
     r.node.querySelector(".sh").setAttribute("rx", (pose === "dort" ? 34 : pose === "assis" ? 24 : 30) * kid);
   }
   function placeCat(cat, t) {
@@ -1972,12 +2000,11 @@
       let chips = "";
       if (!c.kitten && !c.expect) chips += '<button class="chip feed" type="button" data-feed="1"' + (S.tuna < LITTER || full ? " disabled" : "") + ">" +
         (full ? "Maison pleine" : "Nourrir · " + LITTER + " " + ico("tuna")) + "</button>";
-      if (!c.kitten) chips += ACCS.map(a => {
-        const has = owned.indexOf(a.id) >= 0;
-        return '<button class="chip" type="button" data-acc="' + a.id + '" aria-pressed="' + (c.wear === a.id) + '"' +
-          (!has && S.kibble < a.price ? " disabled" : "") + ">" + esc(a.name) + (has ? "" : " · " + a.price + " " + ico("kibble")) + "</button>";
-      }).join("");
-      return '<div class="catrow' + (c.kitten ? " kid" : "") + '" data-cat="' + c.id + '">' + portrait(c.breed, c.wear) +
+      if (!c.kitten && ACCS.length) {
+        const n = wornIds(c).length;
+        chips += '<button class="chip dress" type="button" data-dress="1">' + ico("plus") + "Habiller" + (n ? " · " + n + " porté" + (n > 1 ? "s" : "") : "") + "</button>";
+      }
+      return '<div class="catrow' + (c.kitten ? " kid" : "") + '" data-cat="' + c.id + '">' + portrait(c.breed, wornIds(c)) +
         '<div><input id="cat-name-' + c.id + '" type="text" maxlength="14" value="' + esc(c.name) + '" aria-label="Nom du chat">' +
         '<div class="breed">' + line + "</div></div>" +
         '<div class="chips">' + (chips || '<span class="small">Trop petit pour les accessoires.</span>') + "</div></div>";
@@ -2027,7 +2054,7 @@
     S.kibble -= breed.price;
     const used = S.cats.map(c => c.name);
     const name = CAT_NAMES.find(n => used.indexOf(n) < 0) || "Chat " + S.nextCat;
-    S.cats.push({ id: S.nextCat++, breed: breed.id, name: name, owned: [], wear: null });
+    S.cats.push({ id: S.nextCat++, breed: breed.id, name: name, owned: [], wears: {} });
     S.album[breed.id] = true;
     save(); renderShop(); buzz(15); sfx("buy");
     toast(name + " a rejoint la maison.");
@@ -2043,16 +2070,50 @@
       toast(cat.name + " se régale. Un chaton naîtra dans " + BIRTH_LEVELS + " niveaux.");
       return;
     }
-    const b = e.target.closest ? e.target.closest("button[data-acc]") : null;
-    if (!b || b.disabled) return;
-    const cat = S.cats.find(c => c.id === +b.closest(".catrow").dataset.cat), acc = ACCS.find(a => a.id === b.dataset.acc);
-    cat.owned = cat.owned || [];
-    if (cat.owned.indexOf(acc.id) < 0) {
-      if (S.kibble < acc.price) return;
-      S.kibble -= acc.price; cat.owned.push(acc.id); cat.wear = acc.id;
-    } else cat.wear = cat.wear === acc.id ? null : acc.id;
-    save(); renderShop(); sfx("wear");
+    const d = e.target.closest ? e.target.closest("button[data-dress]") : null;
+    if (d) openDress(+d.closest(".catrow").dataset.cat);
   });
+  /* Habiller un chat : un accessoire par endroit (tête, yeux, cou). Un accessoire acheté reste à ce chat ; on l'enlève ou on le remet librement. */
+  function dressHtml(cat) {
+    const owned = cat.owned || [];
+    return '<div class="dress-prev">' + portrait(cat.breed, wornIds(cat)) + "</div>" +
+      WEAR_SLOTS.map(([slot, label]) => {
+        const list = ACCS.filter(a => a.slot === slot);
+        if (!list.length) return "";
+        return "<h3>" + label + '</h3><div class="chips">' + list.map(a => {
+          const has = owned.indexOf(a.id) >= 0, on = cat.wears[slot] === a.id;
+          const poor = !has && (a.tuna ? S.tuna < a.tuna : S.kibble < a.price);
+          return '<button class="chip' + (a.tuna && !has ? " feed" : "") + '" type="button" data-acc="' + a.id + '" aria-pressed="' + on + '"' + (poor ? " disabled" : "") + ">" +
+            esc(a.name) + (has ? "" : " · " + (a.tuna ? a.tuna + " " + ico("tuna") : a.price + " " + ico("kibble"))) + "</button>";
+        }).join("") + "</div>";
+      }).join("") +
+      '<p class="small">Les accessoires en thon sont les plus beaux : le thon se gagne en finissant un niveau sans perdre de poisson.</p>' +
+      '<button class="btn block" id="dress-ok" type="button">Terminé</button>';
+  }
+  function openDress(id) {
+    const cat = S.cats.find(c => c.id === id);
+    if (!cat || cat.kitten) return;
+    const head = () => '<span class="tag">' + plural(S.kibble, "croquette") + " · " + plural(S.tuna, "boîte") + " de thon</span><h2>Habiller " + esc(cat.name) + "</h2>";
+    openSheet('<div id="dress">' + head() + dressHtml(cat) + "</div>", { noFocus: true, onClose: renderShop });
+    const box = $("#dress");
+    box.addEventListener("click", e => {
+      if (e.target.closest("#dress-ok")) { closeSheet(); return; }
+      const b = e.target.closest("button[data-acc]");
+      if (!b || b.disabled) return;
+      const acc = ACC[b.dataset.acc];
+      cat.owned = cat.owned || [];
+      if (cat.owned.indexOf(acc.id) < 0) {
+        if (acc.tuna ? S.tuna < acc.tuna : S.kibble < acc.price) return;
+        if (acc.tuna) S.tuna -= acc.tuna; else S.kibble -= acc.price;
+        cat.owned.push(acc.id); cat.wears[acc.slot] = acc.id; sfx("buy");
+      } else {
+        if (cat.wears[acc.slot] === acc.id) delete cat.wears[acc.slot]; else cat.wears[acc.slot] = acc.id;
+        sfx("wear");
+      }
+      save(); updateHud();
+      box.innerHTML = head() + dressHtml(cat);
+    });
+  }
   $("#shop-cats").addEventListener("change", e => {
     if (e.target.tagName !== "INPUT") return;
     const cat = S.cats.find(c => c.id === +e.target.closest(".catrow").dataset.cat);
@@ -2063,7 +2124,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.20." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.21." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +

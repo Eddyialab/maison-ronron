@@ -469,3 +469,11 @@ h2 {
 .namefield { font: inherit; font-weight: 800; font-size: 1.05rem; color: var(--ink); padding: 10px 12px; border: 1px solid var(--edge); border-radius: 12px; background: var(--page); width: 100%; box-sizing: border-box; }
 .namefield:focus { outline: 2px solid var(--ink); outline-offset: 1px; }
 @media (max-width: 370px) { .hud { gap: 6px; padding-left: 12px; padding-right: 12px; } .pill { padding: 0 10px 0 6px; } }
+
+/* Habiller un chat */
+#dress h3 { font-size: 0.95rem; margin: 14px 0 8px; }
+#dress .small { font-size: 0.8rem; color: var(--ink-soft); margin: 14px 0 12px; }
+.dress-prev { display: flex; justify-content: center; padding: 8px 0 4px; }
+.dress-prev svg.portrait { height: 130px; width: auto; max-width: 100%; }
+.chip.dress { background: #FFF4E5; border-color: #E8B877; }
+.chip.dress .ico { width: 14px; height: 14px; }
