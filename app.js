@@ -45,6 +45,8 @@
   const p7 = (x, y, pose, dir) => ({ x: x + 6552, y: y + 2458, pose: pose, dir: dir, min: 12000, max: 30000 });
   const z8 = p => [p[0] + 6552, p[1] + 3687];       // zone du perron est, sous l'aile est
   const p8 = (x, y, pose, dir, depth) => ({ x: x + 6552, y: y + 3687, pose: pose, dir: dir, depth: depth, min: 12000, max: 30000 });
+  const z9 = p => [p[0] + 6900, p[1] + 450];        // zone de l'étang, au-dessus de l'aile est (coordonnées à la taille du monde)
+  const p9 = (x, y, pose, dir, depth) => ({ x: x + 6900, y: y + 450, pose: pose, dir: dir, depth: depth, min: 12000, max: 30000 });
   WORLD.start = g([1380, 640]);
 
   /* Chantiers. « at » : position de la bulle sur la carte. « need » : chantiers à terminer avant.
@@ -555,7 +557,48 @@
       desc: "Un fauteuil confortable près de la fontaine. Il ne restera pas libre longtemps.",
       poi: [[p5c(1435, 540, "dort", -1, 3106)], [p5c(1465, 545, "dort", -1, 3102)]],
       styles: [{ name: "Rotin", sw: "#C49A5A", patch: PATCH.cour_fauteuil_rotin }, { name: "Bois blanc", sw: "#F2F1EC", patch: PATCH.cour_fauteuil_blanc }],
-      parts: [[{ patch: PATCH.cour_fauteuil_rotin_p0, depth: 3105 }], [{ patch: PATCH.cour_fauteuil_blanc_p0, depth: 3101 }]] }
+      parts: [[{ patch: PATCH.cour_fauteuil_rotin_p0, depth: 3105 }], [{ patch: PATCH.cour_fauteuil_blanc_p0, depth: 3101 }]] },
+    /* ----- Zone 9 : l'étang et le hangar à bateaux (fenêtre monde x 6900..10540, y 450..2498 ; images agrandies ×4/3). Cadenas : 160 croquettes. ----- */
+    { id: "etang_debrousse", room: "Étang", name: "Débroussailler les berges", short: "Débroussailler", verb: "Débroussailler", cost: 14, icon: "broom", need: ["est_pelouse"], at: z9([1200, 1960]),
+      desc: "Branches mortes, herbes sèches et feuilles : on dégage le tour de l'étang.", patch: PATCH.etang_debrousse },
+    { id: "etang_pelouse", room: "Étang", name: "Semer la pelouse des berges", short: "Pelouse", verb: "Semer", cost: 16, icon: "plus", need: ["etang_debrousse"], at: z9([870, 380]),
+      desc: "Une herbe bien verte tout autour de l'eau.", patch: PATCH.etang_pelouse },
+    { id: "etang_eau", room: "Étang", name: "Nettoyer l'étang", short: "Eau claire", verb: "Nettoyer", cost: 22, icon: "broom", need: ["etang_pelouse"], at: z9([1330, 1200]),
+      desc: "Plus de vase ni de vieux piquets : une eau claire et des nénuphars en fleurs.", patch: PATCH.etang_eau },
+    { id: "etang_chemin", room: "Étang", name: "Paver le tour de l'étang", short: "Chemin", verb: "Paver", cost: 20, icon: "hammer", need: ["etang_pelouse", "grille_chemin"], at: z9([3400, 1530]),
+      desc: "Le chemin longe l'étang jusqu'au hangar, dans le même revêtement que l'entrée.",
+      patch: eff => PATCH["etang_chemin_" + (eff("grille_chemin") ? "gravier" : "paves")] },
+    { id: "etang_ponton", room: "Étang", name: "Reconstruire le ponton", short: "Ponton", verb: "Reconstruire", cost: 24, icon: "hammer", need: ["etang_eau"], at: z9([1730, 1730]),
+      desc: "Un ponton tout neuf où les chats viennent regarder les poissons.",
+      poi: [[p9(1700, 1124, "assis", 1)], [p9(1492, 1492, "assis", -1)]],
+      styles: [{ name: "Bois naturel", sw: "#C98A3E", patch: PATCH.etang_ponton_bois }, { name: "Blanc et bleu marine", sw: "#2B3F73", patch: PATCH.etang_ponton_blanc }] },
+    { id: "etang_hangar", room: "Étang", name: "Rebâtir le hangar à bateaux", short: "Hangar", verb: "Rebâtir", cost: 30, icon: "hammer", need: ["etang_eau"], at: z9([2870, 540]),
+      desc: "Des planches neuves, des fenêtres et un ponton solide devant.",
+      styles: [{ name: "Bois et volets verts", sw: "#C98A3E", patch: PATCH.etang_hangar_bois }, { name: "Rouge suédois", sw: "#A8322D", patch: PATCH.etang_hangar_rouge }] },
+    { id: "etang_canards", room: "Étang", name: "Mettre une maison des canards", short: "Maison des canards", verb: "Mettre", cost: 14, icon: "plus", need: ["etang_eau"], at: z9([1280, 1090]),
+      desc: "Une petite maison qui flotte au milieu des nénuphars.",
+      styles: [{ name: "Toit rouge", sw: "#A8322D", patch: PATCH.etang_canards_naturel }, { name: "Toit bleu", sw: "#3A6FB8", patch: PATCH.etang_canards_blanc }] },
+    { id: "etang_barque", room: "Étang", name: "Amarrer une barque", short: "Barque", verb: "Amarrer", cost: 16, icon: "plus", need: ["etang_hangar"], at: z9([2240, 1120]),
+      desc: "Une petite barque attachée au ponton du hangar.",
+      styles: [{ name: "Bois verni", sw: "#8B4A2B", patch: PATCH.etang_barque_naturel }, { name: "Blanche à rayure bleue", sw: "#3A6FB8", patch: PATCH.etang_barque_blanc }] },
+    { id: "etang_lanternes", room: "Étang", name: "Éclairer le ponton du hangar", short: "Lanternes", verb: "Éclairer", cost: 14, icon: "plus", need: ["etang_hangar"], at: z9([1975, 830]),
+      desc: "Deux lanternes au bout du ponton du hangar.",
+      styles: [{ name: "Fer noir", sw: "#2B2B2E", patch: PATCH.etang_lanternes_naturel }, { name: "Blanches", sw: "#F2F2EE", patch: PATCH.etang_lanternes_blanc }],
+      parts: [[{ patch: PATCH.etang_lanternes_naturel_p0, depth: 1382 }, { patch: PATCH.etang_lanternes_naturel_p1, depth: 1469 }], [{ patch: PATCH.etang_lanternes_blanc_p0, depth: 1330 }, { patch: PATCH.etang_lanternes_blanc_p1, depth: 1425 }]] },
+    { id: "etang_banc", room: "Étang", name: "Installer un banc face à l'eau", short: "Banc", verb: "Installer", cost: 14, icon: "plus", need: ["etang_pelouse"], at: z9([1120, 300]),
+      desc: "Un banc près du gros rocher, pour regarder l'étang.",
+      poi: [[p9(1131, 365, "dort", 1, 930)], [p9(1151, 384, "dort", 1, 930)]],
+      styles: [{ name: "Bois", sw: "#7A5A3A", patch: PATCH.etang_banc_naturel }, { name: "Blanc", sw: "#F2F1EC", patch: PATCH.etang_banc_blanc }],
+      parts: [[{ patch: PATCH.etang_banc_naturel_p0, depth: 929 }], [{ patch: PATCH.etang_banc_blanc_p0, depth: 929 }]] },
+    { id: "etang_piquenique", room: "Étang", name: "Étendre une nappe de pique-nique", short: "Pique-nique", verb: "Étendre", cost: 12, icon: "plus", need: ["etang_pelouse"], at: z9([370, 1690]),
+      desc: "Une nappe et un panier au bord de l'eau. Une sieste s'impose.",
+      poi: [[p9(371, 1776, "dort", 1)], [p9(203, 1582, "dort", 1)]],
+      styles: [{ name: "Vichy rouge", sw: "#D8343A", patch: PATCH.etang_piquenique_naturel }, { name: "Rayures bleues", sw: "#3A6FB8", patch: PATCH.etang_piquenique_blanc }] },
+    { id: "etang_peche", room: "Étang", name: "Poser le matériel de pêche", short: "Pêche", verb: "Poser", cost: 12, icon: "plus", need: ["etang_ponton"], at: z9([2440, 1730]),
+      desc: "Une canne, un seau et une épuisette. Un chat surveille le bouchon.",
+      poi: [[p9(2187, 1957, "assis", -1)], [p9(2103, 1959, "assis", -1)]],
+      styles: [{ name: "Canne en bambou", sw: "#B98552", patch: PATCH.etang_peche_naturel }, { name: "Canne bleue", sw: "#3A6FB8", patch: PATCH.etang_peche_blanc }],
+      parts: [[{ patch: PATCH.etang_peche_naturel_p0, depth: 2447 }], [{ patch: PATCH.etang_peche_blanc_p0, depth: 2449 }]] }
   ];
   const SLOT = {}; SLOTS.forEach(s => { SLOT[s.id] = s; });
 
@@ -569,7 +612,8 @@
     cour: { name: "La cour d'honneur", desc: "La cour à la fontaine, le hall et la salle des chats." },
     aile: { name: "L'aile ouest", desc: "Son jardin, la bibliothèque et la salle à manger." },
     est: { name: "L'aile est", desc: "Son jardin, une cuisine, une chambre et une salle de bain." },
-    perron: { name: "Le perron est", desc: "L'entrée est du manoir et son jardin : 19 chantiers, plein de détails." }
+    perron: { name: "Le perron est", desc: "L'entrée est du manoir et son jardin : 19 chantiers, plein de détails." },
+    etang: { name: "L'étang", desc: "L'étang aux nénuphars, son ponton et le hangar à bateaux : 12 chantiers." }
   };
   const zoneCost = z => ZONE_STEP * (Object.keys(ZONES).indexOf(z) + 1);
   const zoneOf = s => { const p = s.id.split("_")[0]; return ZONES[p] ? p : null; };
@@ -1480,9 +1524,9 @@
   // cases libres (1 maison, 2 jardin du gardien, 3 entrée du domaine, 4 passage caché dans la haie),
   // recalculées quand un meuble est posé ou qu'un chantier se termine
   let navFree = null;
-  let navHouse = [], navGarden = [], navGate = [], navAllee = [], navManoir = [], navSalon = [], navCour = [], navHall = [], navChats = [], navAile = [], navBiblio = [], navEst = [], navEstIn = [], navPerron = [];
+  let navHouse = [], navGarden = [], navGate = [], navAllee = [], navManoir = [], navSalon = [], navCour = [], navHall = [], navChats = [], navAile = [], navBiblio = [], navEst = [], navEstIn = [], navPerron = [], navEtang = [];
   // passages où le chat se faufile sans être vu : haie, sous la grille, porte du manoir, hall vers la cour, arche de la salle des chats
-  const HIDDEN = v => v === 4 || v === 6 || v === 9 || v === 13 || v === 14 || v === 18 || v === 24 || v === 25;
+  const HIDDEN = v => v === 4 || v === 6 || v === 9 || v === 13 || v === 14 || v === 18 || v === 24 || v === 25 || v === 29;   // 29 : dans les roseaux
   function buildNav() {
     navFree = new Uint8Array(NAV.w * NAV.h);
     const garden = isDone("jardin_debrousse");      // tant que le jardin est en friche, les chats restent à l'intérieur
@@ -1496,12 +1540,13 @@
     const biblio = aile && isDone("aile_biblio"), salle = aile && isDone("aile_salle"), atelier = biblio && isDone("aile_atelier");
     const est = chats && isDone("est_debrousse"), estIn = chats && isDone("est_deblai");   // l'aile est, par la salle des chats
     const perron = manoir && isDone("perron_debrousse");     // le jardin du perron est, à côté du devant du manoir
+    const etang = est && isDone("etang_debrousse"), ponton = etang && isDone("etang_ponton");   // l'étang, au-dessus du jardin de l'aile est
     for (let r = 0; r < NAV.h; r++) for (let c = 0; c < NAV.w; c++) {
       const v = NAV.rows[r].charCodeAt(c) - 48;
       navFree[r * NAV.w + c] = v === 1 || (v === 2 && garden) || ((v === 3 || v === 4) && gate) || ((v === 5 || v === 6) && allee) ||
         (v === 7 && manoir) || ((v === 8 || v === 9) && salon) || ((v === 10 || v === 11 || v === 13) && hall) || ((v === 12 || v === 14) && chats) ||
         ((v === 15 || v === 18) && aile) || (v === 16 && biblio) || (v === 17 && salle) || (v === 19 && atelier) ||
-        ((v === 20 || v === 24) && est) || (((v >= 21 && v <= 23) || v === 25) && estIn) || (v === 26 && perron) ? v : 0;
+        ((v === 20 || v === 24) && est) || (((v >= 21 && v <= 23) || v === 25) && estIn) || (v === 26 && perron) || ((v === 27 || v === 29) && etang) || (v === 28 && ponton) ? v : 0;
     }
     Object.keys(NAV.blocks).forEach(id => {
       if (isDone(id)) (NAV.blocks[id][S.house[id].style | 0] || NAV.blocks[id][0] || []).forEach(i => { navFree[i] = 0; });
@@ -1524,7 +1569,7 @@
       }
       if (size > bestSize) { bestSize = size; best = id; }
     }
-    navHouse = []; navGarden = []; navGate = []; navAllee = []; navManoir = []; navSalon = []; navCour = []; navHall = []; navChats = []; navAile = []; navBiblio = []; navEst = []; navEstIn = []; navPerron = [];
+    navHouse = []; navGarden = []; navGate = []; navAllee = []; navManoir = []; navSalon = []; navCour = []; navHall = []; navChats = []; navAile = []; navBiblio = []; navEst = []; navEstIn = []; navPerron = []; navEtang = [];
     for (let i = 0; i < navFree.length; i++) {
       if (comp[i] !== best) navFree[i] = 0;
       else if (navFree[i] === 1) navHouse.push(i);
@@ -1541,6 +1586,7 @@
       else if (navFree[i] === 20) navEst.push(i);
       else if (navFree[i] >= 21 && navFree[i] <= 23) navEstIn.push(i);
       else if (navFree[i] === 26) navPerron.push(i);
+      else if (navFree[i] === 27 || navFree[i] === 28) navEtang.push(i);
     }
   }
   function neighbours(i) {
@@ -1556,7 +1602,7 @@
   const cellXY = i => [NAV.x0 + (i % NAV.w + 0.5) * NAV.cell, NAV.y0 + (((i / NAV.w) | 0) + 0.5) * NAV.cell];
   function randomCell() {
     // on tire d'abord l'endroit, pour que les chats restent visibles un peu partout : maison, jardin, entrée
-    const pools = [[navHouse, 0.22], [navGarden, 0.14], [navGate, 0.08], [navAllee, 0.09], [navManoir, 0.07], [navSalon, 0.11], [navCour, 0.11], [navHall, 0.02], [navChats, 0.06], [navAile, 0.07], [navBiblio, 0.03], [navEst, 0.06], [navEstIn, 0.06], [navPerron, 0.08]].filter(p => p[0].length);
+    const pools = [[navHouse, 0.22], [navGarden, 0.14], [navGate, 0.08], [navAllee, 0.09], [navManoir, 0.07], [navSalon, 0.11], [navCour, 0.11], [navHall, 0.02], [navChats, 0.06], [navAile, 0.07], [navBiblio, 0.03], [navEst, 0.06], [navEstIn, 0.06], [navPerron, 0.08], [navEtang, 0.08]].filter(p => p[0].length);
     if (!pools.length) return 0;
     let k = Math.random() * pools.reduce((t, p) => t + p[1], 0);
     for (const p of pools) { k -= p[1]; if (k <= 0) return p[0][Math.floor(Math.random() * p[0].length)]; }
@@ -2157,7 +2203,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.24." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.25." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -2272,7 +2318,7 @@
     return Object.keys(PATCH).filter(k => out.has(PATCH[k]));
   }
   window.__ronron = { objKeys: objKeys, state: () => S, level: () => L, nav: () => navFree, look: look, layers: () => layerNodes.map(n => [n._p.src, n.getAttribute("src") || ""]), far: () => [farKey === layersKey, farEl ? !farEl.hidden : false], path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
-    navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length, navManoir.length, navSalon.length, navCour.length, navHall.length, navChats.length, navAile.length, navBiblio.length, navEst.length, navEstIn.length, navPerron.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
+    navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length, navManoir.length, navSalon.length, navCour.length, navHall.length, navChats.length, navAile.length, navBiblio.length, navEst.length, navEstIn.length, navPerron.length, navEtang.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
     audio: () => ({ ctx: AC ? AC.state : null, playing: !!(musicSrc && !musicSrc.pending), track: musicIdx % MUSIC.length, pref: audioPref }), sfx: sfx, sfxNames: () => Object.keys(SFX), sfxRaw: name => SFX[name](),
     walls: () => (WALLS ? WALLS.strips.filter(st => st.node && st.node.parentNode).length : -1), wallsReady: () => !!wallCanvas };
 })();
