@@ -114,6 +114,8 @@ h2 {
 .world img { position: absolute; max-width: none; pointer-events: none; -webkit-user-drag: none; }
 .world .plan { left: 0; top: 0; width: 100%; height: 100%; }
 #tiles, #layers, #markers { position: absolute; inset: 0; pointer-events: none; }
+#layers img:not([src]) { display: none; }      /* un calque hors de l'écran n'a pas d'image : rien à dessiner, pas même un cadre */
+#farlayers { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
 /* Les chats vivent pour l'instant dans la zone de la maison du gardien. */
 #world-svg { position: absolute; left: 0; top: 4916px; width: 2730px; height: 1536px; pointer-events: none; overflow: visible; }
 .mk {

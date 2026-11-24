@@ -1038,29 +1038,47 @@
     else updateView();
   }
 
-  /* Mémoire des images : sur un téléphone, la carte entière en pleine définition (dalles + calques des chantiers) ne tient pas.
-     Près de l'écran : pleine définition. Au-delà : rien. En vue éloignée : les versions réduites (4 fois plus petites), dalles comprises,
-     pour que les chantiers restent visibles sans saturer la mémoire (sinon le téléphone efface des images et l'écran clignote). */
-  const tilesEl = $("#tiles"), tileNodes = {};
+  /* Mémoire des images : sur un téléphone, la carte entière en pleine définition (dalles + calques des chantiers) ne tient pas
+     (sinon le téléphone efface des images et l'écran clignote). Près de l'écran : pleine définition. Au-delà : rien.
+     En vue éloignée : le domaine au quart (image de fond) et tous les calques au quart, dessinés une fois dans une toile.
+     Cette toile reste sous les calques en pleine définition : un calque pas encore chargé y est déjà visible, en flou. */
+  const tilesEl = $("#tiles"), tileNodes = {}, farEl = $("#farlayers"), LO = window.RONRON_LO || null;
   const FAR = 0.26;
-  const lowSrc = src => src.replace(/^assets\/([tp])\//, "assets/$1/lo/");
-  let layerNodes = [];
-  function wantSrc(r, full, box, far, cur) {
-    const vis = r.x < box.x1 && r.x + r.w > box.x0 && r.y < box.y1 && r.y + r.h > box.y0;
-    if (far) return vis ? lowSrc(full) : null;
-    if (vis) return full;
+  let layerNodes = [], farKey = null, farBusy = false, farSheets = null, farDrop = 0;
+  function wantSrc(r, full, box, cur) {
+    if (r.x < box.x1 && r.x + r.w > box.x0 && r.y < box.y1 && r.y + r.h > box.y0) return full;
     const m = 700, keep = r.x < box.x1 + m && r.x + r.w > box.x0 - m && r.y < box.y1 + m && r.y + r.h > box.y0 - m;
     return keep ? cur : null;
+  }
+  function composeFar() {
+    if (!LO || !farEl || farBusy || farKey === layersKey) return;
+    farBusy = true;
+    const key = layersKey, shown = layerNodes.map(n => n._p);
+    const sheets = farSheets || Promise.all(LO.sheets.map(src => new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; })));
+    farSheets = sheets;
+    clearTimeout(farDrop); farDrop = setTimeout(() => { if (!farBusy) farSheets = null; }, 15000);   // les planches ne restent pas en mémoire
+    sheets.then(ims => {
+      farBusy = false;
+      if (key !== layersKey) { composeFar(); return; }
+      const q = LO.q;
+      if (farEl.width !== Math.ceil(WORLD.w / q)) { farEl.width = Math.ceil(WORLD.w / q); farEl.height = Math.ceil(WORLD.h / q); }
+      const ctx = farEl.getContext("2d");
+      ctx.clearRect(0, 0, farEl.width, farEl.height);
+      shown.forEach(p => { const m = LO.map[p.src]; if (m && ims[m[0]]) ctx.drawImage(ims[m[0]], m[1], m[2], m[3], m[4], Math.round(p.x / q), Math.round(p.y / q), m[3], m[4]); });   // calé sur les pixels : pas de bord à demi transparent
+      farKey = key; farEl.hidden = false;
+      updateView();
+    });
   }
   function updateView() {
     viewAt = performance.now();
     const l = camLimits();
     if (!l.vw) return;
-    const far = cam.s < FAR, m = 500;
+    const far = cam.s < FAR, m = 500, farReady = !!LO && farKey === layersKey;
     const box = { x0: -cam.x / cam.s - m, y0: -cam.y / cam.s - m, x1: (l.vw - cam.x) / cam.s + m, y1: (l.vh - cam.y) / cam.s + m };
+    // dalles : en vue éloignée, l'image de fond (le domaine au quart) suffit
     TILES.forEach((t, i) => {
       let n = tileNodes[i];
-      const want = wantSrc(t, t.src, box, far, n ? n.getAttribute("src") : null);
+      const want = far ? null : wantSrc(t, t.src, box, n ? n.getAttribute("src") : null);
       if (!want) { if (n) { n.remove(); delete tileNodes[i]; } return; }
       if (!n) {
         n = document.createElement("img");
@@ -1070,8 +1088,9 @@
       }
       if (n.getAttribute("src") !== want) n.setAttribute("src", want);
     });
+    // calques : en vue éloignée, la toile au quart les remplace tous (tant qu'elle n'est pas prête, on garde les images)
     layerNodes.forEach(n => {
-      const p = n._p, cur = n.getAttribute("src"), want = wantSrc(p, p.src, box, far, cur);
+      const p = n._p, cur = n.getAttribute("src"), want = far && farReady ? null : wantSrc(p, p.src, box, cur);
       if (want === cur) return;
       if (want) n.setAttribute("src", want); else n.removeAttribute("src");
     });
@@ -1584,7 +1603,8 @@
       layersEl.innerHTML = shown.map(p => '<img class="layer" alt="" decoding="async" draggable="false" style="left:' + p.x + "px;top:" + p.y + "px;width:" + p.w + "px;height:" + p.h + 'px">').join("");
       layerNodes = Array.from(layersEl.children);
       layerNodes.forEach((n, k) => { n._p = shown[k]; });
-      updateView();
+      if (farEl) farEl.hidden = true;                  // l'ancienne toile ne correspond plus : on la cache le temps de la refaire
+      updateView(); composeFar();
     }
     refreshWalls(shown);
     renderDepth();
@@ -1919,7 +1939,7 @@
   // pour les tests : regarder un point de la carte à une échelle donnée (sans les limites du zoom), avec le chargement des images qui va avec
   const look = (x, y, sc) => { const l = camLimits(); cam.s = sc; cam.x = l.vw / 2 - x * sc; cam.y = l.vh / 2 - y * sc;
     worldEl.style.transform = "translate(" + cam.x + "px," + cam.y + "px) scale(" + sc + ")"; markersEl.style.setProperty("--inv", 1 / sc); updateView(); };
-  window.__ronron = { state: () => S, level: () => L, nav: () => navFree, look: look, layers: () => layerNodes.map(n => [n._p.src, n.getAttribute("src") || ""]), path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
+  window.__ronron = { state: () => S, level: () => L, nav: () => navFree, look: look, layers: () => layerNodes.map(n => [n._p.src, n.getAttribute("src") || ""]), far: () => [farKey === layersKey, farEl ? !farEl.hidden : false], path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
     navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length, navManoir.length, navSalon.length, navCour.length, navHall.length, navChats.length, navAile.length, navBiblio.length, navEst.length, navEstIn.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
     audio: () => ({ ctx: AC ? AC.state : null, playing: !!(musicSrc && !musicSrc.pending), track: musicIdx % MUSIC.length, pref: audioPref }), sfx: sfx, sfxNames: () => Object.keys(SFX), sfxRaw: name => SFX[name](),
     walls: () => (WALLS ? WALLS.strips.filter(st => st.node && st.node.parentNode).length : -1), wallsReady: () => !!wallCanvas };
