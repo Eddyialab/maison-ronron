@@ -1320,6 +1320,7 @@
     renderChrono();
     drawBoard(lv);
     renderFishes(fishMax, fishMax);
+    clearTimeout(hintArm); hintArm = 0; hintBusy = false; $("#level-hint").classList.remove("why"); renderHintBtn();
     $("#level-hint").textContent = k === 2
       ? "Deux chats par zone, par ligne et par colonne, jamais côte à côte. En moins de " + clockText(L.fast) + ", une croquette en plus."
       : kind === "rafale" ? "Cinq grilles 5 × 5 à finir avant la fin du compte à rebours."
@@ -1403,6 +1404,88 @@
       renderFishes(L.fish); buzz([30, 40, 30]); sfx("wrong");
       if (L.fish <= 0) lose();
     }
+  }
+
+  /* Indice (2 boîtes de thon, toujours payant) : la prochaine case qu'on trouve par logique, avec la raison en une phrase.
+     La zone, la ligne ou la colonne concernée s'éclaire, la case brille, puis le chat s'y pose. Un indice n'est pas une erreur :
+     le niveau peut rester parfait. Premier tap : le bouton demande confirmation ; deuxième tap dans les 3 secondes : on paie. */
+  const HINT_COST = 2;
+  let hintArm = 0, hintBusy = false;
+  const ordinal = k => k + 1;
+  function bandText(r) {
+    const w = r.byRow ? "ligne" : "colonne";
+    return r.a === r.b ? "la " + w + " " + ordinal(r.a) : "les " + w + "s " + ordinal(r.a) + " à " + ordinal(r.b);
+  }
+  function hintText(h) {
+    if (!h) return "Pas de déduction simple ici : voici un chat de la solution.";
+    const U = h.unit === "zone" ? "cette zone" : h.unit === "row" ? "cette ligne" : "cette colonne";
+    const two = L.k === 2, need = h.need || 1;
+    if (h.unit === "clue") return "Cette pelote veut <b>" + plural(h.v, "chat") + "</b> autour d'elle et il ne reste que ces cases : il en faut un ici.";
+    const end = two && need === 2 ? "il ne reste que deux cases pour " + U + ", qui a besoin de ses deux chats : en voici un."
+      : "il ne reste que <b>cette case</b> pour " + U + ".";
+    const r = h.rule;
+    if (!r) {
+      if (h.alone) return "Cette zone n'a qu'une seule case : son chat ne peut être que là.";
+      const cap = end.charAt(0).toUpperCase() + end.slice(1);
+      return h.cats ? "Les autres cases sont sur la ligne ou la colonne d'un chat déjà posé, ou le touchent : " + end
+        : cap;
+    }
+    if (r.rule === "inside") return (r.k === 1 ? "Une zone tient entièrement dans " + bandText(r) + " : elle la garde pour elle" : r.k + " zones tiennent entièrement dans " + bandText(r) + " : elles les remplissent") +
+      ". Les autres zones n'y ont plus de place, donc " + end;
+    if (r.rule === "touch") return (r.k === 1 ? "Une seule zone peut encore remplir " + bandText(r) + " : son chat y est forcément" : "Seules " + r.k + " zones peuvent encore remplir " + bandText(r) + " : leurs chats y sont forcément") +
+      ", donc " + end;
+    if (r.rule === "look") return "Un chat posé sur les autres cases ne laisserait plus aucune place à toute une ligne, une colonne ou une zone : " + end;
+    if (r.rule === "clue") return "Une pelote a déjà tous ses chats autour d'elle, ses autres voisines restent vides : " + end;
+    return end;
+  }
+  function hintCells(h, gr) {
+    const n = L.n, out = [];
+    for (let j = 0; j < n * n; j++) {
+      if (h.unit === "zone" ? gr.regions[j] === h.at && L.st[j] !== 5 : h.unit === "row" ? ((j / n) | 0) === h.at : h.unit === "col" ? j % n === h.at
+          : (j === h.at || window.RonronGen.around(n, h.at).indexOf(j) >= 0)) out.push(j);
+    }
+    return out;
+  }
+  function renderHintBtn() {
+    const b = $("#btn-hint"); if (!b) return;
+    const poor = S.tuna < HINT_COST;
+    b.classList.toggle("poor", poor); b.classList.toggle("arm", !!hintArm && !poor);
+    b.innerHTML = (hintArm && !poor ? "Confirmer · " : "Indice · ") + HINT_COST + " " + ico("tuna");
+    b.setAttribute("aria-label", hintArm ? "Confirmer l'indice pour " + HINT_COST + " boîtes de thon" : "Indice pour " + HINT_COST + " boîtes de thon");
+    b.disabled = !L || L.over;
+  }
+  function useHint() {
+    if (!L || L.over || hintBusy || L.placed >= L.n * L.k) return;
+    if (S.tuna < HINT_COST) { toast("Un indice coûte " + HINT_COST + " boîtes de thon. Tu en gagnes en finissant un niveau sans erreur."); return; }
+    if (!hintArm) { hintArm = setTimeout(() => { hintArm = 0; renderHintBtn(); }, 3000); renderHintBtn(); return; }
+    clearTimeout(hintArm); hintArm = 0;
+    const gr = L.lv.grids ? L.lv.grids[L.grid] : L.lv, n = L.n;
+    const g = Array.from(gr.regions); (L.lv.block || []).forEach(i => { g[i] = -1; });
+    const have = []; for (let j = 0; j < n * n; j++) if (L.st[j] === 3) have.push(j);
+    let h = null;
+    try { h = L.k === 2 ? window.RonronGen.hintStep2(n, g, have) : window.RonronGen.hintStep(n, g, have, L.lv.clues ? { clues: L.lv.clues } : null); } catch (e) { h = null; }
+    if (h && !L.sol.has(h.i)) h = null;                        // jamais un chat faux : sinon, une case de la solution
+    let i = h ? h.i : -1;
+    if (i < 0) { for (const j of L.sol) if (L.st[j] !== 3) { i = j; break; } }
+    if (i < 0) return;
+    S.tuna -= HINT_COST; S.hints = (S.hints || 0) + 1; save(); updateHud(); renderHintBtn();
+    hintBusy = true;
+    const why = $("#level-hint"); why.classList.add("why"); why.innerHTML = hintText(h);
+    const unit = h ? hintCells(h, gr) : [i], inUnit = new Set(unit), cur = L;
+    L.cells.forEach((el, j) => { el.classList.toggle("hint-unit", inUnit.has(j) && j !== i); el.classList.toggle("hint-dim", !inUnit.has(j)); });
+    L.cells[i].classList.add("hint-cell"); sfx("tap"); buzz(10);
+    setTimeout(() => {
+      hintBusy = false;
+      if (L !== cur) return;
+      L.cells[i].classList.remove("hint-cell");
+      L.cells.forEach(el => el.classList.remove("hint-dim"));
+      if (!L.over && L.st[i] !== 3) {
+        setCell(i, 3); L.placed++; buzz(12); sfx("cat");
+        if (L.placed === L.n * L.k) { if (L.limit && L.grid < 4) nextGrid(); else win(); }
+      }
+      setTimeout(() => { if (L === cur) L.cells.forEach(el => el.classList.remove("hint-unit")); }, 1600);
+      renderHintBtn();
+    }, 1100);
   }
 
   function win() {
@@ -1542,6 +1625,8 @@
       "<li>Finis vite pour une croquette en plus : de 30 s sur une grille 5 × 5 à 1:30 sur une 10 × 10, le double avec deux chats.</li>" +
       "<li>Finis sans perdre de poisson pour gagner du thon : une boîte, 2 sur un mini-boss, 3 sur un boss, 5 sur un boss géant. " +
       "Dans l'onglet Chats, 20 boîtes de thon données à un chat lui font avoir un chaton.</li>" +
+      "<li>Bloqué ? Le bouton <strong>Indice</strong> coûte 2 boîtes de thon : il te montre la prochaine case à trouver, t'explique pourquoi, " +
+      "et y pose le chat. Un indice n'est pas une erreur : le niveau peut rester parfait.</li>" +
       "</ul><p><strong>Un tap</strong> pose ou retire une croix ; tu peux glisser le doigt pour en tracer plusieurs. " +
       "<strong>Deux taps rapides</strong> sur une case y posent un chat.</p>" +
       '<button class="btn block" id="r-ok" type="button">Compris</button>', then ? { sticky: true } : undefined);
@@ -2625,7 +2710,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.32." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.33." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -3022,6 +3107,7 @@
   $("#btn-settings").onclick = () => openSettings();
   $("#btn-quit").onclick = () => quitLevel();
   $("#btn-rules").onclick = () => showRules();
+  $("#btn-hint").onclick = () => useHint();
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !sheetSticky) closeSheet(); });
 
   migrateZones();

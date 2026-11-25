@@ -693,7 +693,176 @@
     return count;
   }
 
-  const api = { makeLevel, logicSolve, around, SPECIALS, logicSolve2, countSolutions, countSolutions2, tierFor, targetFor, sizeFor, kindOf, rewardFor, mulberry32 };
+  /* Indice : la prochaine case qu'on peut trouver par logique, à partir des chats déjà posés par le joueur.
+     Même raisonnement que logicSolve (qui, lui, reste tel quel : il sert à fabriquer les niveaux), mais on s'arrête au premier chat trouvé
+     et on note la dernière règle avancée qui a servi, pour l'expliquer en une phrase.
+     g : zone de chaque case (< 0 : pot de fleurs), have : cases où un chat est déjà posé, opt.clues : pelotes [[case, nombre]].
+     Renvoie { i, unit: "zone" | "row" | "col" | "clue", at, v?, rule, cats, alone } ou null si aucune déduction ne mène à un chat. */
+  function hintStep(n, g, have, opt) {
+    const N = n * n, cand = new Uint8Array(N).fill(1);
+    const rowDone = new Uint8Array(n), colDone = new Uint8Array(n), regDone = new Uint8Array(n), catAt = new Uint8Array(N);
+    for (let i = 0; i < N; i++) if (g[i] < 0) cand[i] = 0;
+    const CL = opt && opt.clues ? opt.clues.map(q => { cand[q[0]] = 0; return [q[0], q[1], around(n, q[0])]; }) : null;
+    let last = null;
+    function place(i) {
+      const r = (i / n) | 0, c = i % n, z = g[i];
+      for (let k = 0; k < n; k++) { cand[r * n + k] = 0; cand[k * n + c] = 0; }
+      for (let j = 0; j < N; j++) if (g[j] === z) cand[j] = 0;
+      for (const j of around(n, i)) cand[j] = 0;
+      cand[i] = 0; rowDone[r] = 1; colDone[c] = 1; regDone[z] = 1; catAt[i] = 1;
+    }
+    have.forEach(place);
+    function counts(cd) {
+      const rc = new Int16Array(n), cc = new Int16Array(n), zc = new Int16Array(n);
+      for (let i = 0; i < N; i++) if (cd[i]) { rc[(i / n) | 0]++; cc[i % n]++; zc[g[i]]++; }
+      return { rc, cc, zc };
+    }
+    const lineOf = (i, byRow) => (byRow ? (i / n) | 0 : i % n);
+    function confine(byRow) {
+      const lo = new Int8Array(n).fill(127), hi = new Int8Array(n).fill(-1);
+      for (let i = 0; i < N; i++) if (cand[i]) { const l = lineOf(i, byRow), z = g[i]; if (l < lo[z]) lo[z] = l; if (l > hi[z]) hi[z] = l; }
+      const done = byRow ? rowDone : colDone;
+      let free = 0; for (let l = 0; l < n; l++) if (!done[l]) free++;
+      const inBand = (z, a, b) => { for (let i = 0; i < N; i++) if (cand[i] && g[i] === z) { const l = lineOf(i, byRow); if (l >= a && l <= b) return true; } return false; };
+      for (let a = 0; a < n; a++) for (let b = a; b < n; b++) {
+        let k = 0; for (let l = a; l <= b; l++) if (!done[l]) k++;
+        if (k === 0 || k === free) continue;
+        let inside = 0, touching = 0;
+        for (let z = 0; z < n; z++) {
+          if (regDone[z] || hi[z] < 0) continue;
+          if (lo[z] >= a && hi[z] <= b) inside++;
+          if (lo[z] <= b && hi[z] >= a && inBand(z, a, b)) touching++;
+        }
+        let changed = false;
+        if (inside === k) for (let i = 0; i < N; i++) if (cand[i]) {
+          const l = lineOf(i, byRow), z = g[i];
+          if (l >= a && l <= b && !(lo[z] >= a && hi[z] <= b)) { cand[i] = 0; changed = true; }
+        }
+        if (changed) { last = { rule: "inside", byRow: byRow, a: a, b: b, k: k }; return true; }
+        if (touching === k) for (let i = 0; i < N; i++) if (cand[i]) {
+          const l = lineOf(i, byRow), z = g[i];
+          if ((l < a || l > b) && lo[z] <= b && hi[z] >= a && inBand(z, a, b)) { cand[i] = 0; changed = true; }
+        }
+        if (changed) { last = { rule: "touch", byRow: byRow, a: a, b: b, k: k }; return true; }
+      }
+      return false;
+    }
+    function lookahead() {
+      for (let i = 0; i < N; i++) {
+        if (!cand[i]) continue;
+        const r = (i / n) | 0, c = i % n, z = g[i], cd = cand.slice();
+        for (let k = 0; k < n; k++) { cd[r * n + k] = 0; cd[k * n + c] = 0; }
+        for (let j = 0; j < N; j++) if (g[j] === z) cd[j] = 0;
+        for (const j of around(n, i)) cd[j] = 0;
+        const k = counts(cd);
+        let dead = false;
+        for (let u = 0; u < n && !dead; u++) {
+          if (!rowDone[u] && u !== r && k.rc[u] === 0) dead = true;
+          if (!colDone[u] && u !== c && k.cc[u] === 0) dead = true;
+          if (!regDone[u] && u !== z && k.zc[u] === 0) dead = true;
+        }
+        if (!dead && CL) for (const [, v, nb] of CL) {
+          let h = 0, f = 0;
+          for (const j of nb) { if (catAt[j] || j === i) h++; else if (cd[j]) f++; }
+          if (h > v || h + f < v) { dead = true; break; }
+        }
+        if (dead) { cand[i] = 0; last = { rule: "look" }; return true; }
+      }
+      return false;
+    }
+    const alone = z => { let s = 0; for (let i = 0; i < N; i++) if (g[i] === z) s++; return s === 1; };
+    for (let guard = 0; guard < 600; guard++) {
+      const { rc, cc, zc } = counts(cand);
+      for (let u = 0; u < n; u++) if ((!rowDone[u] && rc[u] === 0) || (!colDone[u] && cc[u] === 0) || (!regDone[u] && zc[u] === 0)) return null;
+      // une seule case possible : d'abord dans une zone (c'est le plus parlant), puis dans une ligne, puis dans une colonne
+      for (let i = 0; i < N; i++) if (cand[i] && zc[g[i]] === 1) return { i: i, unit: "zone", at: g[i], rule: last, cats: have.length, alone: alone(g[i]) };
+      for (let i = 0; i < N; i++) if (cand[i] && rc[(i / n) | 0] === 1) return { i: i, unit: "row", at: (i / n) | 0, rule: last, cats: have.length };
+      for (let i = 0; i < N; i++) if (cand[i] && cc[i % n] === 1) return { i: i, unit: "col", at: i % n, rule: last, cats: have.length };
+      let step = false;
+      if (CL) for (const [q, v, nb] of CL) {
+        let h = 0, f = 0;
+        for (const j of nb) { if (catAt[j]) h++; else if (cand[j]) f++; }
+        if (h > v || h + f < v) return null;
+        if (!f) continue;
+        if (h === v) { for (const j of nb) cand[j] = 0; last = { rule: "clue", at: q, v: v }; step = true; break; }
+        if (h + f === v) for (const j of nb) if (cand[j]) return { i: j, unit: "clue", at: q, v: v, rule: last, cats: have.length };
+      }
+      if (step) continue;
+      if (confine(true) || confine(false)) continue;
+      if (lookahead()) continue;
+      break;
+    }
+    return null;
+  }
+  // Indice à deux chats par zone, ligne et colonne : même raisonnement que logicSolve2, arrêté au premier chat trouvé.
+  function hintStep2(n, g, have) {
+    const N = n * n, K = 2, units = [];                  // 0..n-1 lignes, n..2n-1 colonnes, 2n..3n-1 zones
+    for (let u = 0; u < 3 * n; u++) units.push([]);
+    for (let i = 0; i < N; i++) { units[(i / n) | 0].push(i); units[n + i % n].push(i); if (g[i] >= 0) units[2 * n + g[i]].push(i); }
+    const unitsOf = i => [(i / n) | 0, n + i % n, 2 * n + g[i]];
+    const cand = new Uint8Array(N).fill(1), got = new Int8Array(3 * n);
+    for (let i = 0; i < N; i++) if (g[i] < 0) cand[i] = 0;
+    let last = null;
+    function put(cd, gt, i) {
+      cd[i] = 0;
+      for (const j of around(n, i)) cd[j] = 0;
+      for (const u of unitsOf(i)) { gt[u]++; if (gt[u] >= K) for (const j of units[u]) cd[j] = 0; }
+    }
+    have.forEach(i => put(cand, got, i));
+    function room(cd, u) {
+      let k = 0, lastp = -9;
+      if (u < 2 * n) { for (let p = 0; p < n; p++) { const i = units[u][p]; if (cd[i] && p - lastp > 1) { k++; lastp = p; } } return k; }
+      for (const i of units[u]) if (cd[i]) k++;
+      return k;
+    }
+    function dead(cd, gt) { for (let u = 0; u < 3 * n; u++) if (gt[u] < K && room(cd, u) < K - gt[u]) return true; return false; }
+    function confine(byRow) {
+      const line = i => byRow ? (i / n) | 0 : i % n, lu = byRow ? 0 : n;
+      const lo = new Int8Array(n).fill(127), hi = new Int8Array(n).fill(-1);
+      for (let i = 0; i < N; i++) if (cand[i]) { const z = g[i], l = line(i); if (l < lo[z]) lo[z] = l; if (l > hi[z]) hi[z] = l; }
+      for (let a = 0; a < n; a++) for (let b = a; b < n; b++) {
+        let B = 0; for (let l = a; l <= b; l++) B += K - got[lu + l];
+        if (B <= 0) continue;
+        let I = 0, T = 0, zi = 0, zt = 0; const inside = new Uint8Array(n), touch = new Uint8Array(n);
+        for (let z = 0; z < n; z++) {
+          const need = K - got[2 * n + z]; if (need <= 0 || hi[z] < 0) continue;
+          if (lo[z] >= a && hi[z] <= b) { inside[z] = 1; I += need; zi++; }
+          let any = false; for (const i of units[2 * n + z]) if (cand[i] && line(i) >= a && line(i) <= b) { any = true; break; }
+          if (any) { touch[z] = 1; T += need; zt++; }
+        }
+        let changed = false;
+        if (I === B) for (let i = 0; i < N; i++) if (cand[i] && line(i) >= a && line(i) <= b && !inside[g[i]]) { cand[i] = 0; changed = true; }
+        if (changed) { last = { rule: "inside", byRow: byRow, a: a, b: b, k: zi }; return true; }
+        if (T === B) for (let i = 0; i < N; i++) if (cand[i] && touch[g[i]] && (line(i) < a || line(i) > b)) { cand[i] = 0; changed = true; }
+        if (changed) { last = { rule: "touch", byRow: byRow, a: a, b: b, k: zt }; return true; }
+      }
+      return false;
+    }
+    function lookahead() {
+      for (let i = 0; i < N; i++) {
+        if (!cand[i]) continue;
+        const cd = cand.slice(), gt = got.slice(); put(cd, gt, i);
+        if (dead(cd, gt)) { cand[i] = 0; last = { rule: "look" }; return true; }
+      }
+      return false;
+    }
+    const order = [];
+    for (let u = 2 * n; u < 3 * n; u++) order.push(u);          // zones d'abord, puis lignes, puis colonnes
+    for (let u = 0; u < 2 * n; u++) order.push(u);
+    for (let guard = 0; guard < 4000; guard++) {
+      if (dead(cand, got)) return null;
+      for (const u of order) {
+        const need = K - got[u]; if (need <= 0) continue;
+        const c = units[u].filter(i => cand[i]);
+        if (c.length === need) return { i: c[0], unit: u >= 2 * n ? "zone" : u >= n ? "col" : "row", at: u >= 2 * n ? u - 2 * n : u % n, need: need, rule: last, cats: have.length };
+      }
+      if (confine(true) || confine(false)) continue;
+      if (lookahead()) continue;
+      break;
+    }
+    return null;
+  }
+  const api = { makeLevel, logicSolve, around, SPECIALS, logicSolve2, countSolutions, countSolutions2, tierFor, targetFor, sizeFor, kindOf, rewardFor, mulberry32, hintStep, hintStep2 };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.RonronGen = api;
   // Utilisé comme tâche de fond : on reçoit un numéro de niveau, on renvoie le niveau.
