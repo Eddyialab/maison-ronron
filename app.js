@@ -1560,7 +1560,11 @@
   const chunkEl = $("#chunks"), farEl = $("#farlayers"), planEl = worldEl.querySelector(".plan"), LO = window.RONRON_LO || null;
   const FAR = 0.26, CH = 1024, NI = Math.ceil(WORLD.w / CH), NJ = Math.ceil(WORLD.h / CH);
   const DPR = Math.min(3, window.devicePixelRatio || 1);
-  const BM_MAX = (navigator.deviceMemory >= 8 ? 24 : 12) * 1e6;          // pixels d'images décodées gardés en cache
+  // Safari (tous les navigateurs d'iPhone) : createImageBitmap y est fragile (dalles du terrain dessinées vides) et chaque image repasse par la
+  // mémoire graphique : on y décode des images classiques, et on garde moins de choses en mémoire.
+  const WEBKIT = /Apple/.test(navigator.vendor || "");
+  const BM_MAX = (WEBKIT ? 8 : navigator.deviceMemory >= 8 ? 24 : 12) * 1e6;          // pixels d'images décodées gardés en cache
+  const diag = { fails: 0, errors: 0, last: "" };
   let shownList = [], farKey = null, farBusy = false, farSheets = null, farDrop = 0;
   const chunks = {};
   let painting = false, paintAgain = false;
@@ -1596,7 +1600,7 @@
       for (let i = Math.max(0, Math.floor(b.x0 / CH)); i <= Math.min(NI - 1, Math.floor(b.x1 / CH)); i++) out.push(j * NI + i);
     return out;
   }
-  const lod = () => (cam.s * DPR >= 0.6 ? 1 : 0.5);          // définition des carreaux : pleine, ou moitié quand on est assez loin
+  const lod = () => (cam.s * DPR >= (WEBKIT ? 0.78 : 0.6) ? 1 : 0.5);          // définition des carreaux : pleine, ou moitié quand on est assez loin
   function dropChunk(id) { const c = chunks[id]; if (!c) return; c.cv.width = c.cv.height = 0; if (c.snap) c.snap.cv.width = c.snap.cv.height = 0; c.cv.remove(); delete chunks[id]; }
 
   // Cache des images décodées : les plus anciennes sont libérées dès que le total dépasse BM_MAX.
@@ -1606,12 +1610,14 @@
     let e = bmCache.get(src);
     if (e) { bmCache.delete(src); bmCache.set(src, e); return e.p; }
     e = { bm: null, px: 0 };
-    e.p = (typeof createImageBitmap === "function" ? fetch(src).then(r => (r.ok ? r.blob() : Promise.reject())).then(b => createImageBitmap(b))
-      : Promise.reject()).catch(() => new Promise(res => {       // navigateur plus ancien : image classique
-        const im = new Image(); im.onload = () => (im.decode ? im.decode().catch(() => 0) : Promise.resolve()).then(() => res(im)); im.onerror = () => res(null); im.src = src; }))
+    e.p = (!WEBKIT && typeof createImageBitmap === "function" ? fetch(src).then(r => (r.ok ? r.blob() : Promise.reject())).then(b => createImageBitmap(b))
+      : Promise.reject()).catch(() => new Promise(res => {       // Safari, ou navigateur plus ancien : image classique
+        const im = new Image(); im.decoding = "async";
+        im.onload = () => (im.decode ? im.decode() : Promise.resolve()).then(() => res(im.naturalWidth ? im : null), () => res(null));
+        im.onerror = () => res(null); im.src = src; }))
       .then(bm => {
         if (bmCache.get(src) !== e) { free(bm); return bm; }     // déjà sorti du cache : sert une fois, puis libéré
-        if (!bm) { bmCache.delete(src); return null; }           // échec (réseau) : on réessaiera
+        if (!bm) { bmCache.delete(src); diag.fails++; diag.last = src.split("/").pop(); return null; }           // échec (réseau, mémoire) : on réessaiera
         e.bm = bm; e.px = bm ? bm.width * bm.height : 0; bmPx += e.px;
         for (const [k, o] of bmCache) {                          // les plus anciennes d'abord
           if (bmPx <= BM_MAX || bmCache.size <= 4) break;
@@ -1624,6 +1630,7 @@
     return e.p;
   }
   function free(bm) { if (!bm) return; if (bm.close) setTimeout(() => bm.close(), 0); else bm.src = ""; }
+  let missN = 0;
 
   function updateView() {
     const l = camLimits();
@@ -1631,7 +1638,7 @@
     const far = cam.s < FAR;
     if (chunkEl.hidden !== far) chunkEl.hidden = far;
     if (far) { if (!zooming()) Object.keys(chunks).forEach(dropChunk); farCheck(); return; }
-    const keep = new Set(chunkIds(viewBox(400)));
+    const keep = new Set(chunkIds(viewBox(WEBKIT ? 250 : 400)));
     Object.keys(chunks).forEach(id => { if (!keep.has(+id)) dropChunk(id); });
     if (!painting) paint(); else paintAgain = true;
     farCheck();
@@ -1647,7 +1654,7 @@
       for (;;) {
         paintAgain = false;
         if (cam.s < FAR || layersKey === null) break;
-        const todo = jobs().slice(0, 6);
+        const todo = jobs().slice(0, 16);           // tout l'écran d'un coup : chaque image n'est décodée qu'une fois
         if (!todo.length) break;
         const key = layersKey, r = lod(), all = TILES.concat(shownList);
         todo.forEach(o => {
@@ -1686,7 +1693,7 @@
           if (performance.now() - slice > 10) { await yieldNow(); slice = performance.now(); }
         }
         if (!ok) { todo.forEach(o => { o.cv.width = o.cv.height = 0; const sn = chunks[o.id] && chunks[o.id].snap; if (o.snap && o.snap !== sn) o.snap.cv.width = o.snap.cv.height = 0; }); continue; }
-        const keep = new Set(chunkIds(viewBox(400)));
+        const keep = new Set(chunkIds(viewBox(WEBKIT ? 250 : 400)));
         todo.forEach(o => {
           if (!keep.has(o.id)) { o.cv.width = o.cv.height = 0; return; }        // la carte est partie ailleurs entre-temps
           const cv = o.cv;
@@ -1698,9 +1705,10 @@
           if (o.snap && !sn) o.snap.cv.width = o.snap.cv.height = 0;      // plus d'essai en cours : la copie ne sert plus
           chunks[o.id] = { cv: cv, key: miss ? null : key, r: r, snap: sn };      // une image manquait : ce carreau sera repeint
         });
-        if (miss) { setTimeout(updateView, 4000); break; }
+        if (miss) { missN++; setTimeout(updateView, Math.min(60000, 4000 * Math.pow(2, missN - 1))); break; }
+        missN = 0;
       }
-    } catch (e) { setTimeout(updateView, 1000); } finally { painting = false; }
+    } catch (e) { diag.errors++; diag.last = String(e && e.message || e); missN++; setTimeout(updateView, Math.min(60000, 2000 * Math.pow(2, missN))); } finally { painting = false; }
   }
   function painted() { return cam.s < FAR || !jobs().length; }
   // rendre la main sans attendre l'image suivante (un message est servi tout de suite, setTimeout et requestAnimationFrame font attendre)
@@ -1725,9 +1733,27 @@
       if (ims[0]) ctx.drawImage(ims[0], 0, 0, farEl.width, farEl.height);
       shown.forEach(p => { const m = LO.map[p.src]; if (m && ims[m[0] + 1]) ctx.drawImage(ims[m[0] + 1], m[1], m[2], m[3], m[4], Math.round(p.x / q), Math.round(p.y / q), m[3], m[4]); });   // calé sur les pixels : pas de bord à demi transparent
       farKey = key; farEl.hidden = false;
-      if (planEl && planEl.getAttribute("src")) planEl.removeAttribute("src");      // la toile la remplace
       farCheck();
     });
+  }
+  // Retour dans l'appli : un iPhone à court de mémoire peut vider des toiles pendant qu'elle était en arrière-plan.
+  // Un carreau est toujours entièrement opaque (les dalles couvrent tout) : un pixel transparent veut dire « vidé », on le repeint.
+  function emptied(cv, x, y) {
+    try { return cv.width > 0 && cv.getContext("2d").getImageData(x, y, 1, 1).data[3] === 0; } catch (e) { return false; }
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) return;
+    missN = 0;
+    Object.keys(chunks).forEach(c => { const o = chunks[c]; if (emptied(o.cv, o.cv.width >> 1, o.cv.height >> 1)) o.key = null; });
+    if (farEl && farKey && emptied(farEl, farEl.width >> 1, farEl.height >> 1)) { farKey = null; composeFar(); }
+    updateView();
+  });
+  // état de la carte, affiché dans les réglages : aide à comprendre un souci sur un téléphone
+  function mapDiag() {
+    const n = Object.keys(chunks).length, px = Object.keys(chunks).reduce((s, c) => s + chunks[c].cv.width * chunks[c].cv.height, 0);
+    return "Carte : " + n + " carreaux, " + Math.round((px + (farEl ? farEl.width * farEl.height : 0)) * 4 / 1e6) + " Mo de dessins, " +
+      Math.round(bmPx * 4 / 1e6) + " Mo d'images, " + (WEBKIT ? "Safari" : "autre") + ", écran ×" + DPR +
+      (diag.fails || diag.errors ? " · échecs " + diag.fails + ", erreurs " + diag.errors + " (" + diag.last.slice(0, 60) + ")" : " · aucun échec");
   }
   function farCheck() { if (farEl && farKey && farEl.hidden) farEl.hidden = false; }
   function centerOn(wx, wy, s) {
@@ -2562,7 +2588,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.30." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.31." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -2573,6 +2599,7 @@
       '<div class="row"><button class="btn ghost small" id="b-copy" type="button">Copier mon code</button>' +
       '<button class="btn ghost small" id="b-load" type="button">Restaurer ce code</button></div>' +
       '<span class="tag">Outils de test</span>' +
+      '<p class="mapdiag">' + mapDiag() + "</p>" +
       '<div class="row"><button class="btn ghost small" id="t-kibble" type="button">+10 croquettes</button>' +
       '<button class="btn ghost small" id="t-lives" type="button">Recharger les vies</button>' +
       '<button class="btn ghost small" id="t-tuna" type="button">+20 boîtes de thon</button></div>' +
@@ -2987,7 +3014,7 @@
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
         // l'app reste souvent ouverte en arrière-plan : on revérifie quand elle revient au premier plan
-        document.addEventListener("visibilitychange", () => { if (!document.hidden) reg.update().catch(() => {}); });
+        document.addEventListener("visibilitychange", () => { if (!document.hidden && reg) reg.update().catch(() => {}); });
       }).catch(() => {});
     });
   }
@@ -3009,7 +3036,7 @@
     DECOS.forEach(d => d.parts.forEach(o => { if (o.patch) out.add(o.patch); }));
     return Object.keys(PATCH).filter(k => out.has(PATCH[k]));
   }
-  window.__ronron = { objKeys: objKeys, slots: () => SLOTS.map(x => ({ id: x.id, name: x.name, short: x.short, room: x.room, zone: zoneOf(x) || "gardien", poi: x.poi, at: x.at, styles: (x.styles || []).length })), state: () => S, level: () => L, nav: () => navFree, look: look, layers: () => shownList.map(p => [p.src, Object.keys(chunks).some(c => chunks[c].key === layersKey && hit(geom(+c), p)) ? p.src : ""]), shown: () => shownList.map(p => [p.src, p.x, p.y, p.w, p.h]), painted: painted, paintStats: () => paintStats, mem: () => ({ chunks: Object.keys(chunks).length, chunkPx: Object.keys(chunks).reduce((s, c) => s + chunks[c].cv.width * chunks[c].cv.height, 0), cachePx: bmPx, cached: bmCache.size }), far: () => [farKey === layersKey, farEl ? !farEl.hidden : false], path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
+  window.__ronron = { objKeys: objKeys, slots: () => SLOTS.map(x => ({ id: x.id, name: x.name, short: x.short, room: x.room, zone: zoneOf(x) || "gardien", poi: x.poi, at: x.at, styles: (x.styles || []).length })), state: () => S, level: () => L, nav: () => navFree, look: look, layers: () => shownList.map(p => [p.src, Object.keys(chunks).some(c => chunks[c].key === layersKey && hit(geom(+c), p)) ? p.src : ""]), shown: () => shownList.map(p => [p.src, p.x, p.y, p.w, p.h]), painted: painted, paintStats: () => paintStats, diag: () => diag, mem: () => ({ chunks: Object.keys(chunks).length, chunkPx: Object.keys(chunks).reduce((s, c) => s + chunks[c].cv.width * chunks[c].cv.height, 0), cachePx: bmPx, cached: bmCache.size }), far: () => [farKey === layersKey, farEl ? !farEl.hidden : false], path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
     navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length, navManoir.length, navSalon.length, navCour.length, navHall.length, navChats.length, navAile.length, navBiblio.length, navEst.length, navEstIn.length, navPerron.length, navEtang.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
     audio: () => ({ ctx: AC ? AC.state : null, playing: !!(musicSrc && !musicSrc.pending), track: musicIdx % MUSIC.length, pref: audioPref }), sfx: sfx, sfxNames: () => Object.keys(SFX), sfxRaw: name => SFX[name](),
     walls: () => (WALLS ? WALLS.strips.filter(st => st.node && st.node.parentNode).length : -1), wallsReady: () => !!wallCanvas };

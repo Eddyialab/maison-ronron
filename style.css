@@ -623,3 +623,5 @@ h2 {
 .sheet p.family.pack { display: flex; align-items: center; gap: 8px; }
 .sheet p.family.pack .btn { flex: none; min-height: 34px; }
 @media (prefers-reduced-motion: reduce) { .tcard.r3, .tcard.r2::after, .tcard.r3::after, .adv.can, .advbtn.badge .ico { animation: none; } .flip { transition: none; } }
+
+.mapdiag { font-size: 12px; color: var(--muted, #8a7f72); margin: 4px 0 8px; }
