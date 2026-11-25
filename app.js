@@ -224,6 +224,11 @@
     { id: "cour_dallage", room: "Cour", name: "Refaire le dallage de la cour", short: "Dallage de la cour", verb: "Refaire", cost: 14, icon: "hammer", need: ["cour_desherbe"], at: z5([1750, 820]),
       desc: "Les vieilles dalles sont fendues. Choisis le sol de la cour.",
       styles: [{ name: "Pierre blonde", sw: "#E2BE7A", patch: PATCH.cour_dallage_blond }, { name: "Damier pierre et ardoise", sw: "#5E6168", patch: PATCH.cour_dallage_damier }] },
+    /* Lot J : le tapis est rangé avant la fontaine, le fauteuil et les pots, qui passent par-dessus. */
+    { id: "cour_carpette", room: "Cour", name: "Dérouler un tapis devant le fauteuil", short: "Tapis", verb: "Dérouler", cost: 14, icon: "plus", need: ["cour_fauteuil", "cour_fontaine"], at: z5([1500, 640]),
+      desc: "Pour la sieste au soleil, devant le fauteuil.",
+      poi: [[{ x: 5863, y: 3140, pose: "dort", dir: -1, min: 12000, max: 28000 }], [{ x: 5860, y: 3127, pose: "dort", dir: -1, min: 12000, max: 28000 }]],
+      styles: [{ name: "Kilim", sw: "#B5342B", patch: PATCH.cour_carpette_A }, { name: "Rayures bleues", sw: "#7FA3CF", patch: PATCH.cour_carpette_B }] },
     { id: "cour_fontaine", room: "Cour", name: "Restaurer la fontaine", short: "Fontaine", verb: "Restaurer", cost: 16, icon: "hammer", need: ["cour_dallage"], at: z5([1365, 830]),
       desc: "De l'eau claire et un petit jet. Les chats viendront s'asseoir sur le bord.",
       poi: [[p5(1340, 1066, "assis", 1), p5(1150, 955, "assis", 1)], [p5(1340, 1018, "assis", 1), p5(1140, 910, "assis", 1)]],
@@ -711,7 +716,30 @@
     { id: "manoir_gramophone", room: "Manoir", name: "Poser un gramophone", short: "Gramophone", verb: "Poser", cost: 14, icon: "plus", need: ["manoir_sol"], at: z4([1500, 660]),
       desc: "Pour danser dans le grand salon.",
       styles: [{ name: "Pavillon en laiton", sw: "#C9A24B", patch: PATCH.manoir_gramophone_A }, { name: "Pavillon fleuri", sw: "#F0B8C8", patch: PATCH.manoir_gramophone_B }],
-      parts: [[{ patch: PATCH.manoir_gramophone_A_p0, depth: 4426 }], [{ patch: PATCH.manoir_gramophone_B_p0, depth: 4424 }]] }
+      parts: [[{ patch: PATCH.manoir_gramophone_A_p0, depth: 4426 }], [{ patch: PATCH.manoir_gramophone_B_p0, depth: 4424 }]] },
+    /* ----- Détails de la cour d'honneur (lot J, 132 croquettes ; le tapis est plus haut, avant la fontaine). ----- */
+    { id: "cour_portraits", room: "Cour", name: "Accrocher des portraits de chats", short: "Portraits", verb: "Accrocher", cost: 20, icon: "plus", need: ["cour_galeries"], at: z5([490, 140]),
+      desc: "Les ancêtres de la maison, en peinture, dans la petite galerie.",
+      styles: [{ name: "Cadres dorés", sw: "#C9A24B", patch: PATCH.cour_portraits_A }, { name: "Aquarelles", sw: "#F3F1E8", patch: PATCH.cour_portraits_B }] },
+    { id: "cour_banquette", room: "Cour", name: "Installer une banquette", short: "Banquette", verb: "Installer", cost: 16, icon: "plus", need: ["cour_galeries"], at: z5([480, 330]),
+      desc: "Sous les portraits, pour les admirer assis.",
+      styles: [{ name: "Velours bordeaux", sw: "#7A2342", patch: PATCH.cour_banquette_A }, { name: "Lin crème", sw: "#EFE6CF", patch: PATCH.cour_banquette_B }] },
+    { id: "cour_statue", room: "Cour", name: "Poser une statue de chat", short: "Statue", verb: "Poser", cost: 16, icon: "plus", need: ["cour_galeries"], at: z5([270, 240]),
+      desc: "Dans le coin de la galerie, un chat qui ne bouge jamais.",
+      styles: [{ name: "Buste en marbre", sw: "#F1EEE6", patch: PATCH.cour_statue_A }, { name: "Terre cuite", sw: "#D49A72", patch: PATCH.cour_statue_B }] },
+    { id: "cour_grimpante", room: "Cour", name: "Faire grimper une plante", short: "Plante grimpante", verb: "Faire grimper", cost: 24, icon: "plus", need: ["cour_arcades"], at: z5([1950, 330]),
+      desc: "Sur le haut du mur aux arcades, jusqu'à la salle des chats.",
+      styles: [{ name: "Bougainvillier", sw: "#C2287A", patch: PATCH.cour_grimpante_A }, { name: "Jasmin", sw: "#F3F1E8", patch: PATCH.cour_grimpante_B }] },
+    { id: "cour_voliere", room: "Cour", name: "Installer une volière", short: "Volière", verb: "Installer", cost: 26, icon: "plus", need: ["cour_dallage"], at: z5([1760, 760]),
+      desc: "Deux oiseaux qui chantent. Un chat qui les regarde, très, très attentivement.",
+      poi: [[{ x: 6154, y: 3270, pose: "assis", dir: -1, min: 12000, max: 28000 }], [{ x: 6150, y: 3256, pose: "assis", dir: 1, min: 12000, max: 28000 }]],
+      styles: [{ name: "Laiton", sw: "#B8913E", patch: PATCH.cour_voliere_A }, { name: "Blanche", sw: "#F1F0EC", patch: PATCH.cour_voliere_B }],
+      parts: [[{ patch: PATCH.cour_voliere_A_p0, depth: 3486 }], [{ patch: PATCH.cour_voliere_B_p0, depth: 3268 }]] },
+    { id: "cour_cartons", room: "Cour", name: "Empiler des cartons", short: "Cartons", verb: "Empiler", cost: 16, icon: "plus", need: ["cour_dallage"], at: z5([730, 850]),
+      desc: "Le meilleur lit du monde, d'après les chats.",
+      poi: [[{ x: 5146, y: 3410, pose: "dort", dir: -1, min: 12000, max: 28000, depth: 3434 }], [{ x: 5133, y: 3373, pose: "dort", dir: 1, min: 12000, max: 28000, depth: 3443 }]],
+      styles: [{ name: "Cartons", sw: "#C49A6C", patch: PATCH.cour_cartons_A }, { name: "Boîtes à chapeaux", sw: "#F4C6D2", patch: PATCH.cour_cartons_B }],
+      parts: [[{ patch: PATCH.cour_cartons_A_p0, depth: 3433 }], [{ patch: PATCH.cour_cartons_B_p0, depth: 3442 }]] }
   ];
   const SLOT = {}; SLOTS.forEach(s => { SLOT[s.id] = s; });
   /* Détail posé sur un autre objet (s.dep) : une variante par style de cet objet. Places des chats et cases de la grille
@@ -1568,7 +1596,7 @@
   let shownList = [], farKey = null, farBusy = false, farSheets = null, farDrop = 0;
   const chunks = {};
   let painting = false, paintAgain = false;
-  const paintStats = { batches: 0, chunks: 0, draws: 0, waitMs: 0, drawMs: 0 };
+  const paintStats = { batches: 0, chunks: 0, draws: 0, waitMs: 0, drawMs: 0, fromSnap: 0, full: 0 };
   /* Essai d'un style : on garde, pour chaque carreau touché, une copie peinte jusqu'au calque essayé (non compris).
      Changer de style ne repeint alors que ce calque et ceux qui passent par-dessus. */
   let snapIds = null;
@@ -1657,13 +1685,16 @@
         const todo = jobs().slice(0, 16);           // tout l'écran d'un coup : chaque image n'est décodée qu'une fois
         if (!todo.length) break;
         const key = layersKey, r = lod(), all = TILES.concat(shownList);
+        // essai d'un style : la copie est prise à la place du chantier dans l'ordre global (même si son calque ne touche pas ce carreau)
+        const ia = snapIds ? all.findIndex(p => snapIds.has(p.src)) : -1, gi = ia >= 0 ? new Map(all.map((p, i) => [pid(p), i])) : null;
         todo.forEach(o => {
           o.cv = document.createElement("canvas"); o.cv.width = Math.ceil(o.g.cw * r); o.cv.height = Math.ceil(o.g.ch * r);
           o.ctx = o.cv.getContext("2d"); o.ctx.imageSmoothingQuality = "high";
           o.list = all.filter(p => hit(o.g, p)).map(pid); o.pos = 0; o.start = 0; o.snapAt = -1;
           const old = chunks[o.id], sn = old && old.snap;
           if (sn && sn.cv.width && sn.r === r && sn.n <= o.list.length && sn.ids.every((s, i) => s === o.list[i])) try { o.ctx.drawImage(sn.cv, 0, 0); o.start = sn.n; o.snap = sn; } catch (e) { /* copie libérée */ }
-          if (snapIds) { const k = o.list.findIndex(s => snapIds.has(s.slice(0, s.lastIndexOf("@")))); if (k > 0 && !(o.snap && o.snap.n === k)) o.snapAt = k; }
+          if (o.start) paintStats.fromSnap++; else paintStats.full++;
+          if (ia >= 0) { let k = o.list.findIndex(s => gi.get(s) >= ia); if (k < 0) k = o.list.length; if (k > 0 && !(o.snap && o.snap.n === k)) o.snapAt = k; }
         });
         const srcs = all.filter(p => todo.some(o => hit(o.g, p))), at = new Map(srcs.map((p, i) => [pid(p), i]));
         // premier calque à peindre vraiment (ceux d'avant sont dans les instantanés) : on ne décode rien avant
@@ -1677,7 +1708,7 @@
           if (!use.length) continue;
           use.forEach(o => { if (o.pos - 1 === o.snapAt) {          // copie avant le calque essayé
             const c = document.createElement("canvas"); c.width = o.cv.width; c.height = o.cv.height; c.getContext("2d").drawImage(o.cv, 0, 0);
-            o.snap = { n: o.snapAt, ids: o.list.slice(0, o.snapAt), at: p.src, r: r, cv: c }; } });
+            o.snap = { n: o.snapAt, ids: o.list.slice(0, o.snapAt), at: all[ia].src, r: r, cv: c }; } });
           for (let b = Math.max(k + 1, first); b < Math.min(srcs.length, Math.max(k + 1, first) + 2); b++) getBitmap(srcs[b].src);     // les suivantes se décodent pendant ce temps
           const tw = performance.now(), bm = await getBitmap(p.src); paintStats.waitMs += performance.now() - tw; const td = performance.now();
           if (layersKey !== key || lod() !== r || cam.s < FAR) { ok = false; break; }
@@ -1692,6 +1723,12 @@
           // on rend la main au navigateur toutes les 10 ms : la carte continue de glisser pendant qu'on peint
           if (performance.now() - slice > 10) { await yieldNow(); slice = performance.now(); }
         }
+        if (ok) todo.forEach(o => {               // le chantier essayé vient après tout ce carreau : copie du carreau entier
+          if (o.snapAt > 0 && o.snapAt === o.list.length && !(o.snap && o.snap.n === o.snapAt)) {
+            const c = document.createElement("canvas"); c.width = o.cv.width; c.height = o.cv.height; c.getContext("2d").drawImage(o.cv, 0, 0);
+            o.snap = { n: o.snapAt, ids: o.list.slice(), at: all[ia].src, r: r, cv: c };
+          }
+        });
         if (!ok) { todo.forEach(o => { o.cv.width = o.cv.height = 0; const sn = chunks[o.id] && chunks[o.id].snap; if (o.snap && o.snap !== sn) o.snap.cv.width = o.snap.cv.height = 0; }); continue; }
         const keep = new Set(chunkIds(viewBox(WEBKIT ? 250 : 400)));
         todo.forEach(o => {
@@ -2154,12 +2191,12 @@
   // Recompose l'image de la maison (dalles du terrain puis calques des chantiers) dès que ce qui est affiché change.
   function refreshWalls(layers) {
     if (!WALLS) return;
-    const key = layers.map(p => p.src).join("|");
+    const B = wallBox, inB = t => t.x < B.x + B.w && t.x + t.w > B.x && t.y < B.y + B.h && t.y + t.h > B.y;
+    const list = TILES.filter(inB).concat(layers.filter(inB));      // seulement ce qui touche la maison : pas tout le domaine
+    const key = list.map(p => p.src).join("|");                     // un chantier ailleurs sur le domaine ne refait pas les murs
     if (key === wallKey) return;
     wallKey = key;
-    const stamp = ++wallStamp, B = wallBox;
-    const inB = t => t.x < B.x + B.w && t.x + t.w > B.x && t.y < B.y + B.h && t.y + t.h > B.y;
-    const list = TILES.filter(inB).concat(layers.filter(inB));      // seulement ce qui touche la maison : pas tout le domaine
+    const stamp = ++wallStamp;
     Promise.all(list.map(p => getBitmap(p.src))).then(ims => {
       if (stamp !== wallStamp) return;
       const cv = document.createElement("canvas"); cv.width = B.w; cv.height = B.h;
@@ -2588,7 +2625,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.31." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.32." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
