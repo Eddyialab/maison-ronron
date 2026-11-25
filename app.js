@@ -675,7 +675,43 @@
       styles: [{ name: "Tulipes", sw: "#E2483A", patch: PATCH.allee_bordure_A }, { name: "Pensées", sw: "#7A5BC4", patch: PATCH.allee_bordure_B }] },
     { id: "allee_fleurs", room: "Allée du manoir", name: "Fleurir la statue", short: "Fleurs de la statue", verb: "Fleurir", cost: 12, icon: "plus", need: ["allee_statue"], at: z3([2060, 1400]),
       desc: "Un massif tout autour du socle de la statue.",
-      styles: [{ name: "Lavande", sw: "#8E7CC3", patch: PATCH.allee_fleurs_A }, { name: "Roses blanches", sw: "#F3F1E8", patch: PATCH.allee_fleurs_B }] }
+      styles: [{ name: "Lavande", sw: "#8E7CC3", patch: PATCH.allee_fleurs_A }, { name: "Roses blanches", sw: "#F3F1E8", patch: PATCH.allee_fleurs_B }] },
+    /* ----- Détails de l'aile d'entrée du manoir (lot I, 146 croquettes). ----- */
+    { id: "manoir_jardin", room: "Manoir", name: "Installer un salon de jardin", short: "Salon de jardin", verb: "Installer", cost: 26, icon: "plus", need: ["manoir_pelouse"], at: z4([710, 860]),
+      desc: "Une table, deux chaises et du thé. Les chaises sont vite prises.",
+      poi: [[{ x: 4936, y: 4529, pose: "assis", dir: 1, min: 12000, max: 28000, depth: 4691 }, { x: 5165, y: 4580, pose: "assis", dir: -1, min: 12000, max: 28000, depth: 4691 }], [{ x: 4928, y: 4512, pose: "assis", dir: 1, min: 12000, max: 28000, depth: 4716 }, { x: 5173, y: 4627, pose: "assis", dir: -1, min: 12000, max: 28000, depth: 4716 }]],
+      styles: [{ name: "Fer forgé vert", sw: "#2F5A3E", patch: PATCH.manoir_jardin_A }, { name: "Bois blanc", sw: "#F1F0EC", patch: PATCH.manoir_jardin_B }],
+      parts: [[{ patch: PATCH.manoir_jardin_A_p0, depth: 4690 }], [{ patch: PATCH.manoir_jardin_B_p0, depth: 4715 }]] },
+    { id: "manoir_lanternes", room: "Manoir", name: "Planter des lanternes", short: "Lanternes", verb: "Planter", cost: 16, icon: "plus", need: ["manoir_pelouse"], at: z4([1300, 1290]),
+      desc: "Le long de la bordure, pour les soirées sur la pelouse.",
+      styles: [{ name: "Fer noir", sw: "#2B2B30", patch: PATCH.manoir_lanternes_A }, { name: "Laiton", sw: "#C9A24B", patch: PATCH.manoir_lanternes_B }],
+      parts: [[{ patch: PATCH.manoir_lanternes_A_p0, depth: 4566 }, { patch: PATCH.manoir_lanternes_A_p1, depth: 4879 }, { patch: PATCH.manoir_lanternes_A_p2, depth: 5082 }, { patch: PATCH.manoir_lanternes_A_p3, depth: 5075 }, { patch: PATCH.manoir_lanternes_A_p4, depth: 4888 }, { patch: PATCH.manoir_lanternes_A_p5, depth: 4696 }], [{ patch: PATCH.manoir_lanternes_B_p0, depth: 4769 }, { patch: PATCH.manoir_lanternes_B_p1, depth: 5089 }, { patch: PATCH.manoir_lanternes_B_p2, depth: 5077 }, { patch: PATCH.manoir_lanternes_B_p3, depth: 4891 }, { patch: PATCH.manoir_lanternes_B_p4, depth: 4696 }]] },
+    { id: "manoir_puits", room: "Manoir", name: "Restaurer le vieux puits", short: "Puits", verb: "Restaurer", cost: 28, icon: "hammer", need: ["manoir_pelouse"], at: z4([2310, 880]),
+      desc: "Il servait aux jardiniers. Les chats aiment s'asseoir sur la margelle.",
+      poi: [[{ x: 6548, y: 4662, pose: "assis", dir: 1, min: 12000, max: 28000, depth: 4797 }], [{ x: 6583, y: 4672, pose: "assis", dir: 1, min: 12000, max: 28000, depth: 4761 }]],
+      styles: [{ name: "Pierre et tuiles", sw: "#B5523B", patch: PATCH.manoir_puits_A }, { name: "Pierre claire et roses", sw: "#EFE6CF", patch: PATCH.manoir_puits_B }],
+      parts: [[{ patch: PATCH.manoir_puits_A_p0, depth: 4796 }], [{ patch: PATCH.manoir_puits_B_p0, depth: 4760 }]] },
+    { id: "manoir_oiseaux", room: "Manoir", name: "Poser un bain d'oiseaux", short: "Bain d'oiseaux", verb: "Poser", cost: 16, icon: "plus", need: ["manoir_pelouse"], at: z4([1390, 1250]),
+      desc: "Les oiseaux viennent boire. Un chat les surveille, l'air de rien.",
+      poi: [[{ x: 5868, y: 5057, pose: "assis", dir: -1, min: 12000, max: 28000 }], [{ x: 5928, y: 5062, pose: "assis", dir: -1, min: 12000, max: 28000 }]],
+      styles: [{ name: "Pierre grise", sw: "#A8A49A", patch: PATCH.manoir_oiseaux_A }, { name: "Céramique bleue", sw: "#3A6FB8", patch: PATCH.manoir_oiseaux_B }],
+      parts: [[{ patch: PATCH.manoir_oiseaux_A_p0, depth: 5063 }], [{ patch: PATCH.manoir_oiseaux_B_p0, depth: 5071 }]] },
+    { id: "manoir_griffoir", room: "Manoir", name: "Installer un griffoir", short: "Griffoir", verb: "Installer", cost: 12, icon: "plus", need: ["manoir_pelouse"], at: z4([1860, 1230]),
+      desc: "Pour épargner les meubles du manoir.",
+      poi: [[{ x: 6283, y: 4992, pose: "griffe", dir: -1, min: 12000, max: 28000 }], [{ x: 6390, y: 4915, pose: "griffe", dir: -1, min: 12000, max: 28000 }]],
+      styles: [{ name: "Sisal et bois", sw: "#C9A26B", patch: PATCH.manoir_griffoir_A }, { name: "Poteau blanc", sw: "#F1F0EC", patch: PATCH.manoir_griffoir_B }],
+      parts: [[{ patch: PATCH.manoir_griffoir_A_p0, depth: 5016 }], [{ patch: PATCH.manoir_griffoir_B_p0, depth: 4929 }]] },
+    { id: "manoir_grimpante", room: "Manoir", name: "Faire grimper une plante", short: "Plante grimpante", verb: "Faire grimper", cost: 18, icon: "plus", need: ["manoir_fenetres"], at: z4([985, 620]),
+      desc: "Sur l'angle du grand salon, jusqu'en haut du mur.",
+      styles: [{ name: "Lierre", sw: "#3F6B2E", patch: PATCH.manoir_grimpante_A }, { name: "Rosier blanc", sw: "#F3F1E8", patch: PATCH.manoir_grimpante_B }] },
+    { id: "manoir_horloge", room: "Manoir", name: "Installer une horloge comtoise", short: "Horloge", verb: "Installer", cost: 16, icon: "plus", need: ["manoir_murs"], at: z4([1155, 470]),
+      desc: "À gauche de la cheminée. On l'entend de tout le salon.",
+      styles: [{ name: "Bois foncé", sw: "#5A3420", patch: PATCH.manoir_horloge_A }, { name: "Blanche et or", sw: "#E9D9A6", patch: PATCH.manoir_horloge_B }],
+      parts: [[{ patch: PATCH.manoir_horloge_A_p0, depth: 4262 }], [{ patch: PATCH.manoir_horloge_B_p0, depth: 4275 }]] },
+    { id: "manoir_gramophone", room: "Manoir", name: "Poser un gramophone", short: "Gramophone", verb: "Poser", cost: 14, icon: "plus", need: ["manoir_sol"], at: z4([1500, 660]),
+      desc: "Pour danser dans le grand salon.",
+      styles: [{ name: "Pavillon en laiton", sw: "#C9A24B", patch: PATCH.manoir_gramophone_A }, { name: "Pavillon fleuri", sw: "#F0B8C8", patch: PATCH.manoir_gramophone_B }],
+      parts: [[{ patch: PATCH.manoir_gramophone_A_p0, depth: 4426 }], [{ patch: PATCH.manoir_gramophone_B_p0, depth: 4424 }]] }
   ];
   const SLOT = {}; SLOTS.forEach(s => { SLOT[s.id] = s; });
   /* Détail posé sur un autre objet (s.dep) : une variante par style de cet objet. Places des chats et cases de la grille
@@ -1486,7 +1522,7 @@
 
   /* ================= 5. Carte du domaine ================= */
 
-  const mapEl = $("#map"), worldEl = $("#world"), layersEl = $("#layers"), markersEl = $("#markers");
+  const mapEl = $("#map"), worldEl = $("#world"), markersEl = $("#markers");
   const cam = { x: 0, y: 0, s: 0.5, placed: false };   // écran = monde × s + (x, y)
   worldEl.style.width = WORLD.w + "px"; worldEl.style.height = WORLD.h + "px";
 
@@ -1516,23 +1552,167 @@
     else updateView();
   }
 
-  /* Mémoire des images : sur un téléphone, la carte entière en pleine définition (dalles + calques des chantiers) ne tient pas
-     (sinon le téléphone efface des images et l'écran clignote). Près de l'écran : pleine définition. Au-delà : rien.
-     En vue éloignée : le domaine au quart (image de fond) et tous les calques au quart, dessinés une fois dans une toile.
-     De près, cette toile (placée sous les calques) ne sert qu'en attendant les calques en pleine définition : on la cache dès qu'ils sont tous chargés. */
-  const tilesEl = $("#tiles"), tileNodes = {}, farEl = $("#farlayers"), LO = window.RONRON_LO || null;
-  const FAR = 0.26;
-  let layerNodes = [], farKey = null, farBusy = false, farSheets = null, farDrop = 0;
-  function wantSrc(r, full, box, cur) {
-    if (r.x < box.x1 && r.x + r.w > box.x0 && r.y < box.y1 && r.y + r.h > box.y0) return full;
-    const m = 700, keep = r.x < box.x1 + m && r.x + r.w > box.x0 - m && r.y < box.y1 + m && r.y + r.h > box.y0 - m;
-    return keep ? cur : null;
+  /* Peinture de la carte. Sur un téléphone, garder chaque calque décodé à l'écran faisait jusqu'à 400 Mo d'images (et le zoom les redessinait toutes) :
+     le navigateur ralentissait puis fermait la page. On peint donc le domaine nous-mêmes, dans des carreaux de 1024 × 1024 pixels du monde :
+     dalles du terrain puis calques des chantiers, dans l'ordre. Seuls les carreaux autour de l'écran existent ; les images ne servent que le temps
+     de les peindre (un petit cache garde les dernières). Zoomer ou déplacer la carte ne fait que glisser des images déjà prêtes.
+     En vue éloignée : une seule toile au quart (le domaine et tous les calques), qui reste aussi dessous en attendant les carreaux. */
+  const chunkEl = $("#chunks"), farEl = $("#farlayers"), planEl = worldEl.querySelector(".plan"), LO = window.RONRON_LO || null;
+  const FAR = 0.26, CH = 1024, NI = Math.ceil(WORLD.w / CH), NJ = Math.ceil(WORLD.h / CH);
+  const DPR = Math.min(3, window.devicePixelRatio || 1);
+  const BM_MAX = (navigator.deviceMemory >= 8 ? 24 : 12) * 1e6;          // pixels d'images décodées gardés en cache
+  let shownList = [], farKey = null, farBusy = false, farSheets = null, farDrop = 0;
+  const chunks = {};
+  let painting = false, paintAgain = false;
+  const paintStats = { batches: 0, chunks: 0, draws: 0, waitMs: 0, drawMs: 0 };
+  /* Essai d'un style : on garde, pour chaque carreau touché, une copie peinte jusqu'au calque essayé (non compris).
+     Changer de style ne repeint alors que ce calque et ceux qui passent par-dessus. */
+  let snapIds = null;
+  const pid = p => p.src + "@" + p.x + "," + p.y;
+  function dropSnaps() {
+    snapIds = null;
+    Object.keys(chunks).forEach(c => { const o = chunks[c]; if (o.snap) { o.snap.cv.width = o.snap.cv.height = 0; o.snap = null; } });
   }
+  function prepSnaps(slot) {
+    const ps = [];
+    (slot.styles || [{ patch: slot.patch }]).forEach(st => { let p = st.patch; if (typeof p === "function") p = p(effStyle); if (p) ps.push(p); });
+    snapIds = new Set(ps.map(p => p.src));
+    Object.keys(chunks).forEach(c => { const o = chunks[c], g = geom(+c); if (ps.some(p => hit(g, p)) && !(o.snap && snapIds.has(o.snap.at))) o.key = null; });
+    updateView();
+  }
+  const hit = (g, p) => p.x < g.x + g.cw && p.x + p.w > g.x && p.y < g.y + g.ch && p.y + p.h > g.y;
+  function geom(id) {
+    const i = id % NI, j = (id - i) / NI, x = i * CH, y = j * CH;
+    // 2 pixels de recouvrement avec le carreau voisin : pas de fine ligne entre deux carreaux une fois zoomé
+    return { x: x, y: y, cw: Math.min(CH + (i < NI - 1 ? 2 : 0), WORLD.w - x), ch: Math.min(CH + (j < NJ - 1 ? 2 : 0), WORLD.h - y) };
+  }
+  function viewBox(m) {
+    const l = camLimits();
+    return { x0: -cam.x / cam.s - m, y0: -cam.y / cam.s - m, x1: (l.vw - cam.x) / cam.s + m, y1: (l.vh - cam.y) / cam.s + m };
+  }
+  function chunkIds(b) {
+    const out = [];
+    for (let j = Math.max(0, Math.floor(b.y0 / CH)); j <= Math.min(NJ - 1, Math.floor(b.y1 / CH)); j++)
+      for (let i = Math.max(0, Math.floor(b.x0 / CH)); i <= Math.min(NI - 1, Math.floor(b.x1 / CH)); i++) out.push(j * NI + i);
+    return out;
+  }
+  const lod = () => (cam.s * DPR >= 0.6 ? 1 : 0.5);          // définition des carreaux : pleine, ou moitié quand on est assez loin
+  function dropChunk(id) { const c = chunks[id]; if (!c) return; c.cv.width = c.cv.height = 0; if (c.snap) c.snap.cv.width = c.snap.cv.height = 0; c.cv.remove(); delete chunks[id]; }
+
+  // Cache des images décodées : les plus anciennes sont libérées dès que le total dépasse BM_MAX.
+  const bmCache = new Map();
+  let bmPx = 0;
+  function getBitmap(src) {
+    let e = bmCache.get(src);
+    if (e) { bmCache.delete(src); bmCache.set(src, e); return e.p; }
+    e = { bm: null, px: 0 };
+    e.p = (typeof createImageBitmap === "function" ? fetch(src).then(r => (r.ok ? r.blob() : Promise.reject())).then(b => createImageBitmap(b))
+      : Promise.reject()).catch(() => new Promise(res => {       // navigateur plus ancien : image classique
+        const im = new Image(); im.onload = () => (im.decode ? im.decode().catch(() => 0) : Promise.resolve()).then(() => res(im)); im.onerror = () => res(null); im.src = src; }))
+      .then(bm => {
+        if (bmCache.get(src) !== e) { free(bm); return bm; }     // déjà sorti du cache : sert une fois, puis libéré
+        if (!bm) { bmCache.delete(src); return null; }           // échec (réseau) : on réessaiera
+        e.bm = bm; e.px = bm ? bm.width * bm.height : 0; bmPx += e.px;
+        for (const [k, o] of bmCache) {                          // les plus anciennes d'abord
+          if (bmPx <= BM_MAX || bmCache.size <= 4) break;
+          if (k === src || !o.bm) continue;
+          bmCache.delete(k); bmPx -= o.px; free(o.bm);
+        }
+        return bm;
+      });
+    bmCache.set(src, e);
+    return e.p;
+  }
+  function free(bm) { if (!bm) return; if (bm.close) setTimeout(() => bm.close(), 0); else bm.src = ""; }
+
+  function updateView() {
+    const l = camLimits();
+    if (!l.vw) return;
+    const far = cam.s < FAR;
+    if (chunkEl.hidden !== far) chunkEl.hidden = far;
+    if (far) { if (!zooming()) Object.keys(chunks).forEach(dropChunk); farCheck(); return; }
+    const keep = new Set(chunkIds(viewBox(400)));
+    Object.keys(chunks).forEach(id => { if (!keep.has(+id)) dropChunk(id); });
+    if (!painting) paint(); else paintAgain = true;
+    farCheck();
+  }
+  function jobs() {
+    const r = lod(), v = viewBox(160), cx = (v.x0 + v.x1) / 2, cy = (v.y0 + v.y1) / 2;
+    return chunkIds(v).filter(id => !chunks[id] || chunks[id].key !== layersKey || chunks[id].r !== r)
+      .map(id => ({ id: id, g: geom(id) })).sort((a, b) => Math.hypot(a.g.x + 512 - cx, a.g.y + 512 - cy) - Math.hypot(b.g.x + 512 - cx, b.g.y + 512 - cy));
+  }
+  async function paint() {
+    painting = true;
+    try {
+      for (;;) {
+        paintAgain = false;
+        if (cam.s < FAR || layersKey === null) break;
+        const todo = jobs().slice(0, 6);
+        if (!todo.length) break;
+        const key = layersKey, r = lod(), all = TILES.concat(shownList);
+        todo.forEach(o => {
+          o.cv = document.createElement("canvas"); o.cv.width = Math.ceil(o.g.cw * r); o.cv.height = Math.ceil(o.g.ch * r);
+          o.ctx = o.cv.getContext("2d"); o.ctx.imageSmoothingQuality = "high";
+          o.list = all.filter(p => hit(o.g, p)).map(pid); o.pos = 0; o.start = 0; o.snapAt = -1;
+          const old = chunks[o.id], sn = old && old.snap;
+          if (sn && sn.cv.width && sn.r === r && sn.n <= o.list.length && sn.ids.every((s, i) => s === o.list[i])) try { o.ctx.drawImage(sn.cv, 0, 0); o.start = sn.n; o.snap = sn; } catch (e) { /* copie libérée */ }
+          if (snapIds) { const k = o.list.findIndex(s => snapIds.has(s.slice(0, s.lastIndexOf("@")))); if (k > 0 && !(o.snap && o.snap.n === k)) o.snapAt = k; }
+        });
+        const srcs = all.filter(p => todo.some(o => hit(o.g, p))), at = new Map(srcs.map((p, i) => [pid(p), i]));
+        // premier calque à peindre vraiment (ceux d'avant sont dans les instantanés) : on ne décode rien avant
+        const first = Math.min.apply(null, todo.map(o => (o.start < o.list.length ? at.get(o.list[o.start]) : srcs.length)));
+        paintStats.batches++; paintStats.chunks += todo.length;
+        let ok = true, miss = false, slice = performance.now();
+        for (let k = 0; k < srcs.length; k++) {
+          const p = srcs[k];
+          // ce calque est-il à peindre dans au moins un carreau ? (sinon : déjà dans l'instantané)
+          const use = todo.filter(o => hit(o.g, p) && o.pos++ >= o.start);
+          if (!use.length) continue;
+          use.forEach(o => { if (o.pos - 1 === o.snapAt) {          // copie avant le calque essayé
+            const c = document.createElement("canvas"); c.width = o.cv.width; c.height = o.cv.height; c.getContext("2d").drawImage(o.cv, 0, 0);
+            o.snap = { n: o.snapAt, ids: o.list.slice(0, o.snapAt), at: p.src, r: r, cv: c }; } });
+          for (let b = Math.max(k + 1, first); b < Math.min(srcs.length, Math.max(k + 1, first) + 2); b++) getBitmap(srcs[b].src);     // les suivantes se décodent pendant ce temps
+          const tw = performance.now(), bm = await getBitmap(p.src); paintStats.waitMs += performance.now() - tw; const td = performance.now();
+          if (layersKey !== key || lod() !== r || cam.s < FAR) { ok = false; break; }
+          if (!bm) { miss = true; continue; }
+          const kx = bm.width / p.w, ky = bm.height / p.h;
+          use.forEach(o => {
+            // seulement la partie de l'image qui tombe dans le carreau
+            const x0 = Math.max(p.x, o.g.x), y0 = Math.max(p.y, o.g.y), x1 = Math.min(p.x + p.w, o.g.x + o.g.cw), y1 = Math.min(p.y + p.h, o.g.y + o.g.ch);
+            paintStats.draws++; try { o.ctx.drawImage(bm, (x0 - p.x) * kx, (y0 - p.y) * ky, (x1 - x0) * kx, (y1 - y0) * ky, (x0 - o.g.x) * r, (y0 - o.g.y) * r, (x1 - x0) * r, (y1 - y0) * r); } catch (e) { /* image libérée */ }
+          });
+          paintStats.drawMs += performance.now() - td;
+          // on rend la main au navigateur toutes les 10 ms : la carte continue de glisser pendant qu'on peint
+          if (performance.now() - slice > 10) { await yieldNow(); slice = performance.now(); }
+        }
+        if (!ok) { todo.forEach(o => { o.cv.width = o.cv.height = 0; const sn = chunks[o.id] && chunks[o.id].snap; if (o.snap && o.snap !== sn) o.snap.cv.width = o.snap.cv.height = 0; }); continue; }
+        const keep = new Set(chunkIds(viewBox(400)));
+        todo.forEach(o => {
+          if (!keep.has(o.id)) { o.cv.width = o.cv.height = 0; return; }        // la carte est partie ailleurs entre-temps
+          const cv = o.cv;
+          cv.className = "chunk"; cv.style.cssText = "left:" + o.g.x + "px;top:" + o.g.y + "px;width:" + o.g.cw + "px;height:" + o.g.ch + "px";
+          const old = chunks[o.id];
+          if (old) { old.cv.replaceWith(cv); old.cv.width = old.cv.height = 0; } else chunkEl.appendChild(cv);
+          if (old && old.snap && old.snap !== o.snap) { old.snap.cv.width = old.snap.cv.height = 0; }
+          const sn = o.snap && o.snap.cv.width && snapIds ? o.snap : null;
+          if (o.snap && !sn) o.snap.cv.width = o.snap.cv.height = 0;      // plus d'essai en cours : la copie ne sert plus
+          chunks[o.id] = { cv: cv, key: miss ? null : key, r: r, snap: sn };      // une image manquait : ce carreau sera repeint
+        });
+        if (miss) { setTimeout(updateView, 4000); break; }
+      }
+    } catch (e) { setTimeout(updateView, 1000); } finally { painting = false; }
+  }
+  function painted() { return cam.s < FAR || !jobs().length; }
+  // rendre la main sans attendre l'image suivante (un message est servi tout de suite, setTimeout et requestAnimationFrame font attendre)
+  const yieldChan = typeof MessageChannel === "function" ? new MessageChannel() : null, yieldQ = [];
+  if (yieldChan) yieldChan.port1.onmessage = () => { const f = yieldQ.shift(); if (f) f(); };
+  const yieldNow = () => new Promise(res => { if (yieldChan) { yieldQ.push(res); yieldChan.port2.postMessage(0); } else setTimeout(res, 0); });
   function composeFar() {
     if (!LO || !farEl || farBusy || farKey === layersKey) return;
     farBusy = true;
-    const key = layersKey, shown = layerNodes.map(n => n._p);
-    const sheets = farSheets || Promise.all(LO.sheets.map(src => new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; })));
+    const key = layersKey, shown = shownList;
+    const load = src => new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+    const sheets = farSheets || Promise.all(["assets/monde.webp"].concat(LO.sheets).map(load));
     farSheets = sheets;
     clearTimeout(farDrop); farDrop = setTimeout(() => { if (!farBusy) farSheets = null; }, 15000);   // les planches ne restent pas en mémoire
     sheets.then(ims => {
@@ -1542,46 +1722,14 @@
       if (farEl.width !== Math.ceil(WORLD.w / q)) { farEl.width = Math.ceil(WORLD.w / q); farEl.height = Math.ceil(WORLD.h / q); }
       const ctx = farEl.getContext("2d");
       ctx.clearRect(0, 0, farEl.width, farEl.height);
-      shown.forEach(p => { const m = LO.map[p.src]; if (m && ims[m[0]]) ctx.drawImage(ims[m[0]], m[1], m[2], m[3], m[4], Math.round(p.x / q), Math.round(p.y / q), m[3], m[4]); });   // calé sur les pixels : pas de bord à demi transparent
+      if (ims[0]) ctx.drawImage(ims[0], 0, 0, farEl.width, farEl.height);
+      shown.forEach(p => { const m = LO.map[p.src]; if (m && ims[m[0] + 1]) ctx.drawImage(ims[m[0] + 1], m[1], m[2], m[3], m[4], Math.round(p.x / q), Math.round(p.y / q), m[3], m[4]); });   // calé sur les pixels : pas de bord à demi transparent
       farKey = key; farEl.hidden = false;
-      updateView(); farCheck();
+      if (planEl && planEl.getAttribute("src")) planEl.removeAttribute("src");      // la toile la remplace
+      farCheck();
     });
   }
-  // toile visible en vue éloignée, ou de près tant qu'un calque à l'écran se charge encore
-  function farCheck() {
-    if (!farEl || farKey !== layersKey) return;
-    const pending = cam.s < FAR || layerNodes.some(n => n.getAttribute("src") && !n.complete);
-    if (farEl.hidden === pending) farEl.hidden = !pending;
-  }
-  layersEl.addEventListener("load", farCheck, true);
-  layersEl.addEventListener("error", farCheck, true);
-  function updateView() {
-    viewAt = performance.now();
-    const l = camLimits();
-    if (!l.vw) return;
-    const far = cam.s < FAR, m = 500, farReady = !!LO && farKey === layersKey;
-    const box = { x0: -cam.x / cam.s - m, y0: -cam.y / cam.s - m, x1: (l.vw - cam.x) / cam.s + m, y1: (l.vh - cam.y) / cam.s + m };
-    // dalles : en vue éloignée, l'image de fond (le domaine au quart) suffit
-    TILES.forEach((t, i) => {
-      let n = tileNodes[i];
-      const want = far ? null : wantSrc(t, t.src, box, n ? n.getAttribute("src") : null);
-      if (!want) { if (n) { n.remove(); delete tileNodes[i]; } return; }
-      if (!n) {
-        n = document.createElement("img");
-        n.className = "tile"; n.alt = ""; n.decoding = "async"; n.draggable = false;
-        n.style.cssText = "left:" + t.x + "px;top:" + t.y + "px;width:" + t.w + "px;height:" + t.h + "px";
-        tilesEl.appendChild(n); tileNodes[i] = n;
-      }
-      if (n.getAttribute("src") !== want) n.setAttribute("src", want);
-    });
-    // calques : en vue éloignée, la toile au quart les remplace tous (tant qu'elle n'est pas prête, on garde les images)
-    layerNodes.forEach(n => {
-      const p = n._p, cur = n.getAttribute("src"), want = far && farReady ? null : wantSrc(p, p.src, box, cur);
-      if (want === cur) return;
-      if (want) n.setAttribute("src", want); else n.removeAttribute("src");
-    });
-    farCheck();
-  }
+  function farCheck() { if (farEl && farKey && farEl.hidden) farEl.hidden = false; }
   function centerOn(wx, wy, s) {
     const l = camLimits();
     if (!l.vw) return;
@@ -1968,11 +2116,6 @@
      on redessine par-dessus lui la bande de mur concernée, découpée dans ce qui est affiché à cet instant. */
   const WALLS = window.RONRON_WALLS || null;
   let wallCanvas = null, wallBox = null, wallStamp = 0, wallKey = "";
-  const imgCache = {};
-  function loadImg(src) {
-    if (!imgCache[src]) imgCache[src] = new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
-    return imgCache[src];
-  }
   if (WALLS) {
     let x0 = 1e9, y0 = 1e9, x1 = 0, y1 = 0;
     WALLS.strips.forEach(st => {
@@ -1989,12 +2132,13 @@
     if (key === wallKey) return;
     wallKey = key;
     const stamp = ++wallStamp, B = wallBox;
-    const list = TILES.filter(t => t.x < B.x + B.w && t.x + t.w > B.x && t.y < B.y + B.h && t.y + t.h > B.y).concat(layers);
-    Promise.all(list.map(p => loadImg(p.src))).then(ims => {
+    const inB = t => t.x < B.x + B.w && t.x + t.w > B.x && t.y < B.y + B.h && t.y + t.h > B.y;
+    const list = TILES.filter(inB).concat(layers.filter(inB));      // seulement ce qui touche la maison : pas tout le domaine
+    Promise.all(list.map(p => getBitmap(p.src))).then(ims => {
       if (stamp !== wallStamp) return;
       const cv = document.createElement("canvas"); cv.width = B.w; cv.height = B.h;
       const ctx = cv.getContext("2d");
-      list.forEach((p, i) => { if (ims[i]) ctx.drawImage(ims[i], p.x - B.x, p.y - B.y, p.w, p.h); });
+      list.forEach((p, i) => { if (ims[i]) try { ctx.drawImage(ims[i], p.x - B.x, p.y - B.y, p.w, p.h); } catch (e) { /* image libérée */ } });
       WALLS.strips.forEach(st => { if (st.node) { st.node.remove(); st.node = null; } });
       wallCanvas = cv;
       sortCats();
@@ -2138,11 +2282,11 @@
     // les calques ne changent pas à chaque passage ici : on ne refait les images que si la liste a changé
     const key = shown.map(p => p.src + "@" + p.x + "," + p.y).join("|");
     if (key !== layersKey) {
-      layersKey = key;
-      layersEl.innerHTML = shown.map(p => '<img class="layer" alt="" decoding="async" draggable="false" style="left:' + p.x + "px;top:" + p.y + "px;width:" + p.w + "px;height:" + p.h + 'px">').join("");
-      layerNodes = Array.from(layersEl.children);
-      layerNodes.forEach((n, k) => { n._p = shown[k]; });
-      if (farEl) farEl.hidden = true;                  // l'ancienne toile ne correspond plus : on la cache le temps de la refaire
+      // les carreaux que le changement ne touche pas gardent leur image : essayer un style ne repeint que son coin
+      const oldKey = layersKey, id = p => p.src + "@" + p.x + "," + p.y, A_ = new Set(shownList.map(id)), B_ = new Set(shown.map(id));
+      const changed = shownList.filter(p => !B_.has(id(p))).concat(shown.filter(p => !A_.has(id(p))));
+      layersKey = key; shownList = shown;
+      Object.keys(chunks).forEach(c => { const o = chunks[c]; if (o.key === oldKey && !changed.some(p => hit(geom(+c), p))) o.key = key; });
       updateView(); composeFar();
     }
     refreshWalls(shown);
@@ -2218,7 +2362,7 @@
     const ready = hasArt(slot), poor = !restyle && S.kibble < slot.cost;
     const styles = slot.styles ? slot.styles.map((st, k) => ({ st: st, k: k })).filter(o => o.st.patch) : [];
     let sel = restyle ? (S.house[slot.id].style | 0) : (styles.length ? styles[0].k : 0);
-    if (styles.length) { preview = { id: slot.id, style: sel }; renderLayers(); renderMarkers(); }
+    if (styles.length) { preview = { id: slot.id, style: sel }; renderLayers(); renderMarkers(); prepSnaps(slot); }
     // on remonte le chantier dans le haut de l'écran, au-dessus de la feuille
     const l = camLimits();
     if (l.vw) centerOn(slot.at[0], slot.at[1] + l.vh * 0.2 / cam.s);
@@ -2233,7 +2377,7 @@
         : restyle ? "Appliquer ce style"
         : poor ? "Il te manque " + plural(slot.cost - S.kibble, "croquette")
         : esc(slot.verb) + " · " + slot.cost + " " + ico("kibble")) + "</button>";
-    openSheet(h, { onClose: () => { preview = null; if (view === "home") renderHome(); }, noFocus: true });
+    openSheet(h, { onClose: () => { preview = null; dropSnaps(); if (view === "home") renderHome(); }, noFocus: true });
     $$(".swatch", sheet).forEach(b => {
       b.onclick = () => {
         sel = +b.dataset.k; preview.style = sel;
@@ -2418,7 +2562,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.29." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.30." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -2865,7 +3009,7 @@
     DECOS.forEach(d => d.parts.forEach(o => { if (o.patch) out.add(o.patch); }));
     return Object.keys(PATCH).filter(k => out.has(PATCH[k]));
   }
-  window.__ronron = { objKeys: objKeys, slots: () => SLOTS.map(x => ({ id: x.id, name: x.name, short: x.short, room: x.room, zone: zoneOf(x) || "gardien", poi: x.poi, at: x.at, styles: (x.styles || []).length })), state: () => S, level: () => L, nav: () => navFree, look: look, layers: () => layerNodes.map(n => [n._p.src, n.getAttribute("src") || ""]), far: () => [farKey === layersKey, farEl ? !farEl.hidden : false], path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
+  window.__ronron = { objKeys: objKeys, slots: () => SLOTS.map(x => ({ id: x.id, name: x.name, short: x.short, room: x.room, zone: zoneOf(x) || "gardien", poi: x.poi, at: x.at, styles: (x.styles || []).length })), state: () => S, level: () => L, nav: () => navFree, look: look, layers: () => shownList.map(p => [p.src, Object.keys(chunks).some(c => chunks[c].key === layersKey && hit(geom(+c), p)) ? p.src : ""]), shown: () => shownList.map(p => [p.src, p.x, p.y, p.w, p.h]), painted: painted, paintStats: () => paintStats, mem: () => ({ chunks: Object.keys(chunks).length, chunkPx: Object.keys(chunks).reduce((s, c) => s + chunks[c].cv.width * chunks[c].cv.height, 0), cachePx: bmPx, cached: bmCache.size }), far: () => [farKey === layersKey, farEl ? !farEl.hidden : false], path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
     navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length, navManoir.length, navSalon.length, navCour.length, navHall.length, navChats.length, navAile.length, navBiblio.length, navEst.length, navEstIn.length, navPerron.length, navEtang.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
     audio: () => ({ ctx: AC ? AC.state : null, playing: !!(musicSrc && !musicSrc.pending), track: musicIdx % MUSIC.length, pref: audioPref }), sfx: sfx, sfxNames: () => Object.keys(SFX), sfxRaw: name => SFX[name](),
     walls: () => (WALLS ? WALLS.strips.filter(st => st.node && st.node.parentNode).length : -1), wallsReady: () => !!wallCanvas };

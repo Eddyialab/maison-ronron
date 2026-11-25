@@ -113,9 +113,10 @@ h2 {
 .world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; --inv: 1; }
 .world img { position: absolute; max-width: none; pointer-events: none; -webkit-user-drag: none; }
 .world .plan { left: 0; top: 0; width: 100%; height: 100%; }
-#tiles, #layers, #markers { position: absolute; inset: 0; pointer-events: none; }
-#layers img:not([src]) { display: none; }      /* un calque hors de l'écran n'a pas d'image : rien à dessiner, pas même un cadre */
-#farlayers { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
+#chunks, #markers { position: absolute; inset: 0; pointer-events: none; }
+/* carreaux peints par app.js : chacun sur sa propre couche, pour que zoomer ne fasse que les agrandir, sans rien redessiner */
+#chunks .chunk { position: absolute; will-change: transform; }
+#farlayers { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; will-change: transform; }
 /* Les chats vivent pour l'instant dans la zone de la maison du gardien. */
 #world-svg { position: absolute; left: 0; top: 4916px; width: 2730px; height: 1536px; pointer-events: none; overflow: visible; }
 .mk {
