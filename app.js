@@ -648,6 +648,27 @@
       desc: "Quelques lanternes pour trouver l'entrée à la nuit tombée.",
       styles: [{ name: "Fer noir", sw: "#2B2B2E", patch: PATCH.laby_lanternes_A }, { name: "Sur piquets blancs", sw: "#E8C77A", patch: PATCH.laby_lanternes_B }],
       parts: [[{ patch: PATCH.laby_lanternes_A_p0, depth: 4186 }, { patch: PATCH.laby_lanternes_A_p1, depth: 4431 }, { patch: PATCH.laby_lanternes_A_p2, depth: 4875 }], [{ patch: PATCH.laby_lanternes_B_p0, depth: 4533 }, { patch: PATCH.laby_lanternes_B_p1, depth: 4464 }, { patch: PATCH.laby_lanternes_B_p2, depth: 4662 }, { patch: PATCH.laby_lanternes_B_p3, depth: 4606 }]] },
+    /* lot K : décors (images K1/K2 faites sur le départ B ; laby_k_calques.py) */
+    { id: "laby_cadran", room: "Labyrinthe", name: "Installer un cadran solaire", short: "Cadran solaire", verb: "Installer", cost: 18, icon: "plus", need: ["laby_pelouse"], at: z10([2110, 250]),
+      desc: "Sur la grande pelouse, au-dessus du labyrinthe. Un chat vient s'y asseoir au soleil.", poi: [[p10(2213, 346, "assis", -1)], [p10(2205, 363, "assis", -1)]],
+      styles: [{ name: "Pierre et bronze", sw: "#5E9C8C", patch: PATCH.laby_cadran_A }, { name: "Colonne aux roses", sw: "#D9B44A", patch: PATCH.laby_cadran_B }],
+      parts: [[{ patch: PATCH.laby_cadran_A_p0, depth: 3212 }], [{ patch: PATCH.laby_cadran_B_p0, depth: 3229 }]] },
+    { id: "laby_urnes", room: "Labyrinthe", name: "Poser des urnes fleuries", short: "Urnes", verb: "Poser", cost: 14, icon: "plus", need: ["laby_allees"], at: z10([1990, 1180]),
+      desc: "Une de chaque côté de la rotonde.",
+      styles: [{ name: "Pierre et buis", sw: "#A9A59C", patch: PATCH.laby_urnes_A }, { name: "Géraniums", sw: "#E86A8A", patch: PATCH.laby_urnes_B }],
+      parts: [[{ patch: PATCH.laby_urnes_A_p0, depth: 4198 }, { patch: PATCH.laby_urnes_A_p1, depth: 4191 }], [{ patch: PATCH.laby_urnes_B_p0, depth: 4168 }, { patch: PATCH.laby_urnes_B_p1, depth: 4023 }]] },
+    { id: "laby_topiaires", room: "Labyrinthe", name: "Planter des topiaires à l'entrée", short: "Topiaires", verb: "Planter", cost: 14, icon: "plus", need: ["laby_haies"], at: z10([2400, 560]),
+      desc: "Deux buis taillés pour marquer l'entrée, côté maison.",
+      styles: [{ name: "Cônes en pots", sw: "#C2703D", patch: PATCH.laby_topiaires_A }, { name: "Caisses de Versailles", sw: "#F2F1EC", patch: PATCH.laby_topiaires_B }],
+      parts: [[{ patch: PATCH.laby_topiaires_A_p0, depth: 3539 }, { patch: PATCH.laby_topiaires_A_p1, depth: 3602 }], [{ patch: PATCH.laby_topiaires_B_p0, depth: 3512 }, { patch: PATCH.laby_topiaires_B_p1, depth: 3780 }]] },
+    { id: "laby_panneau", room: "Labyrinthe", name: "Planter un panneau", short: "Panneau", verb: "Planter", cost: 10, icon: "plus", need: ["laby_haies"], at: z10([2600, 400]),
+      desc: "Pour que personne ne passe à côté du labyrinthe.",
+      styles: [{ name: "Bois sombre", sw: "#5A3E2B", patch: PATCH.laby_panneau_A }, { name: "Peint en blanc", sw: "#E8E2D0", patch: PATCH.laby_panneau_B }],
+      parts: [[{ patch: PATCH.laby_panneau_A_p0, depth: 3371 }], [{ patch: PATCH.laby_panneau_B_p0, depth: 3585 }]] },
+    { id: "laby_nichoir", room: "Labyrinthe", name: "Installer un nichoir", short: "Nichoir", verb: "Installer", cost: 12, icon: "plus", need: ["laby_pelouse"], at: z10([560, 260]),
+      desc: "Sur la petite pelouse près de la statue. Un chat y guette les oiseaux.", poi: [[p10(614, 446, "assis", -1)], [p10(625, 440, "assis", -1)]],
+      styles: [{ name: "Toit d'ardoise", sw: "#6B7280", patch: PATCH.laby_nichoir_A }, { name: "Maison rose", sw: "#F2A7B8", patch: PATCH.laby_nichoir_B }],
+      parts: [[{ patch: PATCH.laby_nichoir_A_p0, depth: 3292 }], [{ patch: PATCH.laby_nichoir_B_p0, depth: 3286 }]] },
     /* ----- fin de la zone 10 ----- */
     /* ----- Détails de la grille d'entrée (lot G, 156 croquettes) : placés en fin de liste, leurs calques passent par-dessus le reste. ----- */
     { id: "grille_plaque", room: "Grille d'entrée", name: "Poser la plaque du domaine", short: "Plaque", verb: "Poser", cost: 12, icon: "plus", need: ["grille_mur"], at: z2([1450, 550]),
@@ -811,7 +832,7 @@
     est: { name: "L'aile est", desc: "Son jardin, une cuisine, une chambre et une salle de bain." },
     perron: { name: "Le perron est", desc: "L'entrée est du manoir et son jardin : 19 chantiers, plein de détails." },
     etang: { name: "L'étang", desc: "L'étang aux nénuphars, son ponton et le hangar à bateaux : 12 chantiers." },
-    laby: { name: "Le labyrinthe", desc: "Les haies, la rotonde au centre et ses allées : 11 chantiers." }
+    laby: { name: "Le labyrinthe", desc: "Les haies, la rotonde au centre et ses allées : 16 chantiers." }
   };
   const zoneCost = z => ZONE_STEP * (Object.keys(ZONES).indexOf(z) + 1);
   const zoneOf = s => { const p = s.id.split("_")[0]; return ZONES[p] ? p : null; };
@@ -2776,7 +2797,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.34." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.35." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
