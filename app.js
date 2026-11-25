@@ -46,6 +46,8 @@
   const z8 = p => [p[0] + 6552, p[1] + 3687];       // zone du perron est, sous l'aile est
   const p8 = (x, y, pose, dir, depth) => ({ x: x + 6552, y: y + 3687, pose: pose, dir: dir, depth: depth, min: 12000, max: 30000 });
   const z9 = p => [p[0] + 6900, p[1] + 450];        // zone de l'étang, au-dessus de l'aile est (coordonnées à la taille du monde)
+  const z10 = p => [p[0], p[1] + 2860];       // zone du labyrinthe, à gauche de l'allée (coordonnées à la taille du monde)
+  const p10 = (x, y, pose, dir, depth) => ({ x: x, y: y + 2860, pose: pose, dir: dir, depth: depth, min: 12000, max: 30000 });
   const p9 = (x, y, pose, dir, depth) => ({ x: x + 6900, y: y + 450, pose: pose, dir: dir, depth: depth, min: 12000, max: 30000 });
   WORLD.start = g([1380, 640]);
 
@@ -610,6 +612,43 @@
       poi: [[p9(2187, 1957, "assis", -1)], [p9(2103, 1959, "assis", -1)]],
       styles: [{ name: "Canne en bambou", sw: "#B98552", patch: PATCH.etang_peche_naturel }, { name: "Canne bleue", sw: "#3A6FB8", patch: PATCH.etang_peche_blanc }],
       parts: [[{ patch: PATCH.etang_peche_naturel_p0, depth: 2447 }], [{ patch: PATCH.etang_peche_blanc_p0, depth: 2449 }]] },
+    /* ----- Zone 10 : le labyrinthe (fenêtre monde x 0..3640, y 2860..4908 ; images agrandies ×4/3). Cadenas : 180 croquettes. ----- */
+    { id: "laby_debrousse", room: "Labyrinthe", name: "Débroussailler le labyrinthe", short: "Débroussailler", verb: "Débroussailler", cost: 14, icon: "broom", need: ["allee_pelouse", "aile_pelouse"], at: z10([520, 330]),
+      desc: "Herbes folles, ronces et vieilles pierres : on dégage le tour des haies.", patch: PATCH.laby_debrousse },
+    { id: "laby_pelouse", room: "Labyrinthe", name: "Semer la pelouse", short: "Pelouse", verb: "Semer", cost: 16, icon: "plus", need: ["laby_debrousse"], at: z10([2000, 300]),
+      desc: "Un gazon bien vert entre les haies et tout autour.", patch: PATCH.laby_pelouse },
+    { id: "laby_haies", room: "Labyrinthe", name: "Tailler les haies", short: "Haies taillées", verb: "Tailler", cost: 26, icon: "broom", need: ["laby_pelouse"], at: z10([560, 960]),
+      desc: "Des haies nettes et droites, et deux arrondis autour de la rotonde. Les chats peuvent enfin s'y promener.", patch: PATCH.laby_haies },
+    { id: "laby_allees", room: "Labyrinthe", name: "Tracer les allées", short: "Allées", verb: "Tracer", cost: 22, icon: "hammer", need: ["laby_haies"], at: z10([1240, 1470]),
+      desc: "Quatre allées qui mènent à la place de la rotonde.",
+      styles: [{ name: "Gravier blanc", sw: "#E6E3DA", patch: PATCH.laby_allees_gravier }, { name: "Dalles claires", sw: "#E8D7A6", patch: PATCH.laby_allees_dalles }] },
+    { id: "laby_rotonde", room: "Labyrinthe", name: "Restaurer la rotonde", short: "Rotonde", verb: "Restaurer", cost: 30, icon: "hammer", need: ["laby_haies"], at: z10([1620, 860]),
+      desc: "Le petit temple au cœur du labyrinthe retrouve ses colonnes.",
+      styles: [{ name: "Marbre et dôme", sw: "#5E9C8C", patch: PATCH.laby_rotonde_marbre }, { name: "Blanche aux roses", sw: "#F2B6C6", patch: PATCH.laby_rotonde_roses }],
+      parts: [[{ patch: PATCH.laby_rotonde_marbre_p0, depth: 4210 }], [{ patch: PATCH.laby_rotonde_roses_p0, depth: 4206 }]] },
+    { id: "laby_muret", room: "Labyrinthe", name: "Relever les murets", short: "Murets", verb: "Relever", cost: 18, icon: "hammer", need: ["laby_pelouse"], at: z10([300, 700]),
+      desc: "Les vieux murs écroulés autour du labyrinthe, comme neufs.",
+      styles: [{ name: "Pierre", sw: "#B8B0A0", patch: PATCH.laby_muret_pierre }, { name: "Crépi et tuiles", sw: "#D9643A", patch: PATCH.laby_muret_crepi }] },
+    { id: "laby_coussins", room: "Labyrinthe", name: "Poser des coussins dans la rotonde", short: "Coussins", verb: "Poser", cost: 12, icon: "plus", need: ["laby_rotonde"], at: z10([1720, 1130]),
+      desc: "Pour la sieste, à l'ombre de la rotonde.", poi: [[p10(1580, 1117, "dort", 1, 4022), p10(1762, 1135, "dort", -1, 4039)], [p10(1620, 1095, "dort", 1, 3998), p10(1462, 1184, "dort", 1, 4090), p10(1762, 1150, "dort", -1, 4056)]],
+      styles: [{ name: "Rayés bleus", sw: "#7FA6C9", patch: PATCH.laby_coussins_A }, { name: "Fleuris roses", sw: "#F0B8B8", patch: PATCH.laby_coussins_B }] },
+    { id: "laby_arche", room: "Labyrinthe", name: "Dresser une arche à l'entrée", short: "Arche", verb: "Dresser", cost: 16, icon: "plus", need: ["laby_haies"], at: z10([960, 1500]),
+      desc: "Une arche fleurie à l'entrée du labyrinthe.",
+      styles: [{ name: "Roses", sw: "#F0A9C0", patch: PATCH.laby_arche_A }, { name: "Glycine", sw: "#9B6AD6", patch: PATCH.laby_arche_B }],
+      parts: [[{ patch: PATCH.laby_arche_A_p0, depth: 4463 }, { patch: PATCH.laby_arche_A_p1, depth: 4479 }, { patch: PATCH.laby_arche_A_p2, depth: 4496 }, { patch: PATCH.laby_arche_A_p3, depth: 4512 }, { patch: PATCH.laby_arche_A_p4, depth: 4529 }, { patch: PATCH.laby_arche_A_p5, depth: 4545 }, { patch: PATCH.laby_arche_A_p6, depth: 4562 }, { patch: PATCH.laby_arche_A_p7, depth: 4578 }, { patch: PATCH.laby_arche_A_p8, depth: 4595 }, { patch: PATCH.laby_arche_A_p9, depth: 4611 }, { patch: PATCH.laby_arche_A_p10, depth: 4628 }, { patch: PATCH.laby_arche_A_p11, depth: 4644 }, { patch: PATCH.laby_arche_A_p12, depth: 4661 }, { patch: PATCH.laby_arche_A_p13, depth: 4677 }, { patch: PATCH.laby_arche_A_p14, depth: 4694 }], [{ patch: PATCH.laby_arche_B_p0, depth: 4428 }, { patch: PATCH.laby_arche_B_p1, depth: 4443 }, { patch: PATCH.laby_arche_B_p2, depth: 4458 }, { patch: PATCH.laby_arche_B_p3, depth: 4473 }, { patch: PATCH.laby_arche_B_p4, depth: 4488 }, { patch: PATCH.laby_arche_B_p5, depth: 4504 }, { patch: PATCH.laby_arche_B_p6, depth: 4519 }, { patch: PATCH.laby_arche_B_p7, depth: 4534 }, { patch: PATCH.laby_arche_B_p8, depth: 4549 }, { patch: PATCH.laby_arche_B_p9, depth: 4564 }, { patch: PATCH.laby_arche_B_p10, depth: 4579 }, { patch: PATCH.laby_arche_B_p11, depth: 4594 }, { patch: PATCH.laby_arche_B_p12, depth: 4609 }, { patch: PATCH.laby_arche_B_p13, depth: 4624 }]] },
+    { id: "laby_banc", room: "Labyrinthe", name: "Installer un banc", short: "Banc", verb: "Installer", cost: 14, icon: "plus", need: ["laby_haies"], at: z10([1200, 1040]),
+      desc: "Un banc près de la rotonde. Il ne restera pas libre longtemps.", poi: [[p10(1203, 1094, "dort", 1, 4067)], [p10(1236, 1086, "dort", 1, 4058)]],
+      styles: [{ name: "Pierre", sw: "#A9A59C", patch: PATCH.laby_banc_A }, { name: "Bois blanc", sw: "#F2F1EC", patch: PATCH.laby_banc_B }],
+      parts: [[{ patch: PATCH.laby_banc_A_p0, depth: 4066 }], [{ patch: PATCH.laby_banc_B_p0, depth: 4057 }]] },
+    { id: "laby_statue", room: "Labyrinthe", name: "Dresser une statue de chat", short: "Statue", verb: "Dresser", cost: 14, icon: "plus", need: ["laby_pelouse"], at: z10([830, 680]),
+      desc: "Le gardien du labyrinthe, sur son socle.",
+      styles: [{ name: "Chat en pierre", sw: "#9A958A", patch: PATCH.laby_statue_A }, { name: "Chat en buis", sw: "#4F7A3A", patch: PATCH.laby_statue_B }],
+      parts: [[{ patch: PATCH.laby_statue_A_p0, depth: 3485 }], [{ patch: PATCH.laby_statue_B_p0, depth: 3487 }]] },
+    { id: "laby_lanternes", room: "Labyrinthe", name: "Planter des lanternes", short: "Lanternes", verb: "Planter", cost: 12, icon: "plus", need: ["laby_haies"], at: z10([260, 1240]),
+      desc: "Quelques lanternes pour trouver l'entrée à la nuit tombée.",
+      styles: [{ name: "Fer noir", sw: "#2B2B2E", patch: PATCH.laby_lanternes_A }, { name: "Sur piquets blancs", sw: "#E8C77A", patch: PATCH.laby_lanternes_B }],
+      parts: [[{ patch: PATCH.laby_lanternes_A_p0, depth: 4186 }, { patch: PATCH.laby_lanternes_A_p1, depth: 4431 }, { patch: PATCH.laby_lanternes_A_p2, depth: 4875 }], [{ patch: PATCH.laby_lanternes_B_p0, depth: 4533 }, { patch: PATCH.laby_lanternes_B_p1, depth: 4464 }, { patch: PATCH.laby_lanternes_B_p2, depth: 4662 }, { patch: PATCH.laby_lanternes_B_p3, depth: 4606 }]] },
+    /* ----- fin de la zone 10 ----- */
     /* ----- Détails de la grille d'entrée (lot G, 156 croquettes) : placés en fin de liste, leurs calques passent par-dessus le reste. ----- */
     { id: "grille_plaque", room: "Grille d'entrée", name: "Poser la plaque du domaine", short: "Plaque", verb: "Poser", cost: 12, icon: "plus", need: ["grille_mur"], at: z2([1450, 550]),
       desc: "« Maison Ronron », sur le petit mur à côté de la grille.",
@@ -771,7 +810,8 @@
     aile: { name: "L'aile ouest", desc: "Son jardin, la bibliothèque et la salle à manger." },
     est: { name: "L'aile est", desc: "Son jardin, une cuisine, une chambre et une salle de bain." },
     perron: { name: "Le perron est", desc: "L'entrée est du manoir et son jardin : 19 chantiers, plein de détails." },
-    etang: { name: "L'étang", desc: "L'étang aux nénuphars, son ponton et le hangar à bateaux : 12 chantiers." }
+    etang: { name: "L'étang", desc: "L'étang aux nénuphars, son ponton et le hangar à bateaux : 12 chantiers." },
+    laby: { name: "Le labyrinthe", desc: "Les haies, la rotonde au centre et ses allées : 11 chantiers." }
   };
   const zoneCost = z => ZONE_STEP * (Object.keys(ZONES).indexOf(z) + 1);
   const zoneOf = s => { const p = s.id.split("_")[0]; return ZONES[p] ? p : null; };
@@ -1994,9 +2034,9 @@
   // cases libres (1 maison, 2 jardin du gardien, 3 entrée du domaine, 4 passage caché dans la haie),
   // recalculées quand un meuble est posé ou qu'un chantier se termine
   let navFree = null;
-  let navHouse = [], navGarden = [], navGate = [], navAllee = [], navManoir = [], navSalon = [], navCour = [], navHall = [], navChats = [], navAile = [], navBiblio = [], navEst = [], navEstIn = [], navPerron = [], navEtang = [];
+  let navHouse = [], navGarden = [], navGate = [], navAllee = [], navManoir = [], navSalon = [], navCour = [], navHall = [], navChats = [], navAile = [], navBiblio = [], navEst = [], navEstIn = [], navPerron = [], navEtang = [], navLaby = [];
   // passages où le chat se faufile sans être vu : haie, sous la grille, porte du manoir, hall vers la cour, arche de la salle des chats
-  const HIDDEN = v => v === 4 || v === 6 || v === 9 || v === 13 || v === 14 || v === 18 || v === 24 || v === 25 || v === 29;   // 29 : dans les roseaux
+  const HIDDEN = v => v === 4 || v === 6 || v === 9 || v === 13 || v === 14 || v === 18 || v === 24 || v === 25 || v === 29 || v === 32;   // 29 : dans les roseaux ; 32 : derrière les haies du labyrinthe
   function buildNav() {
     navFree = new Uint8Array(NAV.w * NAV.h);
     const garden = isDone("jardin_debrousse");      // tant que le jardin est en friche, les chats restent à l'intérieur
@@ -2011,12 +2051,14 @@
     const est = chats && isDone("est_debrousse"), estIn = chats && isDone("est_deblai");   // l'aile est, par la salle des chats
     const perron = manoir && isDone("perron_debrousse");     // le jardin du perron est, à côté du devant du manoir
     const etang = est && isDone("etang_debrousse"), ponton = etang && isDone("etang_ponton");   // l'étang, au-dessus du jardin de l'aile est
+    const laby = allee && aile && isDone("laby_debrousse"), labyIn = laby && isDone("laby_haies");   // le labyrinthe ; ses allées une fois les haies taillées
     for (let r = 0; r < NAV.h; r++) for (let c = 0; c < NAV.w; c++) {
       const v = NAV.rows[r].charCodeAt(c) - 48;
       navFree[r * NAV.w + c] = v === 1 || (v === 2 && garden) || ((v === 3 || v === 4) && gate) || ((v === 5 || v === 6) && allee) ||
         (v === 7 && manoir) || ((v === 8 || v === 9) && salon) || ((v === 10 || v === 11 || v === 13) && hall) || ((v === 12 || v === 14) && chats) ||
         ((v === 15 || v === 18) && aile) || (v === 16 && biblio) || (v === 17 && salle) || (v === 19 && atelier) ||
-        ((v === 20 || v === 24) && est) || (((v >= 21 && v <= 23) || v === 25) && estIn) || (v === 26 && perron) || ((v === 27 || v === 29) && etang) || (v === 28 && ponton) ? v : 0;
+        ((v === 20 || v === 24) && est) || (((v >= 21 && v <= 23) || v === 25) && estIn) || (v === 26 && perron) || ((v === 27 || v === 29) && etang) || (v === 28 && ponton) ||
+        (v === 30 && laby) || ((v === 31 || v === 32) && labyIn) ? v : 0;
     }
     const open = navFree.slice();                    // le sol praticable, avant les meubles
     Object.keys(NAV.blocks).forEach(id => {
@@ -2042,7 +2084,7 @@
       }
       if (size > bestSize) { bestSize = size; best = id; }
     }
-    navHouse = []; navGarden = []; navGate = []; navAllee = []; navManoir = []; navSalon = []; navCour = []; navHall = []; navChats = []; navAile = []; navBiblio = []; navEst = []; navEstIn = []; navPerron = []; navEtang = [];
+    navHouse = []; navGarden = []; navGate = []; navAllee = []; navManoir = []; navSalon = []; navCour = []; navHall = []; navChats = []; navAile = []; navBiblio = []; navEst = []; navEstIn = []; navPerron = []; navEtang = []; navLaby = [];
     for (let i = 0; i < navFree.length; i++) {
       if (comp[i] !== best) navFree[i] = 0;
       else if (navFree[i] === 1) navHouse.push(i);
@@ -2060,6 +2102,7 @@
       else if (navFree[i] >= 21 && navFree[i] <= 23) navEstIn.push(i);
       else if (navFree[i] === 26) navPerron.push(i);
       else if (navFree[i] === 27 || navFree[i] === 28) navEtang.push(i);
+      else if (navFree[i] === 30 || navFree[i] === 31) navLaby.push(i);
     }
   }
   /* Un meuble peut fermer un passage selon le style choisi (le banc vert de l'entrée coupait le salon et la cuisine du reste).
@@ -2109,7 +2152,7 @@
   const cellXY = i => [NAV.x0 + (i % NAV.w + 0.5) * NAV.cell, NAV.y0 + (((i / NAV.w) | 0) + 0.5) * NAV.cell];
   function randomCell() {
     // on tire d'abord l'endroit, pour que les chats restent visibles un peu partout : maison, jardin, entrée
-    const pools = [[navHouse, 0.22], [navGarden, 0.14], [navGate, 0.08], [navAllee, 0.09], [navManoir, 0.07], [navSalon, 0.11], [navCour, 0.11], [navHall, 0.02], [navChats, 0.06], [navAile, 0.07], [navBiblio, 0.03], [navEst, 0.06], [navEstIn, 0.06], [navPerron, 0.08], [navEtang, 0.08]].filter(p => p[0].length);
+    const pools = [[navHouse, 0.22], [navGarden, 0.14], [navGate, 0.08], [navAllee, 0.09], [navManoir, 0.07], [navSalon, 0.11], [navCour, 0.11], [navHall, 0.02], [navChats, 0.06], [navAile, 0.07], [navBiblio, 0.03], [navEst, 0.06], [navEstIn, 0.06], [navPerron, 0.08], [navEtang, 0.08], [navLaby, 0.08]].filter(p => p[0].length);
     if (!pools.length) return 0;
     let k = Math.random() * pools.reduce((t, p) => t + p[1], 0);
     for (const p of pools) { k -= p[1]; if (k <= 0) return p[0][Math.floor(Math.random() * p[0].length)]; }
@@ -2308,6 +2351,17 @@
     } catch (e) { wallCanvas = null; }   // navigateur qui refuse de relire l'image : on se passe des murs
     return st.node;
   }
+  /* Haies du labyrinthe : comme les murs, découpées en bandes (assets/haies.js) ; une bande est posée par-dessus un chat qui passe derrière. */
+  const HEDGES = window.RONRON_HEDGES || null;
+  if (HEDGES) HEDGES.strips = HEDGES.strips.map(a => ({ x: a[0], top: a[1], w: a[2], h: a[3], sx: a[4], sy: a[5], a: a[6], b: a[7], bot: a[1] + a[3], cx: a[0] + a[2] / 2, node: null }));
+  function hedgeNode(st) {
+    if (st.node) return st.node;
+    const NS = "http://www.w3.org/2000/svg", n = document.createElementNS(NS, "svg"), im = document.createElementNS(NS, "image");
+    n.setAttribute("class", "wall"); n.setAttribute("x", st.x); n.setAttribute("y", st.top); n.setAttribute("width", st.w); n.setAttribute("height", st.h);
+    n.setAttribute("viewBox", st.sx + " " + st.sy + " " + st.w + " " + st.h); n.setAttribute("preserveAspectRatio", "none");
+    im.setAttribute("href", HEDGES.src); im.setAttribute("width", HEDGES.fw); im.setAttribute("height", HEDGES.fh);
+    n.appendChild(im); st.node = n; return n;
+  }
   // Ordre de dessin : chats et objets du plus loin au plus près, et après chacun les bandes de mur qui le cachent.
   function sortCats() {
     const layer = $("#objects");
@@ -2332,6 +2386,18 @@
       if (slot >= 0) { const n = stripNode(st); if (n) after[slot].push(n); }
       else if (st.node && st.node.parentNode) st.node.remove();
     });
+    if (HEDGES) {
+      const on = isDone(HEDGES.need), cats = on ? items.map((it, i) => (it.cat ? i : -1)).filter(i => i >= 0) : [];
+      HEDGES.strips.forEach(st => {
+        let slot = -1;
+        for (let j = 0; j < cats.length; j++) {
+          const it = items[cats[j]];
+          if (Math.abs(it.x - st.cx) < it.hw + st.w / 2 && it.y > st.top && it.y - it.h < st.bot && it.y < st.a * it.x + st.b - 1) slot = cats[j];
+        }
+        if (slot >= 0) after[slot].push(hedgeNode(st));
+        else if (st.node && st.node.parentNode) st.node.remove();
+      });
+    }
     const order = [];
     items.forEach((it, i) => { order.push(it.n); after[i].forEach(n => order.push(n)); });
     const kids = layer.children;
@@ -2710,7 +2776,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.33." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.34." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -2781,7 +2847,7 @@
   const DUP_POINTS = [10, 25, 50, 50];             // points de jauge d'un doublon, selon sa rareté
   const PACK_FOR = { mini: 1, boss: 2, geant: 3, rafale: 3, trouee: 3, zero: 3, pelotes: 3 };
   const ALBUM_GIFT = { gardien: { kibble: 40 }, grille: { kitten: "creme" }, allee: { tuna: 20 }, manoir: { kitten: "chocolat" }, cour: { kitten: "rose" },
-    aile: { kibble: 60 }, est: { kitten: "lavande" }, perron: { kitten: "menthe" }, etang: { kitten: "nuage" }, hiver: { kitten: "bengalneige" }, uniques: { kitten: "or" } };
+    aile: { kibble: 60 }, est: { kitten: "lavande" }, perron: { kitten: "menthe" }, etang: { kitten: "nuage" }, laby: { tuna: 30 }, hiver: { kitten: "bengalneige" }, uniques: { kitten: "or" } };
   const giftText = g => g.kitten ? "un chaton à la robe " + (BREED[g.kitten] ? BREED[g.kitten].name : "rare") : g.kibble ? plural(g.kibble, "croquette") : plural(g.tuna, "boîte") + " de thon";
 
   function migrateCards() {
@@ -3160,7 +3226,8 @@
     return Object.keys(PATCH).filter(k => out.has(PATCH[k]));
   }
   window.__ronron = { objKeys: objKeys, slots: () => SLOTS.map(x => ({ id: x.id, name: x.name, short: x.short, room: x.room, zone: zoneOf(x) || "gardien", poi: x.poi, at: x.at, styles: (x.styles || []).length })), state: () => S, level: () => L, nav: () => navFree, look: look, layers: () => shownList.map(p => [p.src, Object.keys(chunks).some(c => chunks[c].key === layersKey && hit(geom(+c), p)) ? p.src : ""]), shown: () => shownList.map(p => [p.src, p.x, p.y, p.w, p.h]), painted: painted, paintStats: () => paintStats, diag: () => diag, mem: () => ({ chunks: Object.keys(chunks).length, chunkPx: Object.keys(chunks).reduce((s, c) => s + chunks[c].cv.width * chunks[c].cv.height, 0), cachePx: bmPx, cached: bmCache.size }), far: () => [farKey === layersKey, farEl ? !farEl.hidden : false], path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
-    navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length, navManoir.length, navSalon.length, navCour.length, navHall.length, navChats.length, navAile.length, navBiblio.length, navEst.length, navEstIn.length, navPerron.length, navEtang.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
+    navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length, navManoir.length, navSalon.length, navCour.length, navHall.length, navChats.length, navAile.length, navBiblio.length, navEst.length, navEstIn.length, navPerron.length, navEtang.length, navLaby.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
     audio: () => ({ ctx: AC ? AC.state : null, playing: !!(musicSrc && !musicSrc.pending), track: musicIdx % MUSIC.length, pref: audioPref }), sfx: sfx, sfxNames: () => Object.keys(SFX), sfxRaw: name => SFX[name](),
-    walls: () => (WALLS ? WALLS.strips.filter(st => st.node && st.node.parentNode).length : -1), wallsReady: () => !!wallCanvas };
+    walls: () => (WALLS ? WALLS.strips.filter(st => st.node && st.node.parentNode).length : -1), wallsReady: () => !!wallCanvas,
+    hedges: () => (HEDGES ? HEDGES.strips.filter(st => st.node && st.node.parentNode).length : -1) };
 })();
