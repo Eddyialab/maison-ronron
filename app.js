@@ -638,7 +638,7 @@
     { id: "grille_arbre", room: "Grille d'entrée", name: "Planter un arbre", short: "Arbre", verb: "Planter", cost: 26, icon: "plus", need: ["grille_pelouse"], at: z2([2060, 330]),
       desc: "Un arbre derrière la grille, sur la pelouse de l'allée.",
       styles: [{ name: "Érable rouge", sw: "#C8452E", patch: PATCH.grille_arbre_A }, { name: "Bouleau", sw: "#A9C46A", patch: PATCH.grille_arbre_B }],
-      parts: [[{ patch: PATCH.grille_arbre_A_p0, depth: 5414 }], [{ patch: PATCH.grille_arbre_B_p0, depth: 5406 }]] },
+      parts: [[{ patch: PATCH.grille_arbre_A_p0, depth: 5414 }], [{ patch: PATCH.grille_arbre_B_p0, depth: 5384 }]] },
     { id: "grille_mangeoire", room: "Grille d'entrée", name: "Installer une mangeoire", short: "Mangeoire", verb: "Installer", cost: 14, icon: "plus", need: ["grille_pelouse"], at: z2([1260, 150]),
       desc: "Des graines pour les oiseaux. Un chat les surveille, très sérieusement.",
       poi: [[{ x: 3529, y: 5131, pose: "assis", dir: -1, min: 12000, max: 28000 }], [{ x: 3534, y: 5138, pose: "assis", dir: -1, min: 12000, max: 28000 }]],
@@ -2418,7 +2418,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.28." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.29." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
