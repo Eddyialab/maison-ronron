@@ -288,6 +288,12 @@
     { id: "allee_rondpoint", room: "Allée du manoir", name: "Créer un rond-point", short: "Rond-point", verb: "Créer", cost: 12, icon: "plus", need: ["allee_pelouse"], at: z3([2080, 780]),
       desc: "Un îlot planté devant le perron, pour que les voitures tournent autour.",
       styles: [{ name: "Buis et rosier", sw: "#B3262E", patch: PATCH.rondpoint_buis }, { name: "Cadran solaire", sw: "#B9B29C", patch: PATCH.rondpoint_cadran }] },
+    /* Lot H (détails de l'allée) : le bassin passe sous l'arche (son bord gauche est caché par le pilier de l'arche en roses). */
+    { id: "allee_bassin", room: "Allée du manoir", name: "Creuser un bassin", short: "Bassin", verb: "Creuser", cost: 28, icon: "hammer", need: ["allee_pelouse"], at: z3([1850, 270]),
+      desc: "Des poissons rouges et des nénuphars, au pied du manoir. Les chats viennent les regarder.",
+      dep: "allee_arche", depMap: p => (p === 0 ? 0 : 1),
+      poi: [[{ x: 4034, y: 4029, pose: "assis", dir: -1, min: 12000, max: 28000 }], [{ x: 4024, y: 4039, pose: "assis", dir: -1, min: 12000, max: 28000 }]],
+      styles: [{ name: "Margelle en pierre", sw: "#9A958A", patch: eff => PATCH["allee_bassin_A" + (eff("allee_arche") === 0 ? 0 : 1)] }, { name: "Bassin naturel", sw: "#5FA8A0", patch: eff => PATCH["allee_bassin_B" + (eff("allee_arche") === 0 ? 0 : 1)] }] },
     { id: "allee_arche", room: "Allée du manoir", name: "Dresser une arche fleurie", short: "Arche", verb: "Dresser", cost: 11, icon: "plus", need: ["allee_pelouse"], at: z3([1540, 330]),
       desc: "Une arche au bout du sentier du labyrinthe.",
       styles: [{ name: "Roses", sw: "#F0A9C0", patch: PATCH.arche_roses }, { name: "Glycine", sw: "#9B6AD6", patch: PATCH.arche_glycine }] },
@@ -637,9 +643,45 @@
       desc: "Des graines pour les oiseaux. Un chat les surveille, très sérieusement.",
       poi: [[{ x: 3529, y: 5131, pose: "assis", dir: -1, min: 12000, max: 28000 }], [{ x: 3534, y: 5138, pose: "assis", dir: -1, min: 12000, max: 28000 }]],
       styles: [{ name: "Bois", sw: "#8A6238", patch: PATCH.grille_mangeoire_A }, { name: "Blanc et bleu", sw: "#7FA3D6", patch: PATCH.grille_mangeoire_B }],
-      parts: [[{ patch: PATCH.grille_mangeoire_A_p0, depth: 5203 }], [{ patch: PATCH.grille_mangeoire_B_p0, depth: 5214 }]] }
+      parts: [[{ patch: PATCH.grille_mangeoire_A_p0, depth: 5203 }], [{ patch: PATCH.grille_mangeoire_B_p0, depth: 5214 }]] },
+    /* ----- Détails de l'allée du manoir (lot H, 157 croquettes ; le bassin est rangé avant l'arche). Un détail posé sur un objet qui change
+       de forme selon son style (dep) a une variante par style de cet objet : calques <id>_<A|B><style de l'objet>, places et cases d'indice style + 2 × style de l'objet. ----- */
+    { id: "allee_fauteuils", room: "Allée du manoir", name: "Installer deux fauteuils", short: "Fauteuils", verb: "Installer", cost: 18, icon: "plus", need: ["allee_pelouse"], at: z3([2075, 330]),
+      desc: "Face au bassin. Les chats ont vite compris à qui ils étaient.",
+      poi: [[{ x: 4192, y: 4022, pose: "dort", dir: 1, min: 12000, max: 28000, depth: 4131 }, { x: 4274, y: 4059, pose: "dort", dir: -1, min: 12000, max: 28000, depth: 4131 }], [{ x: 4174, y: 4027, pose: "dort", dir: 1, min: 12000, max: 28000, depth: 4150 }, { x: 4264, y: 4067, pose: "dort", dir: -1, min: 12000, max: 28000, depth: 4150 }]],
+      styles: [{ name: "Bois blanc", sw: "#F1F0EC", patch: PATCH.allee_fauteuils_A }, { name: "Rotin", sw: "#B98552", patch: PATCH.allee_fauteuils_B }],
+      parts: [[{ patch: PATCH.allee_fauteuils_A_p0, depth: 4130 }], [{ patch: PATCH.allee_fauteuils_B_p0, depth: 4149 }]] },
+    { id: "allee_topiaire", room: "Allée du manoir", name: "Tailler un chat dans le buis", short: "Topiaire", verb: "Tailler", cost: 24, icon: "plus", need: ["allee_pelouse"], at: z3([1235, 690]),
+      desc: "Un chat de buis sur la pelouse, à côté de l'arche. Les vrais chats l'ignorent.",
+      styles: [{ name: "Chat assis", sw: "#5E8C3A", patch: PATCH.allee_topiaire_A }, { name: "Chat couché", sw: "#4E7A35", patch: PATCH.allee_topiaire_B }],
+      parts: [[{ patch: PATCH.allee_topiaire_A_p0, depth: 4509 }], [{ patch: PATCH.allee_topiaire_B_p0, depth: 4509 }]] },
+    { id: "allee_hamac", room: "Allée du manoir", name: "Suspendre un hamac", short: "Hamac", verb: "Suspendre", cost: 18, icon: "plus", need: ["allee_pelouse"], at: z3([1910, 1190]),
+      desc: "Entre le massif et la statue. Réservé à la sieste.",
+      poi: [[{ x: 4089, y: 4897, pose: "dort", dir: 1, min: 12000, max: 28000, depth: 5026 }], [{ x: 4089, y: 4887, pose: "dort", dir: 1, min: 12000, max: 28000, depth: 5003 }]],
+      styles: [{ name: "Rayé bleu", sw: "#3A6FB8", patch: PATCH.allee_hamac_A }, { name: "Macramé", sw: "#EFE6CF", patch: PATCH.allee_hamac_B }],
+      parts: [[{ patch: PATCH.allee_hamac_A_p0, depth: 5025 }], [{ patch: PATCH.allee_hamac_B_p0, depth: 5002 }]] },
+    { id: "allee_coussins", room: "Allée du manoir", name: "Poser des coussins", short: "Coussins", verb: "Poser", cost: 12, icon: "plus", need: ["allee_rondpoint"], at: z3([1975, 835]),
+      desc: "Sur la margelle du rond-point, pour la sieste au soleil.",
+      dep: "allee_rondpoint", poi: [[{ x: 4154, y: 4532, pose: "dort", dir: 1, min: 12000, max: 28000 }], [{ x: 4159, y: 4525, pose: "dort", dir: 1, min: 12000, max: 28000 }], [{ x: 4148, y: 4546, pose: "dort", dir: 1, min: 12000, max: 28000 }], [{ x: 4153, y: 4539, pose: "dort", dir: 1, min: 12000, max: 28000 }]],
+      styles: [{ name: "Rayures bleues", sw: "#3A6FB8", patch: eff => PATCH["allee_coussins_A" + (eff("allee_rondpoint") | 0)] }, { name: "Fleuri rose", sw: "#F0B8C8", patch: eff => PATCH["allee_coussins_B" + (eff("allee_rondpoint") | 0)] }] },
+    { id: "allee_paniers", room: "Allée du manoir", name: "Suspendre des paniers fleuris", short: "Paniers fleuris", verb: "Suspendre", cost: 15, icon: "plus", need: ["allee_lampadaires"], at: z3([1690, 690]),
+      desc: "Un panier de fleurs à chacun des trois lampadaires.", dep: "allee_lampadaires",
+      styles: [{ name: "Pétunias roses", sw: "#E58FA8", patch: eff => PATCH["allee_paniers_A" + (eff("allee_lampadaires") | 0)] }, { name: "Géraniums rouges", sw: "#D8343A", patch: eff => PATCH["allee_paniers_B" + (eff("allee_lampadaires") | 0)] }] },
+    { id: "allee_lampions", room: "Allée du manoir", name: "Accrocher des lampions", short: "Lampions", verb: "Accrocher", cost: 12, icon: "plus", need: ["allee_arche"], at: z3([1600, 330]),
+      desc: "Sous l'arche, pour les soirs d'été.", dep: "allee_arche",
+      styles: [{ name: "Lampions en papier", sw: "#F3D27A", patch: eff => PATCH["allee_lampions_A" + (eff("allee_arche") | 0)] }, { name: "Guirlande guinguette", sw: "#FFF3B0", patch: eff => PATCH["allee_lampions_B" + (eff("allee_arche") | 0)] }] },
+    { id: "allee_bordure", room: "Allée du manoir", name: "Border le sentier", short: "Bordure", verb: "Border", cost: 18, icon: "plus", need: ["allee_sentier"], at: z3([560, 950]),
+      desc: "Des fleurs tout le long du sentier. Les chats s'y cachent en passant.",
+      styles: [{ name: "Tulipes", sw: "#E2483A", patch: PATCH.allee_bordure_A }, { name: "Pensées", sw: "#7A5BC4", patch: PATCH.allee_bordure_B }] },
+    { id: "allee_fleurs", room: "Allée du manoir", name: "Fleurir la statue", short: "Fleurs de la statue", verb: "Fleurir", cost: 12, icon: "plus", need: ["allee_statue"], at: z3([2060, 1400]),
+      desc: "Un massif tout autour du socle de la statue.",
+      styles: [{ name: "Lavande", sw: "#8E7CC3", patch: PATCH.allee_fleurs_A }, { name: "Roses blanches", sw: "#F3F1E8", patch: PATCH.allee_fleurs_B }] }
   ];
   const SLOT = {}; SLOTS.forEach(s => { SLOT[s.id] = s; });
+  /* Détail posé sur un autre objet (s.dep) : une variante par style de cet objet. Places des chats et cases de la grille
+     sont rangées à l'indice style + 2 × style de l'objet (depMap pour regrouper, par ex. « sans arche » avec la glycine). */
+  const houseSt = id => (S.house[id] && S.house[id].done ? S.house[id].style | 0 : null);
+  const vk = (s, k, st) => (s && s.dep ? k + 2 * (s.depMap ? s.depMap(st(s.dep)) : (st(s.dep) | 0)) : k);
   /* Décorations de Noël, débloquées par le calendrier de l'Avent : posées sur le domaine du 1er décembre au 6 janvier.
      DECOS_START (liste écrite par art/noel_app.py) */
   const DECOS = [
@@ -1682,13 +1724,13 @@
     }
     const open = navFree.slice();                    // le sol praticable, avant les meubles
     Object.keys(NAV.blocks).forEach(id => {
-      if (isDone(id)) (NAV.blocks[id][S.house[id].style | 0] || NAV.blocks[id][0] || []).forEach(i => { navFree[i] = 0; });
+      if (isDone(id)) (NAV.blocks[id][vk(SLOT[id], S.house[id].style | 0, houseSt)] || NAV.blocks[id][0] || []).forEach(i => { navFree[i] = 0; });
     });
     DECOS.forEach(d => { if (decoShown(d)) d.block.forEach(i => { navFree[i] = 0; }); });      // pied des sapins de Noël
     reconnect(open);
     // tunnel, bacs du potager, cabane : on passe dedans ou derrière, caché (case de passage, jamais une destination)
     Object.keys(NAV.hide || {}).forEach(id => {
-      if (isDone(id)) (NAV.hide[id][S.house[id].style | 0] || NAV.hide[id][0] || []).forEach(i => { if (navFree[i]) navFree[i] = 4; });
+      if (isDone(id)) (NAV.hide[id][vk(SLOT[id], S.house[id].style | 0, houseSt)] || NAV.hide[id][0] || []).forEach(i => { if (navFree[i]) navFree[i] = 4; });
     });
     // on ne garde que le plus grand ensemble de cases reliées entre elles, pour qu'aucun chat ne reste coincé
     const comp = new Int32Array(navFree.length); let best = 0, bestSize = 0, id = 0;
@@ -1822,7 +1864,7 @@
     const list = [];
     SLOTS.forEach(s => {
       if (!s.poi || !isDone(s.id)) return;
-      const k = S.house[s.id].style | 0, p = Array.isArray(s.poi) ? (s.poi[k] || s.poi[0]) : s.poi;
+      const k = vk(s, S.house[s.id].style | 0, houseSt), p = Array.isArray(s.poi) ? (s.poi[k] || s.poi[0]) : s.poi;
       // un style peut avoir plusieurs places (un tableau) : chacune accueille un chat
       (Array.isArray(p) ? p : [p]).forEach((q, j) => list.push(Object.assign({ id: j ? s.id + "#" + j : s.id }, q)));
     });
@@ -2123,7 +2165,7 @@
       const k = effStyle(s.id);
       if (k == null) return;
       // « parts » : morceaux d'un chantier posé à plat, redessinés un par un à leur profondeur
-      if (s.parts) (s.parts[k] || []).forEach(o => img(o.patch, o.depth));
+      if (s.parts) (s.parts[vk(s, k, effStyle)] || s.parts[k] || []).forEach(o => img(o.patch, o.depth));
       if (s.depth) img(patchOf(s, k), Array.isArray(s.depth) ? s.depth[k] : s.depth);
     });
     DECOS.forEach(d => { if (decoShown(d)) d.parts.forEach(o => img(o.patch, o.depth)); });
@@ -2376,7 +2418,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.27." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.28." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
