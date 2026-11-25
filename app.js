@@ -598,7 +598,46 @@
       desc: "Une canne, un seau et une épuisette. Un chat surveille le bouchon.",
       poi: [[p9(2187, 1957, "assis", -1)], [p9(2103, 1959, "assis", -1)]],
       styles: [{ name: "Canne en bambou", sw: "#B98552", patch: PATCH.etang_peche_naturel }, { name: "Canne bleue", sw: "#3A6FB8", patch: PATCH.etang_peche_blanc }],
-      parts: [[{ patch: PATCH.etang_peche_naturel_p0, depth: 2447 }], [{ patch: PATCH.etang_peche_blanc_p0, depth: 2449 }]] }
+      parts: [[{ patch: PATCH.etang_peche_naturel_p0, depth: 2447 }], [{ patch: PATCH.etang_peche_blanc_p0, depth: 2449 }]] },
+    /* ----- Détails de la grille d'entrée (lot G, 156 croquettes) : placés en fin de liste, leurs calques passent par-dessus le reste. ----- */
+    { id: "grille_plaque", room: "Grille d'entrée", name: "Poser la plaque du domaine", short: "Plaque", verb: "Poser", cost: 12, icon: "plus", need: ["grille_mur"], at: z2([1450, 550]),
+      desc: "« Maison Ronron », sur le petit mur à côté de la grille.",
+      styles: [{ name: "Émail bleu", sw: "#1F3A7A", patch: PATCH.grille_plaque_A }, { name: "Laiton", sw: "#CEA442", patch: PATCH.grille_plaque_B }] },
+    { id: "grille_boite", room: "Grille d'entrée", name: "Fixer une boîte aux lettres", short: "Boîte aux lettres", verb: "Fixer", cost: 14, icon: "hammer", need: ["grille_mur"], at: z2([2440, 1110]),
+      desc: "Pour les lettres et les cartes postales, sur le mur à droite de la grille.",
+      styles: [{ name: "Vert anglais", sw: "#2F5A3E", patch: PATCH.grille_boite_A }, { name: "Noire et or", sw: "#23232A", patch: PATCH.grille_boite_B }] },
+    { id: "grille_pots", room: "Grille d'entrée", name: "Mettre un pot au portail", short: "Pot du portail", verb: "Mettre", cost: 12, icon: "plus", need: ["grille_chemin"], at: z2([2215, 1200]),
+      desc: "Une plante en pot au pied du pilier de droite.",
+      styles: [{ name: "Buis en boule", sw: "#C8613E", patch: PATCH.grille_pots_A }, { name: "Laurier en caisse blanche", sw: "#F1F0EC", patch: PATCH.grille_pots_B }],
+      parts: [[{ patch: PATCH.grille_pots_A_p0, depth: 6215 }], [{ patch: PATCH.grille_pots_B_p0, depth: 6258 }]] },
+    { id: "grille_panneau", room: "Grille d'entrée", name: "Planter un panneau", short: "Panneau", verb: "Planter", cost: 10, icon: "plus", need: ["grille_pelouse"], at: z2([2390, 1370]),
+      desc: "« Attention chats » : les visiteurs sont prévenus.",
+      styles: [{ name: "Bois peint", sw: "#B98552", patch: PATCH.grille_panneau_A }, { name: "Émail blanc", sw: "#EEF2F8", patch: PATCH.grille_panneau_B }],
+      parts: [[{ patch: PATCH.grille_panneau_A_p0, depth: 6393 }], [{ patch: PATCH.grille_panneau_B_p0, depth: 6411 }]] },
+    { id: "grille_grimpante", room: "Grille d'entrée", name: "Faire grimper une plante", short: "Plante grimpante", verb: "Faire grimper", cost: 22, icon: "plus", need: ["grille_mur"], at: z2([880, 600]),
+      desc: "Des fleurs tout le long du grand mur, au-dessus du massif.",
+      styles: [{ name: "Rosier rose", sw: "#E58FA8", patch: PATCH.grille_grimpante_A }, { name: "Glycine", sw: "#A98AD6", patch: PATCH.grille_grimpante_B }] },
+    { id: "grille_gamelles", room: "Grille d'entrée", name: "Poser des gamelles", short: "Gamelles", verb: "Poser", cost: 12, icon: "plus", need: ["grille_abri"], at: z2([1380, 990]),
+      desc: "Croquettes et eau fraîche devant l'abri. Il y a toujours un chat à côté.",
+      poi: [[{ x: 3684, y: 5928, pose: "assis", dir: -1, min: 12000, max: 28000 }], [{ x: 3714, y: 5924, pose: "assis", dir: -1, min: 12000, max: 28000 }]],
+      styles: [{ name: "Céramique blanche", sw: "#F3F1E8", patch: PATCH.grille_gamelles_A }, { name: "Émail bleu", sw: "#3A6FB8", patch: PATCH.grille_gamelles_B }] },
+    { id: "grille_arbrechat", room: "Grille d'entrée", name: "Installer un arbre à chat", short: "Arbre à chat", verb: "Installer", cost: 16, icon: "plus", need: ["grille_abri"], at: z2([1530, 800]),
+      desc: "Deux plateaux à côté du pilier : en haut on surveille la rue, en bas on fait la sieste.",
+      poi: [[{ x: 3729, y: 5576, pose: "assis", dir: 1, min: 12000, max: 28000, depth: 5929 }, { x: 3708, y: 5722, pose: "dort", dir: 1, min: 12000, max: 28000, depth: 5928 }], [{ x: 3711, y: 5568, pose: "assis", dir: 1, min: 12000, max: 28000, depth: 5912 }, { x: 3774, y: 5730, pose: "dort", dir: -1, min: 12000, max: 28000, depth: 5911 }]],
+      styles: [{ name: "Bois naturel", sw: "#C9A26B", patch: PATCH.grille_arbrechat_A }, { name: "Bois blanc", sw: "#F1F0EC", patch: PATCH.grille_arbrechat_B }],
+      parts: [[{ patch: PATCH.grille_arbrechat_A_p0, depth: 5927 }], [{ patch: PATCH.grille_arbrechat_B_p0, depth: 5910 }]] },
+    { id: "grille_bordure", room: "Grille d'entrée", name: "Border le chemin", short: "Bordure", verb: "Border", cost: 18, icon: "plus", need: ["grille_chemin"], at: z2([900, 1250]),
+      desc: "Une bordure le long du chemin. Les chats s'y cachent en passant.",
+      styles: [{ name: "Lavande", sw: "#8E7CC3", patch: PATCH.grille_bordure_A }, { name: "Buis taillé", sw: "#4E7A35", patch: PATCH.grille_bordure_B }] },
+    { id: "grille_arbre", room: "Grille d'entrée", name: "Planter un arbre", short: "Arbre", verb: "Planter", cost: 26, icon: "plus", need: ["grille_pelouse"], at: z2([2060, 330]),
+      desc: "Un arbre derrière la grille, sur la pelouse de l'allée.",
+      styles: [{ name: "Érable rouge", sw: "#C8452E", patch: PATCH.grille_arbre_A }, { name: "Bouleau", sw: "#A9C46A", patch: PATCH.grille_arbre_B }],
+      parts: [[{ patch: PATCH.grille_arbre_A_p0, depth: 5414 }], [{ patch: PATCH.grille_arbre_B_p0, depth: 5406 }]] },
+    { id: "grille_mangeoire", room: "Grille d'entrée", name: "Installer une mangeoire", short: "Mangeoire", verb: "Installer", cost: 14, icon: "plus", need: ["grille_pelouse"], at: z2([1260, 150]),
+      desc: "Des graines pour les oiseaux. Un chat les surveille, très sérieusement.",
+      poi: [[{ x: 3529, y: 5131, pose: "assis", dir: -1, min: 12000, max: 28000 }], [{ x: 3534, y: 5138, pose: "assis", dir: -1, min: 12000, max: 28000 }]],
+      styles: [{ name: "Bois", sw: "#8A6238", patch: PATCH.grille_mangeoire_A }, { name: "Blanc et bleu", sw: "#7FA3D6", patch: PATCH.grille_mangeoire_B }],
+      parts: [[{ patch: PATCH.grille_mangeoire_A_p0, depth: 5203 }], [{ patch: PATCH.grille_mangeoire_B_p0, depth: 5214 }]] }
   ];
   const SLOT = {}; SLOTS.forEach(s => { SLOT[s.id] = s; });
   /* Décorations de Noël, débloquées par le calendrier de l'Avent : posées sur le domaine du 1er décembre au 6 janvier.
@@ -1641,10 +1680,12 @@
         ((v === 15 || v === 18) && aile) || (v === 16 && biblio) || (v === 17 && salle) || (v === 19 && atelier) ||
         ((v === 20 || v === 24) && est) || (((v >= 21 && v <= 23) || v === 25) && estIn) || (v === 26 && perron) || ((v === 27 || v === 29) && etang) || (v === 28 && ponton) ? v : 0;
     }
+    const open = navFree.slice();                    // le sol praticable, avant les meubles
     Object.keys(NAV.blocks).forEach(id => {
       if (isDone(id)) (NAV.blocks[id][S.house[id].style | 0] || NAV.blocks[id][0] || []).forEach(i => { navFree[i] = 0; });
     });
     DECOS.forEach(d => { if (decoShown(d)) d.block.forEach(i => { navFree[i] = 0; }); });      // pied des sapins de Noël
+    reconnect(open);
     // tunnel, bacs du potager, cabane : on passe dedans ou derrière, caché (case de passage, jamais une destination)
     Object.keys(NAV.hide || {}).forEach(id => {
       if (isDone(id)) (NAV.hide[id][S.house[id].style | 0] || NAV.hide[id][0] || []).forEach(i => { if (navFree[i]) navFree[i] = 4; });
@@ -1681,6 +1722,40 @@
       else if (navFree[i] >= 21 && navFree[i] <= 23) navEstIn.push(i);
       else if (navFree[i] === 26) navPerron.push(i);
       else if (navFree[i] === 27 || navFree[i] === 28) navEtang.push(i);
+    }
+  }
+  /* Un meuble peut fermer un passage selon le style choisi (le banc vert de l'entrée coupait le salon et la cuisine du reste).
+     Tant qu'un morceau d'au moins 40 cases est coupé du grand ensemble, on lui ouvre le chemin le plus court à travers
+     le pied des meubles : ces cases deviennent un passage caché (le chat passe derrière le meuble). */
+  function reconnect(open) {
+    const N = navFree.length, W = NAV.w;
+    const nb4 = k => { const c = k % W; return [k - W, k + W, c > 0 ? k - 1 : -1, c < W - 1 ? k + 1 : -1]; };
+    const skip = new Set();                          // morceaux qu'aucun meuble ne sépare (coupés par un mur) : on les laisse
+    for (let round = 0; round < 12; round++) {
+      const comp = new Int32Array(N), sizes = [0]; let id = 0, best = 0;
+      for (let i = 0; i < N; i++) {
+        if (!navFree[i] || comp[i]) continue;
+        id++; let size = 0; const q = [i]; comp[i] = id;
+        while (q.length) { const k = q.pop(); size++; nb4(k).forEach(j => { if (j >= 0 && j < N && navFree[j] && !comp[j]) { comp[j] = id; q.push(j); } }); }
+        sizes.push(size); if (size > sizes[best]) best = id;
+      }
+      let cut = 0;
+      for (let k = 1; k <= id; k++) if (k !== best && sizes[k] >= 40 && (!cut || sizes[k] > sizes[cut]) && !skip.has(k + ":" + sizes[k])) cut = k;
+      if (!cut) return;
+      const prev = new Int32Array(N).fill(-1), q = [];
+      for (let i = 0; i < N; i++) if (comp[i] === cut) { prev[i] = i; q.push(i); }
+      let hit = -1;
+      for (let h = 0; h < q.length && hit < 0; h++) {
+        const k = q[h];
+        for (const j of nb4(k)) {
+          if (j < 0 || j >= N || prev[j] !== -1) continue;
+          if (navFree[j] && comp[j] === best) { prev[j] = k; hit = j; break; }
+          // sous un meuble (jamais à travers un mur), ou par un autre petit morceau coupé
+          if ((!navFree[j] && open[j]) || (navFree[j] && comp[j] !== cut)) { prev[j] = k; q.push(j); }
+        }
+      }
+      if (hit < 0) { skip.add(cut + ":" + sizes[cut]); continue; }
+      for (let k = prev[hit]; comp[k] !== cut; k = prev[k]) if (!navFree[k]) navFree[k] = 4;
     }
   }
   function neighbours(i) {
@@ -2301,7 +2376,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.26." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.27." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
