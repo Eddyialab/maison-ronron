@@ -480,7 +480,135 @@
     return { COATS: COATS, TRAY: TRAY, config: config, make: make, freeList: freeList, take: take, popOut: popOut, covers: covers };
   })();
 
-  const J = { M3: M3, TM: TM, mulberry32: mulberry32 };
+
+  /* ======================= Pelotes : moteur ======================= */
+  // Grille en nid d'abeille : rangées paires de 9 pelotes, rangées impaires de 8 décalées d'une demi-pelote. Unité : le diamètre d'une pelote (1).
+  // On tire une pelote depuis le bas ; elle rebondit sur les côtés et se colle à la première pelote touchée (ou au plafond).
+  // 3 pelotes pareilles reliées ou plus s'en vont ; celles qui ne tiennent plus au plafond tombent. Des chatons sont pris dans certaines pelotes : les libérer tous.
+  const PB = (function () {
+    const COLS = 9, ROWS = 13, RH = Math.sqrt(3) / 2;             // ROWS : rangées possibles (la dernière est interdite)
+    const COLORS = ["rouge", "bleu", "vert", "jaune", "violet", "rose"];
+    const W = COLS, SHOOT = { x: COLS / 2, y: (ROWS - 1) * RH + 0.5 + 1.25 };
+    const rowLen = r => (r % 2 ? COLS - 1 : COLS);
+    const cx = (r, c) => c + (r % 2 ? 1 : 0.5), cy = r => r * RH + 0.5;
+    const key = (r, c) => r * COLS + c;
+    function neighbors(r, c) {
+      const o = r % 2, out = [[r, c - 1], [r, c + 1], [r - 1, c - 1 + o], [r - 1, c + o], [r + 1, c - 1 + o], [r + 1, c + o]];
+      return out.filter(([a, b]) => a >= 0 && a < ROWS && b >= 0 && b < rowLen(a));
+    }
+    // Au-delà du niveau 420, les plateaux des niveaux 61 à 420 reviennent.
+    const base = level => (level > 420 ? 61 + ((level - 61) % 360) : level);
+    const SHOTS = "3-3233022+*0::50,2759;8.75GF8=@;@,<BMG=JBF9IBDM@MDD9GC@[RA?:IQOAEP?KRLWEAAIN\\BFOCH=A<>EANE:\\MIN9BGA>7J>KIJTAH>H>CQFIHAD<;FJEH<<ACC8@EE;BLINHJAMJF4<H:?BTH-NC\\NF?QK9JAK:;=@NAA=WFIL7IQE<H=8CAGB?RDDC6>MC@G=LNB@PPABHAUTDQHXE@;4FB:KGCCK\\BURIRAN5JLG=IK<<NA48;?N7D=@Q8BZ@C?<VBIWJLE[?</>FEJIOCG=?TOAIA;WIS?FG9RKFGPW@EQF@AM>H>EBD<EFQL?RD=P7I=<CFOBCND86D<BWARAH:NAFONW/COAF8JTET?LGACSBDQGCHNKNDO\\?CTGEBFBEAIAGOAN:@WA=NMIJAI?L>9F>HB";                                               // un caractère par niveau (1 à 420) : tirs = code - 32 (tests/pb_tirs.js)
+    function config(lv) {
+      const level = base(lv), step = Math.min(1, (level - 1) / 45), hard = lv % 10 === 0;
+      const colors = Math.min(6, 4 + Math.round(step * 2) + (hard && level > 12 ? 1 : 0));
+      const rows = Math.min(10, 7 + Math.round(step * 3) + (hard ? 1 : 0));
+      const kittens = Math.min(6, 3 + Math.round(step * 3) + (hard ? 1 : 0));
+      const est = Math.round(8 + rows * 1.6 + colors * 2.5);
+      return { level: lv, seed: level, colors: colors, rows: rows, kittens: kittens, glue: 0.4 - step * 0.15, shots: SHOTS.charCodeAt(level - 1) - 32 || est, hard: hard };
+    }
+    function make(cfg, rnd) {
+      const lay = mulberry32(cfg.seed * 9173 + 7);                  // forme du plateau : toujours la même pour un niveau
+      const g = new Int8Array(COLS * ROWS).fill(-1), kit = new Uint8Array(COLS * ROWS);
+      for (let r = 0; r < cfg.rows; r++) for (let c = 0; c < rowLen(r); c++) {
+        // couleurs en grappes : souvent celle d'une voisine déjà posée
+        const nb = neighbors(r, c).filter(([a, b]) => g[key(a, b)] >= 0);
+        g[key(r, c)] = nb.length && lay() < cfg.glue ? g[key.apply(null, nb[Math.floor(lay() * nb.length)])] : Math.floor(lay() * cfg.colors);
+      }
+      // des trous dans les dernières rangées (le bas du plateau n'est pas plat)
+      for (let r = Math.max(1, cfg.rows - 3); r < cfg.rows; r++) for (let c = 0; c < rowLen(r); c++) if (lay() < 0.16 + (r - cfg.rows + 3) * 0.12) g[key(r, c)] = -1;
+      dropFloating(g, []);
+      // chatons : tout en haut (les deux premières rangées), écartés les uns des autres ; il faut creuser jusqu'à eux
+      const cells = []; for (let r = 0; r < Math.min(2, cfg.rows); r++) for (let c = 0; c < rowLen(r); c++) if (g[key(r, c)] >= 0) cells.push([r, c]);
+      cells.sort(() => lay() - 0.5);
+      const used = new Set();
+      for (const [r, c] of cells) { if (used.size >= cfg.kittens) break; if ([...used].some(k => Math.abs(k % COLS - c) < 2 && Math.abs(((k / COLS) | 0) - r) < 2)) continue; used.add(key(r, c)); }
+      used.forEach(k => { kit[k] = 1; });
+      const st = { g: g, kit: kit, colors: cfg.colors, rnd: rnd, shots: cfg.shots, freed: 0, kittens: used.size, cur: -1, next: -1 };
+      st.cur = pickColor(st); st.next = pickColor(st);
+      return st;
+    }
+    function present(st) { const s = new Set(); for (let i = 0; i < st.g.length; i++) if (st.g[i] >= 0) s.add(st.g[i]); return Array.from(s); }
+    function pickColor(st) { const p = present(st); return p.length ? p[Math.floor(st.rnd() * p.length)] : Math.floor(st.rnd() * st.colors); }
+    // pelotes qui ne tiennent plus au plafond : elles tombent
+    function dropFloating(g, out) {
+      const seen = new Uint8Array(g.length), stack = [];
+      for (let c = 0; c < COLS; c++) if (g[c] >= 0) { seen[c] = 1; stack.push([0, c]); }
+      while (stack.length) { const [r, c] = stack.pop(); neighbors(r, c).forEach(([a, b]) => { const k = key(a, b); if (g[k] >= 0 && !seen[k]) { seen[k] = 1; stack.push([a, b]); } }); }
+      for (let k = 0; k < g.length; k++) if (g[k] >= 0 && !seen[k]) { out.push({ r: (k / COLS) | 0, c: k % COLS, color: g[k] }); g[k] = -1; }
+      return out;
+    }
+    // Trajectoire : la pelote avance en ligne droite, rebondit sur les côtés ; elle s'arrête au contact d'une autre (distance < 0,86) ou du plafond.
+    function trace(st, angle) {
+      let x = SHOOT.x, y = SHOOT.y, dx = Math.cos(angle), dy = -Math.sin(angle);
+      const pts = [[x, y]], R = 0.5, stepLen = 0.08, hitD = 0.86;
+      for (let n = 0; n < 2000; n++) {
+        x += dx * stepLen; y += dy * stepLen;
+        if (x < R) { x = 2 * R - x; dx = -dx; pts.push([x, y]); }
+        if (x > W - R) { x = 2 * (W - R) - x; dx = -dx; pts.push([x, y]); }
+        if (y <= R) { pts.push([x, R]); return { x: x, y: R, pts: pts, top: true }; }
+        // pelotes proches seulement
+        const r0 = Math.max(0, Math.floor((y - 1.2) / RH)), r1 = Math.min(ROWS - 1, Math.ceil((y + 1.2) / RH));
+        for (let r = r0; r <= r1; r++) for (let c = 0; c < rowLen(r); c++) {
+          if (st.g[key(r, c)] < 0) continue;
+          const ddx = cx(r, c) - x, ddy = cy(r) - y;
+          if (ddx * ddx + ddy * ddy < hitD * hitD) { pts.push([x, y]); return { x: x, y: y, pts: pts, hit: [r, c] }; }
+        }
+        if (y > SHOOT.y + 1) break;
+      }
+      pts.push([x, y]); return { x: x, y: y, pts: pts };
+    }
+    // case libre la plus proche du point d'arrêt (voisine de la pelote touchée, ou au plafond)
+    function snap(st, t) {
+      let best = null, bd = 1e9;
+      const cand = [];
+      if (t.hit) neighbors(t.hit[0], t.hit[1]).forEach(x => cand.push(x));
+      const rr = Math.max(0, Math.min(ROWS - 1, Math.round((t.y - 0.5) / RH)));
+      for (let r = Math.max(0, rr - 1); r <= Math.min(ROWS - 1, rr + 1); r++) for (let c = 0; c < rowLen(r); c++) cand.push([r, c]);
+      cand.forEach(([r, c]) => {
+        if (st.g[key(r, c)] >= 0) return;
+        if (r > 0 && !neighbors(r, c).some(([a, b]) => st.g[key(a, b)] >= 0)) return;      // collée à quelque chose (ou au plafond)
+        const d = (cx(r, c) - t.x) ** 2 + (cy(r) - t.y) ** 2;
+        if (d < bd) { bd = d; best = [r, c]; }
+      });
+      return best;
+    }
+    function group(st, r, c) {
+      const col = st.g[key(r, c)], seen = new Set([key(r, c)]), stack = [[r, c]], out = [];
+      while (stack.length) {
+        const [a, b] = stack.pop(); out.push([a, b]);
+        neighbors(a, b).forEach(([x, y]) => { const k = key(x, y); if (!seen.has(k) && st.g[k] === col) { seen.add(k); stack.push([x, y]); } });
+      }
+      return out;
+    }
+    // Un tir. Renvoie ce qu'il faut animer : trajet, case, pelotes parties, pelotes tombées, chatons libérés.
+    function shoot(st, angle) {
+      const color = st.cur, t = trace(st, angle), cell = snap(st, t);
+      st.shots--;
+      const res = { color: color, pts: t.pts, cell: cell, popped: [], dropped: [], freed: 0, lose: false };
+      if (!cell) { res.lose = true; return res; }
+      const [r, c] = cell;
+      if (r >= ROWS - 1) { st.g[key(r, c)] = color; res.lose = true; return res; }   // la pile touche le bas
+      st.g[key(r, c)] = color;
+      const grp = group(st, r, c);
+      if (grp.length >= 3) {
+        grp.forEach(([a, b]) => { const k = key(a, b); res.popped.push({ r: a, c: b, color: st.g[k], kit: !!st.kit[k] }); if (st.kit[k]) { st.kit[k] = 0; res.freed++; } st.g[k] = -1; });
+        dropFloating(st.g, res.dropped);
+        res.dropped.forEach(d => { const k = key(d.r, d.c); d.kit = !!st.kit[k]; if (st.kit[k]) { st.kit[k] = 0; res.freed++; } });
+      }
+      st.freed += res.freed;
+      st.cur = st.next; if (present(st).indexOf(st.cur) < 0) st.cur = pickColor(st);
+      st.next = pickColor(st);
+      return res;
+    }
+    function swap(st) { const x = st.cur; st.cur = st.next; st.next = x; }
+    const won = st => st.freed >= st.kittens;
+    function clone(st) { return { g: Int8Array.from(st.g), kit: Uint8Array.from(st.kit), colors: st.colors, rnd: st.rnd, shots: st.shots, freed: st.freed, kittens: st.kittens, cur: st.cur, next: st.next }; }
+    return { COLS: COLS, ROWS: ROWS, RH: RH, COLORS: COLORS, SHOOT: SHOOT, rowLen: rowLen, cx: cx, cy: cy, key: key, neighbors: neighbors,
+      config: config, make: make, trace: trace, snap: snap, shoot: shoot, swap: swap, won: won, clone: clone, present: present };
+  })();
+
+  const J = { M3: M3, TM: TM, PB: PB, mulberry32: mulberry32 };
   if (typeof module !== "undefined" && module.exports) { module.exports = J; return; }
   window.RonronJeux = J;
 
@@ -499,7 +627,12 @@
     { id: "m3", name: "Friandises", desc: "Échange deux friandises voisines pour en aligner trois. Remplis les objectifs avant la fin des coups.",
       art: '<span class="gt" style="--i:0">' + treat(1) + '</span><span class="gt" style="--i:1">' + treat(2) + '</span><span class="gt" style="--i:2">' + treat(0) + "</span>" },
     { id: "tm", name: "Le panier à trier", desc: "Touche les chats du dessus pour les mettre dans le panier. Trois pareils s'en vont ; ne remplis pas les 7 places.",
-      art: '<span class="gt tile" style="--i:0">' + catIcon("roux") + '</span><span class="gt tile" style="--i:1">' + catIcon("nuage") + '</span><span class="gt tile" style="--i:2">' + catIcon("roux") + "</span>" }
+      art: '<span class="gt tile" style="--i:0">' + catIcon("roux") + '</span><span class="gt tile" style="--i:1">' + catIcon("nuage") + '</span><span class="gt tile" style="--i:2">' + catIcon("roux") + "</span>" },
+    { id: "pb", name: "Pelotes", desc: "Vise et tire des pelotes de laine : trois pareilles s'en vont. Libère les chatons coincés tout en haut.",
+      art: [["#E8574C", "#A8322A"], ["#4C8FE0", "#2A5E9E"], ["#F2C14E", "#B9862A"]].map((c, i) => '<span class="gt" style="--i:' + i + '"><svg class="tr" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="' + c[0] +
+        '" stroke="' + c[1] + '" stroke-width="2"/><g fill="none" stroke="' + c[1] + '" stroke-width="1.8" stroke-linecap="round"><path d="M7 13 C15 13 24 18 28 33"/><path d="M5 21 C12 20 19 25 21 35.5"/><path d="M13 5.5 C19 9 26 16 27 29"/></g></svg></span>').join("") },
+    { id: "df", name: "Les différences", desc: "Deux images d'une pièce de ta maison : trouve ce qui a changé avant la fin du temps.",
+      art: '<span class="gt frame" style="--i:0">' + catIcon("roux", 30) + '</span><span class="gt frame" style="--i:2">' + catIcon("roux", 30) + '<i class="ring"></i></span>' }
   ];
   J.renderHub = function () {
     const el = $("#screen-games"), n = tickets(), g = games();
@@ -520,9 +653,9 @@
     const level = games()[id] || 1;
     cur = { game: id, level: level, over: false, rescued: false };
     $("#screen-bonus").dataset.game = id;
-    $("#b-title").textContent = (id === "m3" ? "Friandises" : "Le panier à trier") + " · niveau " + level;
+    $("#b-title").textContent = GAMES.find(x => x.id === id).name + " · niveau " + level;
     $("#b-sub").textContent = (level % 10 === 0 ? "Niveau difficile · " : "") + "à gagner : " + C.plural(REWARD, "croquette") + (level % 10 === 0 ? " et 1 boîte de thon" : "");
-    if (id === "m3") m3Start(level); else tmStart(level);
+    if (id === "m3") m3Start(level); else if (id === "pb") pbStart(level); else if (id === "df") dfStart(level); else tmStart(level);
   }
   // Fin de partie : le ticket est dépensé ; gagnée, des croquettes et le niveau suivant.
   function finish(win) {
@@ -550,7 +683,7 @@
     }, 700);
   }
   function leave() { stopAll(); cur = null; C.show("games"); }
-  function stopAll() { clearTimeout(hintTimer); $("#b-stage").innerHTML = ""; $("#b-goals").innerHTML = ""; $("#b-tools").innerHTML = ""; }
+  function stopAll() { clearTimeout(hintTimer); if (pbRaf) cancelAnimationFrame(pbRaf); pbRaf = 0; pb = null; clearInterval(dfTimer); df = null; $("#b-stage").innerHTML = ""; $("#b-goals").innerHTML = ""; $("#b-tools").innerHTML = ""; }
   J.quit = function () {
     if (!cur || cur.over) { leave(); return; }
     C.openSheet("<h2>Abandonner la partie ?</h2><p>Le ticket de cette partie sera perdu.</p>" +
@@ -563,7 +696,7 @@
     };
   };
   J.active = () => !!(cur && !cur.over);
-  J.peek = () => ({ cur: cur, m3: m3, tm: tm });             // pour les tests
+  J.peek = () => ({ cur: cur, m3: m3, tm: tm, pb: pb, pbShoot: a => pbShoot(a), df: df });             // pour les tests
 
   /* ---------- Pictogrammes ---------- */
   function treat(t) { return '<svg class="tr" viewBox="0 0 40 40" aria-hidden="true"><use href="#t-' + M3.TYPES[t] + '"/></svg>'; }
@@ -847,4 +980,457 @@
       $("#tm-pop").onclick = () => { C.closeSheet(); S.tuna -= RESCUE; C.save(); C.updateHud(); cur.rescued = true; TM.popOut(tm.g); tmLayout(); tmGoals(); };
     } else finish(false);
   }
+
+  /* ======================= Pelotes : écran ======================= */
+  // Couleurs des pelotes (même ordre que PB.COLORS) : teinte, foncé, clair ; et le sens des brins, différent pour chaque couleur.
+  const PBC = [["#E8574C", "#A8322A", "#F6A29A", 0.2], ["#4C8FE0", "#2A5E9E", "#A8CCF4", 1.1], ["#5DB85C", "#327A33", "#AEE0A8", 2.0],
+    ["#F2C14E", "#B9862A", "#FBE3A6", 2.8], ["#9B6BD6", "#653C9E", "#D3B8F2", 3.7], ["#F28DB8", "#B9527F", "#FBD0E2", 4.6]];
+  const KIT_COATS = ["roux", "blanc", "siamois", "tricolore", "chartreux", "noir"];
+  let pb = null, pbRaf = 0;
+  const pbImgs = {};
+  function pbSprite(coat) {
+    if (pbImgs[coat]) return pbImgs[coat];
+    const im = new Image(); im.src = "assets/c/" + coat + ".webp"; im.onload = () => { if (pb) pbDraw(); };
+    return (pbImgs[coat] = im);
+  }
+  // une pelote dessinée une fois par couleur, puis recopiée
+  function yarnCanvas(ci, px) {
+    const cv = document.createElement("canvas"); cv.width = cv.height = px;
+    const g = cv.getContext("2d"), r = px / 2 - 1, [base, dark, light, rot] = PBC[ci];
+    const grd = g.createRadialGradient(px * 0.38, px * 0.34, r * 0.15, px / 2, px / 2, r);
+    grd.addColorStop(0, light); grd.addColorStop(0.45, base); grd.addColorStop(1, dark);
+    g.fillStyle = grd; g.beginPath(); g.arc(px / 2, px / 2, r, 0, Math.PI * 2); g.fill();
+    g.save(); g.beginPath(); g.arc(px / 2, px / 2, r, 0, Math.PI * 2); g.clip();
+    g.translate(px / 2, px / 2); g.rotate(rot); g.strokeStyle = dark; g.globalAlpha = 0.55; g.lineWidth = Math.max(1, px * 0.045); g.lineCap = "round";
+    for (let k = -2; k <= 2; k++) { g.beginPath(); g.ellipse(k * r * 0.34, 0, r * 0.32, r * 1.05, 0, -Math.PI / 2, Math.PI / 2); g.stroke(); }
+    g.rotate(1.2); g.globalAlpha = 0.35;
+    for (let k = -1; k <= 1; k++) { g.beginPath(); g.ellipse(0, k * r * 0.4, r * 1.0, r * 0.3, 0, 0, Math.PI); g.stroke(); }
+    g.restore();
+    g.strokeStyle = dark; g.lineWidth = Math.max(1, px * 0.03); g.beginPath(); g.arc(px / 2, px / 2, r - g.lineWidth / 2, 0, Math.PI * 2); g.stroke();
+    g.fillStyle = "rgba(255,255,255,0.55)"; g.beginPath(); g.ellipse(px * 0.36, px * 0.3, r * 0.26, r * 0.14, -0.6, 0, Math.PI * 2); g.fill();
+    return cv;
+  }
+  function pbStart(level) {
+    const cfg = PB.config(level), st = PB.make(cfg, Math.random);
+    const stage = $("#b-stage"), wpx = Math.min(stage.clientWidth || 360, 420);
+    const availH = Math.max(380, (stage.clientHeight || 560) - 4);
+    const d = Math.floor(Math.min(wpx / PB.COLS, availH / (PB.SHOOT.y + 1.05)));
+    const W = d * PB.COLS, H = Math.ceil(d * (PB.SHOOT.y + 1.05)), dpr = Math.min(2, window.devicePixelRatio || 1);
+    stage.innerHTML = '<div class="pbwrap" style="width:' + W + "px;height:" + H + 'px"><canvas class="pb" width="' + Math.round(W * dpr) + '" height="' + Math.round(H * dpr) + '" style="width:' + W + "px;height:" + H + 'px"></canvas></div>';
+    const cv = $(".pb", stage);
+    // chaque chaton a sa robe
+    const coats = {}; let n = 0;
+    for (let k = 0; k < st.g.length; k++) if (st.kit[k]) coats[k] = KIT_COATS[n++ % KIT_COATS.length];
+    Object.keys(coats).forEach(k => pbSprite(coats[k]));
+    pb = { st: st, cfg: cfg, d: d, W: W, H: H, dpr: dpr, cv: cv, ctx: cv.getContext("2d"), yarn: PBC.map((_, i) => yarnCanvas(i, Math.ceil(d * dpr))), coats: coats,
+      aim: null, busy: false, fx: [], flying: null };
+    pbGoals(); pbDraw(); bindPB();
+    $("#b-tools").innerHTML = '<p class="hint">Vise en glissant le doigt au-dessus du lanceur, lâche pour tirer : la pelote rebondit sur les côtés. Trois pelotes pareilles ou plus s\'en vont, ' +
+      "et celles qui ne tiennent plus tombent. Libère tous les chatons (tout en haut). Touche la pelote suivante pour l'échanger.</p>";
+  }
+  const pbXY = (r, c) => [PB.cx(r, c) * pb.d, PB.cy(r) * pb.d];
+  function pbGoals() {
+    const st = pb.st;
+    $("#b-goals").innerHTML = '<span class="goal' + (st.freed >= st.kittens ? " done" : "") + '"><span class="mini">' + catIcon("roux", 28) + "</span><b>" + st.freed + "/" + st.kittens + "</b></span>" +
+      '<span class="moves' + (st.shots <= 3 ? " low" : "") + '"><b id="pb-shots">' + st.shots + "</b>tirs</span>";
+  }
+  function drawKitten(g, x, y, d, coat) {
+    const q = window.RONRON_CATS && window.RONRON_CATS[coat] && window.RONRON_CATS[coat].assis, im = pbImgs[coat];
+    g.save(); g.beginPath(); g.arc(x, y, d * 0.4, 0, Math.PI * 2); g.fillStyle = "rgba(255,250,240,0.92)"; g.fill(); g.clip();
+    if (q && im && im.complete && im.naturalWidth) {
+      const k = im.naturalWidth / (q.sw || im.naturalWidth), sh = q.h * 0.62, sc = (d * 0.86) / sh;      // la tête et le haut du corps
+      g.drawImage(im, (q.sx || 0) * k, (q.sy || 0) * k, q.w * k, sh * k, x - (q.w * sc) / 2, y - d * 0.36, q.w * sc, sh * sc);
+    }
+    g.restore();
+  }
+  function pbDraw() {
+    if (!pb) return;
+    const g = pb.ctx, d = pb.d, st = pb.st;
+    g.setTransform(pb.dpr, 0, 0, pb.dpr, 0, 0);
+    g.clearRect(0, 0, pb.W, pb.H);
+    // ligne à ne pas dépasser
+    const ly = (PB.ROWS - 1) * PB.RH * d;
+    g.strokeStyle = "rgba(224,82,74,0.35)"; g.setLineDash([6, 6]); g.lineWidth = 2; g.beginPath(); g.moveTo(0, ly); g.lineTo(pb.W, ly); g.stroke(); g.setLineDash([]);
+    for (let r = 0; r < PB.ROWS; r++) for (let c = 0; c < PB.rowLen(r); c++) {
+      const k = PB.key(r, c), col = st.g[k]; if (col < 0) continue;
+      const [x, y] = pbXY(r, c);
+      g.drawImage(pb.yarn[col], x - d / 2, y - d / 2, d, d);
+      if (st.kit[k]) drawKitten(g, x, y, d, pb.coats[k]);
+    }
+    // visée : tout le trajet jusqu'à la pelote touchée, puis la case où elle se posera
+    if (pb.aim != null && !pb.busy) {
+      const t = PB.trace(st, pb.aim), cell = PB.snap(st, t);
+      g.strokeStyle = "rgba(58,51,64,0.55)"; g.lineWidth = 3; g.setLineDash([2, 9]); g.lineCap = "round";
+      g.beginPath(); t.pts.forEach(([x, y], i) => (i ? g.lineTo(x * d, y * d) : g.moveTo(x * d, y * d))); g.stroke(); g.setLineDash([]);
+      if (cell) { const [x, y] = pbXY(cell[0], cell[1]); g.globalAlpha = 0.35; g.drawImage(pb.yarn[st.cur], x - d / 2, y - d / 2, d, d); g.globalAlpha = 1; }
+    }
+    // effets : pelotes qui éclatent, qui tombent, chatons qui s'envolent
+    pb.fx.forEach(f => {
+      if (f.kind === "pop") { g.globalAlpha = Math.max(0, 1 - f.t / 220); const s = d * (1 + f.t / 400); g.drawImage(pb.yarn[f.color], f.x - s / 2, f.y - s / 2, s, s); g.globalAlpha = 1; }
+      if (f.kind === "drop") { g.drawImage(pb.yarn[f.color], f.x - d / 2, f.y - d / 2, d, d); if (f.coat) drawKitten(g, f.x, f.y, d, f.coat); }
+      if (f.kind === "kit") { g.globalAlpha = Math.max(0, 1 - f.t / 900); drawKitten(g, f.x, f.y, d * 1.25, f.coat); g.globalAlpha = 1; }
+    });
+    // lanceur
+    const sx = PB.SHOOT.x * d, sy = PB.SHOOT.y * d;
+    g.fillStyle = "#E9DCCB"; g.beginPath(); g.ellipse(sx, sy + d * 0.42, d * 0.85, d * 0.26, 0, 0, Math.PI * 2); g.fill();
+    if (pb.flying) g.drawImage(pb.yarn[pb.flying.color], pb.flying.x * d - d / 2, pb.flying.y * d - d / 2, d, d);
+    else g.drawImage(pb.yarn[st.cur], sx - d / 2, sy - d / 2, d, d);
+    // pelote suivante, plus petite, à gauche
+    const nx = sx - d * 2.1, ny = sy + d * 0.15;
+    g.drawImage(pb.yarn[st.next], nx - d * 0.36, ny - d * 0.36, d * 0.72, d * 0.72);
+    g.fillStyle = "#8A8190"; g.font = "700 " + Math.round(d * 0.28) + "px Nunito, sans-serif"; g.textAlign = "center"; g.fillText("suivante", nx, ny + d * 0.66);
+  }
+  function bindPB() {
+    const cv = pb.cv;
+    const at = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / pb.d, (e.clientY - r.top) / pb.d]; };
+    const angleTo = ([x, y]) => {
+      const a = Math.atan2(PB.SHOOT.y - y, x - PB.SHOOT.x);
+      return Math.max(Math.PI * 0.06, Math.min(Math.PI * 0.94, a));
+    };
+    const nearNext = ([x, y]) => Math.hypot(x - (PB.SHOOT.x - 2.1), y - (PB.SHOOT.y + 0.15)) < 0.7;
+    let down = false;
+    cv.addEventListener("pointerdown", e => {
+      if (!pb || pb.busy || !cur || cur.over) return;
+      const p = at(e);
+      if (nearNext(p)) { PB.swap(pb.st); C.sfx("tap"); pbDraw(); return; }
+      if (p[1] > PB.SHOOT.y + 0.3) return;
+      down = true; pb.aim = angleTo(p); pbDraw();
+      try { cv.setPointerCapture(e.pointerId); } catch (x) { /* sans importance */ }
+    });
+    cv.addEventListener("pointermove", e => { if (!down || !pb) return; pb.aim = angleTo(at(e)); pbDraw(); });
+    cv.addEventListener("pointerup", e => {
+      if (!down || !pb) return;
+      down = false; const p = at(e), a = angleTo(p);
+      pb.aim = null;
+      if (p[1] > PB.SHOOT.y - 0.2) { pbDraw(); return; }           // relâché sur le lanceur : on ne tire pas
+      pbShoot(a);
+    });
+    cv.addEventListener("pointercancel", () => { down = false; if (pb) { pb.aim = null; pbDraw(); } });
+  }
+  function pbAnimate(stepFn) {
+    return new Promise(res => {
+      let last = performance.now();
+      const tick = now => {
+        const dt = Math.min(40, now - last); last = now;
+        const more = stepFn(dt);
+        pbDraw();
+        if (more) pbRaf = requestAnimationFrame(tick); else { pbRaf = 0; res(); }
+      };
+      pbRaf = requestAnimationFrame(tick);
+    });
+  }
+  async function pbShoot(angle) {
+    if (!pb || pb.busy || !cur || cur.over) return;
+    const st = pb.st, d = pb.d;
+    pb.busy = true; C.sfx("tap");
+    const res = PB.shoot(st, angle);
+    $("#pb-shots").textContent = st.shots;
+    // vol de la pelote le long du trajet
+    const pts = res.pts.slice(), seg = []; let total = 0;
+    for (let i = 1; i < pts.length; i++) { const L = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg.push(L); total += L; }
+    if (res.cell) { const [x, y] = [PB.cx(res.cell[0], res.cell[1]), PB.cy(res.cell[0])]; const L = Math.hypot(x - pts[pts.length - 1][0], y - pts[pts.length - 1][1]); pts.push([x, y]); seg.push(L); total += L; }
+    // la pelote posée n'est dessinée qu'à l'arrivée
+    const k = res.cell ? PB.key(res.cell[0], res.cell[1]) : -1, placed = k >= 0 ? st.g[k] : -1;
+    if (k >= 0) st.g[k] = -1;
+    const back = []; res.popped.concat(res.dropped).forEach(o => { const kk = PB.key(o.r, o.c); back.push([kk, o.color, o.kit]); st.g[kk] = o.color; if (o.kit) st.kit[kk] = 1; });
+    let dist = 0; const speed = 0.024;                         // pelotes par milliseconde
+    pb.flying = { color: res.color, x: pts[0][0], y: pts[0][1] };
+    await pbAnimate(dt => {
+      dist = Math.min(total, dist + speed * dt);
+      let rem = dist, i = 0;
+      while (i < seg.length && rem > seg[i]) { rem -= seg[i]; i++; }
+      if (i >= seg.length) { pb.flying.x = pts[pts.length - 1][0]; pb.flying.y = pts[pts.length - 1][1]; return false; }
+      const u = seg[i] ? rem / seg[i] : 1;
+      pb.flying.x = pts[i][0] + (pts[i + 1][0] - pts[i][0]) * u; pb.flying.y = pts[i][1] + (pts[i + 1][1] - pts[i][1]) * u;
+      return dist < total;
+    });
+    pb.flying = null;
+    if (k >= 0) st.g[k] = placed;
+    back.forEach(([kk]) => { st.g[kk] = -1; st.kit[kk] = 0; });
+    if (res.popped.length || res.dropped.length) {
+      // celles qui éclatent, puis celles qui tombent
+      res.popped.forEach(o => { const [x, y] = pbXY(o.r, o.c); pb.fx.push({ kind: "pop", color: o.color, x: x, y: y, t: 0 }); if (o.kit) pb.fx.push({ kind: "kit", coat: pb.coats[PB.key(o.r, o.c)], x: x, y: y, t: 0 }); });
+      res.dropped.forEach(o => { const [x, y] = pbXY(o.r, o.c); pb.fx.push({ kind: "drop", color: o.color, coat: o.kit ? pb.coats[PB.key(o.r, o.c)] : null, x: x, y: y, vy: -0.05 - Math.random() * 0.1, vx: (Math.random() - 0.5) * 0.08, t: 0 }); });
+      C.sfx(res.dropped.length ? "pop2" : "pop"); C.buzz(res.freed ? 25 : 10);
+      if (res.freed) { setTimeout(() => C.sfx("cat"), 120); pbGoals(); }
+      await pbAnimate(dt => {
+        let alive = false;
+        pb.fx.forEach(f => {
+          f.t += dt;
+          if (f.kind === "drop") { f.vy += 0.0016 * dt; f.y += f.vy * dt; f.x += f.vx * dt; if (f.y > pb.H + d) { if (f.coat) { pb.fx.push({ kind: "kit", coat: f.coat, x: f.x, y: pb.H - d, t: 0 }); f.coat = null; } f.dead = true; } }
+          if (f.kind === "kit") { f.y -= 0.12 * dt; }
+          if (f.kind === "pop" && f.t > 220) f.dead = true;
+          if (f.kind === "kit" && f.t > 900) f.dead = true;
+          if (!f.dead) alive = true;
+        });
+        pb.fx = pb.fx.filter(f => !f.dead);
+        return alive;
+      });
+    } else C.sfx("cross");
+    pb.busy = false; pbDraw(); pbGoals();
+    if (PB.won(st)) { finish(true); return; }
+    if (res.lose) { C.toast("Les pelotes ont touché le bas !"); finish(false); return; }
+    if (st.shots <= 0) pbOut();
+  }
+  function pbOut() {
+    const S = C.S();
+    if (!cur.rescued && S.tuna >= RESCUE) {
+      C.openSheet("<h2>Plus de pelotes !</h2><p>Encore " + C.plural(pb.st.kittens - pb.st.freed, "chaton") + " à libérer. Continuer avec <strong>5 pelotes de plus</strong> pour " + RESCUE + " boîtes de thon ?</p>" +
+        '<div class="row"><button class="btn ghost" id="pb-stop" type="button">Arrêter</button><button class="btn" id="pb-more" type="button">+5 pelotes · ' + RESCUE + " " + C.ico("tuna") + "</button></div>", { sticky: true });
+      $("#pb-stop").onclick = () => { C.closeSheet(); finish(false); };
+      $("#pb-more").onclick = () => { C.closeSheet(); S.tuna -= RESCUE; C.save(); C.updateHud(); cur.rescued = true; pb.st.shots += 5; pbGoals(); };
+    } else finish(false);
+  }
+
+  /* ======================= Le jeu des différences ======================= */
+  // Deux fois la même vue de la maison (avec ses chantiers et ses styles), mais dans l'une, quelques détails changent :
+  // un objet a disparu, un autre a pris un autre style ou une autre couleur, un chat est là ou pas. On touche les différences avant la fin du temps.
+  const DF = {
+    count: lv => (lv < 12 ? 5 : lv < 40 ? 6 : 7),                       // visé ; la vue choisie en a parfois une de moins
+    // temps : par différence trouvée dans la vue, de 28 s au début à 16 s (un peu moins aux niveaux difficiles)
+    time: (lv, k) => Math.round(k * Math.max(16, 28 - lv * 0.3) * (lv % 10 === 0 ? 0.85 : 1)),
+    PENALTY: 5, EXTRA: 30
+  };
+  let df = null, dfTimer = 0;
+  const COATS_ALL = ["roux", "tigre", "smoking", "siamois", "chartreux", "noir", "blanc", "tricolore", "bengal", "persan", "lavande", "menthe", "nuage", "rose"];
+  const inBox = (b, r, m) => r.x >= b.x + m && r.y >= b.y + m && r.x + r.w <= b.x + b.w - m && r.y + r.h <= b.y + b.h - m;
+  const overlaps = (a, b, m) => a.x < b.x + b.w + m && b.x < a.x + a.w + m && a.y < b.y + b.h + m && b.y < a.y + a.h + m;
+  // deux différences trop proches : elles se recouvrent beaucoup, ou leurs centres sont voisins (on doit pouvoir toucher l'une sans l'autre)
+  const tooClose = (a, b) => {
+    const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+    if (w > 0 && h > 0 && w * h > 0.3 * Math.min(a.w * a.h, b.w * b.h)) return true;
+    return Math.hypot(a.x + a.w / 2 - b.x - b.w / 2, a.y + a.h / 2 - b.y - b.h / 2) < 70;
+  };
+  function bboxOf(list) {
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    list.forEach(p => { if (!p) return; x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x + p.w); y1 = Math.max(y1, p.y + p.h); });
+    return x1 > x0 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : null;
+  }
+  const variantPatches = v => v.flat.concat(v.objs.map(o => o.p));
+  function catBox(H, breed, poi) {
+    const L = H.look(breed, poi.pose === "griffe" ? "assis" : poi.pose), q = L.q, k = H.spriteScale, w = q.w * k, h = q.h * k;
+    return { x: poi.x - w * q.ax, y: poi.y - h * q.ay, w: w, h: h };
+  }
+  // Choix de la vue et des différences
+  function dfPlan(level, bw, bh) {
+    const H = C.house, sc = H.scene(), W = sc.world, n = DF.count(level), rnd = Math.random, area = bw * bh;
+    // un chantier peut changer s'il n'est ni trop petit ni trop grand : disparaître (objets moyens), changer de couleur ou de style (jusqu'à un bon tiers de l'image)
+    const items = sc.slots.map(s => {
+      const cb = bboxOf(variantPatches(s.cur)); if (!cb) return null;
+      const a = cb.w * cb.h, ok = Math.min(cb.w, cb.h) >= 50 && a >= 4500;
+      const kinds = [];
+      if (ok && a <= area * 0.18) kinds.push("hide");
+      if (ok && a <= area * 0.45) kinds.push("hue");
+      if (s.alts.length) { const ab = bboxOf(variantPatches(s.cur).concat(variantPatches(s.alts[0]))); if (ab && ok && ab.w * ab.h <= area * 0.5) kinds.push("style"); }
+      return kinds.length ? { s: s, bb: cb, kinds: kinds } : null;
+    }).filter(Boolean);
+    const mostlyIn = (b, r) => { const w = Math.min(r.x + r.w, b.x + b.w) - Math.max(r.x, b.x), h = Math.min(r.y + r.h, b.y + b.h) - Math.max(r.y, b.y); return w > 0 && h > 0 && w * h >= r.w * r.h * 0.8; };
+    const clip = (b, r) => { const x = Math.max(r.x, b.x), y = Math.max(r.y, b.y); return { x: x, y: y, w: Math.min(r.x + r.w, b.x + b.w) - x, h: Math.min(r.y + r.h, b.y + b.h) - y }; };
+    const breeds = sc.cats.length ? sc.cats : ["roux"];
+    // vues possibles : centrées sur les chantiers faits
+    const centers = [], seen = new Set();
+    sc.slots.forEach(s => { if (!s.at) return; const k = Math.round(s.at[0] / 250) + "," + Math.round(s.at[1] / 250); if (!seen.has(k)) { seen.add(k); centers.push(s.at); } });
+    const recent = games().dfLast || [];
+    let views = centers.map(c => {
+      const b = { x: Math.max(0, Math.min(W.w - bw, c[0] - bw / 2)), y: Math.max(0, Math.min(W.h - bh, c[1] - bh / 2)), w: bw, h: bh };
+      const its = items.filter(it => mostlyIn(b, it.bb)).map(it => Object.assign({}, it, { bb: clip(b, it.bb) }));
+      const pois = sc.pois.filter(p => p.x > b.x + 60 && p.x < b.x + bw - 60 && p.y > b.y + 90 && p.y < b.y + bh - 20);
+      return { b: b, its: its, pois: pois, score: its.length + Math.min(2, pois.length), key: Math.round(b.x) + "," + Math.round(b.y) };
+    }).filter(v => v.its.length >= 2);
+    if (!views.length) return null;
+    views.sort((a, b) => b.score - a.score);
+    // pour une vue : des chats posés dans les deux images (le décor), peut-être un chat en plus dans une seule, puis les chantiers qui changent
+    const build = v => {
+      const pois = v.pois.slice().sort(() => rnd() - 0.5), cats = [], diffs = [];
+      const catFor = poi => ({ breed: breeds[Math.floor(rnd() * breeds.length)], poi: poi });
+      pois.slice(0, Math.min(2, Math.max(0, pois.length - 1))).forEach(poi => cats.push(catFor(poi)));
+      const taken = cats.map(c => catBox(H, c.breed, c.poi));
+      for (let j = cats.length; j < pois.length && j < cats.length + (n >= 7 ? 2 : 1); j++) {     // un chat (deux pour 7 différences) dans une seule image
+        if (rnd() > 0.8) continue;
+        const c = catFor(pois[j]), bb = catBox(H, c.breed, c.poi);
+        if (!taken.some(t => tooClose(t, bb)) && !diffs.some(d => tooClose(d.bb, bb))) diffs.push({ kind: "cat", cat: c, bb: bb, side: rnd() < 0.5 ? 0 : 1 });
+      }
+      if (cats.length && rnd() < 0.6) {                // un chat du décor a une autre robe dans l'une des images
+        const j = Math.floor(rnd() * cats.length), c = cats[j], others = COATS_ALL.filter(x => x !== c.breed);
+        diffs.push({ kind: "coat", j: j, breed: others[Math.floor(rnd() * others.length)], bb: taken[j], side: rnd() < 0.5 ? 0 : 1 });
+      }
+      const its = v.its.slice().sort(() => rnd() - 0.5);
+      for (const it of its) {
+        if (diffs.length >= n) break;
+        if (diffs.some(d => tooClose(d.bb, it.bb)) || taken.some(t => tooClose(t, it.bb))) continue;
+        const pref = it.kinds.indexOf("style") >= 0 && rnd() < 0.55 ? "style" : it.kinds[Math.floor(rnd() * it.kinds.length)];
+        const d = { kind: pref, id: it.s.id, bb: it.bb, side: rnd() < 0.5 ? 0 : 1 };
+        if (pref === "style") {
+          d.alt = it.s.alts[Math.floor(rnd() * it.s.alts.length)]; d.bb = bboxOf(variantPatches(it.s.cur).concat(variantPatches(d.alt)));
+          if (diffs.some(o => tooClose(o.bb, d.bb))) continue;
+        }
+        if (pref === "hue") d.hue = 100 + Math.floor(rnd() * 160);
+        diffs.push(d);
+      }
+      return { v: v, cats: cats, diffs: diffs };
+    };
+    // on essaie plusieurs vues (les plus riches, pas les dernières jouées) et on garde la première qui a assez de différences
+    const near = (v, k) => { const [x, y] = k.split(",").map(Number); return Math.hypot(v.b.x - x, v.b.y - y) < 500; };
+    // les vues les plus riches d'abord (au hasard parmi elles), celles qu'on vient de jouer à la fin ; on garde la première qui a assez de différences
+    const rich = views.slice(0, Math.max(8, Math.ceil(views.length / 3))).sort(() => rnd() - 0.5), rest = views.slice(rich.length);
+    const order = rich.concat(rest).sort((a, b2) => (recent.some(k => near(a, k)) ? 1 : 0) - (recent.some(k => near(b2, k)) ? 1 : 0));
+    let best = null;
+    for (const v of order.slice(0, 16)) { const r = build(v); if (!best || r.diffs.length > best.diffs.length) best = r; if (r.diffs.length >= n) break; }
+    const v = best.v, cats = best.cats, diffs = best.diffs;
+    games().dfLast = [v.key].concat(recent).slice(0, 4);
+    return { box: v.b, scene: sc, cats: cats, diffs: diffs };
+  }
+  // Dessin d'une vue : dalles, calques à plat dans l'ordre, puis objets et chats par profondeur.
+  async function dfRender(cv, plan, side) {
+    const H = C.house, b = plan.box, g = cv.getContext("2d"), k = cv.width / b.w;
+    g.fillStyle = "#EDE3D3"; g.fillRect(0, 0, cv.width, cv.height);
+    const mods = {}; plan.diffs.forEach(d => { if (d.side === side && d.id) mods[d.id] = d; });
+    const hit = p => p && p.x < b.x + b.w && p.x + p.w > b.x && p.y < b.y + b.h && p.y + p.h > b.y;
+    const draws = [];                                  // [patch, teinte]
+    plan.scene.tiles.forEach(p => { if (hit(p)) draws.push([p, 0]); });
+    const objs = [];
+    plan.scene.slots.forEach(s => {
+      const m = mods[s.id];
+      if (m && m.kind === "hide") return;
+      const v = m && m.kind === "style" ? m.alt : s.cur, hue = m && m.kind === "hue" ? m.hue : 0;
+      v.flat.forEach(p => { if (hit(p)) draws.push([p, hue]); });
+      v.objs.forEach(o => { if (hit(o.p)) objs.push({ p: o.p, d: o.d, hue: hue }); });
+    });
+    plan.cats.forEach((c, j) => {
+      const m = plan.diffs.find(d => d.kind === "coat" && d.j === j && d.side === side);
+      objs.push({ cat: m ? { breed: m.breed, poi: c.poi } : c, d: c.poi.depth || c.poi.y });
+    });
+    plan.diffs.forEach(d => { if (d.kind === "cat" && d.side === side) objs.push({ cat: d.cat, d: d.cat.poi.depth || d.cat.poi.y }); });
+    objs.sort((a, b2) => a.d - b2.d);
+    for (const [p, hue] of draws) await drawPatch(g, p, b, k, hue);
+    for (const o of objs) { if (o.cat) await drawCat(g, o.cat, b, k); else await drawPatch(g, o.p, b, k, o.hue); }
+  }
+  async function drawPatch(g, p, b, k, hue) {
+    const H = C.house, bm = await H.bitmap(H.imgOf(p)); if (!bm) return;
+    let sx = 0, sy = 0, sw = bm.width, sh = bm.height;
+    if (p.pk) { sx = p.pk[1]; sy = p.pk[2]; sw = p.w; sh = p.h; }
+    else if (p.fw) { const f = bm.width / p.fw; sx = p.sx * f; sy = p.sy * f; sw = p.w * f; sh = p.h * f; }
+    const x0 = Math.max(p.x, b.x), y0 = Math.max(p.y, b.y), x1 = Math.min(p.x + p.w, b.x + b.w), y1 = Math.min(p.y + p.h, b.y + b.h);
+    if (x1 <= x0 || y1 <= y0) return;
+    const kx = sw / p.w, ky = sh / p.h, dx = (x0 - b.x) * k, dy = (y0 - b.y) * k, dw = (x1 - x0) * k, dh = (y1 - y0) * k;
+    const src = [sx + (x0 - p.x) * kx, sy + (y0 - p.y) * ky, (x1 - x0) * kx, (y1 - y0) * ky];
+    if (!hue) { g.drawImage(bm, src[0], src[1], src[2], src[3], dx, dy, dw, dh); return; }
+    // autre couleur : on tourne la teinte des pixels (et on colore un peu ce qui est gris)
+    const t = document.createElement("canvas"); t.width = Math.max(1, Math.round(dw)); t.height = Math.max(1, Math.round(dh));
+    const tg = t.getContext("2d"); tg.drawImage(bm, src[0], src[1], src[2], src[3], 0, 0, t.width, t.height);
+    const im = tg.getImageData(0, 0, t.width, t.height), a = im.data, rot = hue / 360;
+    for (let i = 0; i < a.length; i += 4) {
+      if (a[i + 3] < 8) continue;
+      let r = a[i] / 255, gg = a[i + 1] / 255, bb = a[i + 2] / 255;
+      const mx = Math.max(r, gg, bb), mn = Math.min(r, gg, bb), l = (mx + mn) / 2;
+      let h = 0, s2 = 0;
+      if (mx !== mn) { const dd = mx - mn; s2 = l > 0.5 ? dd / (2 - mx - mn) : dd / (mx + mn); h = mx === r ? (gg - bb) / dd + (gg < bb ? 6 : 0) : mx === gg ? (bb - r) / dd + 2 : (r - gg) / dd + 4; h /= 6; }
+      h = (h + rot) % 1; if (s2 < 0.2) { s2 = 0.42; h = rot; }
+      const q2 = l < 0.5 ? l * (1 + s2) : l + s2 - l * s2, p2 = 2 * l - q2;
+      const f = tt => { tt = (tt + 1) % 1; return tt < 1 / 6 ? p2 + (q2 - p2) * 6 * tt : tt < 0.5 ? q2 : tt < 2 / 3 ? p2 + (q2 - p2) * (2 / 3 - tt) * 6 : p2; };
+      a[i] = f(h + 1 / 3) * 255; a[i + 1] = f(h) * 255; a[i + 2] = f(h - 1 / 3) * 255;
+    }
+    tg.putImageData(im, 0, 0); g.drawImage(t, dx, dy, dw, dh);
+  }
+  async function drawCat(g, c, b, k) {
+    const H = C.house, L = H.look(c.breed, c.poi.pose === "griffe" ? "assis" : c.poi.pose), q = L.q, bm = await H.bitmap(L.src); if (!bm) return;
+    const f = bm.width / (q.sw || q.w), bb = catBox(H, c.breed, c.poi);
+    g.save();
+    if ((c.poi.dir || 1) < 0) { g.translate((c.poi.x - b.x) * k * 2, 0); g.scale(-1, 1); }
+    g.drawImage(bm, (q.sx || 0) * f, (q.sy || 0) * f, q.w * f, q.h * f, (bb.x - b.x) * k, (bb.y - b.y) * k, bb.w * k, bb.h * k);
+    g.restore();
+  }
+  async function dfStart(level) {
+    const stage = $("#b-stage"), wpx = Math.min(stage.clientWidth || 360, 440), hAvail = Math.max(420, (stage.clientHeight || 600) - 6);
+    const iw = wpx, ih = Math.floor(Math.min(iw * 0.86, (hAvail - 10) / 2)), dpr = Math.min(2, window.devicePixelRatio || 1);
+    const bw = Math.round(Math.max(860, Math.min(1150, 1000 * (iw / 358)))), bh = Math.round(bw * ih / iw);
+    stage.innerHTML = '<div class="dfwrap"><p class="dfload">On prépare les deux images…</p></div>';
+    const plan = dfPlan(level, bw, bh);
+    if (!plan || plan.diffs.length < 3) {
+      stage.innerHTML = '<p class="hint">Il faut encore quelques chantiers dans la maison pour ce jeu. Reviens après en avoir fini quelques-uns !</p>';
+      cur.over = true; return;
+    }
+    df = { plan: plan, found: plan.diffs.map(() => false), left: DF.time(level, plan.diffs.length), level: level, running: false, hint: 1 };
+    stage.innerHTML = '<div class="dfwrap">' + [0, 1].map(i => '<div class="dfimg" data-side="' + i + '" style="width:' + iw + "px;height:" + ih + 'px"><canvas width="' + Math.round(iw * dpr) + '" height="' + Math.round(ih * dpr) +
+      '" style="width:' + iw + "px;height:" + ih + 'px"></canvas><div class="dfmarks"></div></div>').join("") + '<p class="dfload">On prépare les deux images…</p></div>';
+    const cvs = $$(".dfimg canvas", stage);
+    $("#b-tools").innerHTML = '<div class="dftools"><button class="btn ghost small" id="df-hint" type="button">' + C.ico("eye") + "Indice (1)</button><span>Touche les différences sur l'une ou l'autre image. Une erreur : −" + DF.PENALTY + " s.</span></div>";
+    dfGoals();
+    await Promise.all([dfRender(cvs[0], plan, 0), dfRender(cvs[1], plan, 1)]);
+    if (!df || df.plan !== plan) return;
+    const ld = $(".dfload", stage); if (ld) ld.remove();
+    $$(".dfimg", stage).forEach(el => bindDF(el));
+    $("#df-hint").onclick = dfHint;
+    df.running = true; df.t0 = performance.now();
+    clearInterval(dfTimer); dfTimer = setInterval(dfTick, 250);
+  }
+  function dfGoals() {
+    const n = df.found.filter(Boolean).length, s = Math.max(0, Math.ceil(df.left));
+    $("#b-goals").innerHTML = '<span class="goal' + (n === df.found.length ? " done" : "") + '">' + C.ico("eye") + "<b>" + n + "/" + df.found.length + "</b></span>" +
+      '<span class="moves' + (s <= 15 ? " low" : "") + '"><b id="df-time">' + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0") + "</b>restant</span>";
+  }
+  function dfTick() {
+    if (!df || !df.running || !cur || cur.over) return;
+    const now = performance.now(); df.left -= (now - (df.last || now)) / 1000; df.last = now;
+    if (document.querySelector("#sheet:not([hidden])") && !$("#bq-go")) { /* une feuille ouverte (autre que l'abandon) */ }
+    const s = Math.max(0, Math.ceil(df.left)), el = $("#df-time");
+    if (el) { el.textContent = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); el.parentNode.classList.toggle("low", s <= 15); }
+    if (df.left <= 0) { df.running = false; clearInterval(dfTimer); dfOut(); }
+  }
+  function bindDF(el) {
+    let down = null;
+    el.addEventListener("pointerdown", e => { down = { x: e.clientX, y: e.clientY }; });
+    el.addEventListener("pointerup", e => {
+      if (!down || !df || !df.running || !cur || cur.over) return;
+      if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 14) { down = null; return; }
+      down = null;
+      const r = el.getBoundingClientRect(), b = df.plan.box, k = r.width / b.w, wx = b.x + (e.clientX - r.left) / k, wy = b.y + (e.clientY - r.top) / k;
+      // la zone de chaque différence, un peu agrandie (et jamais trop petite)
+      let best = -1, bd = 1e9;
+      df.plan.diffs.forEach((d, i) => {
+        if (df.found[i]) return;
+        const m = Math.max(16, (70 - Math.min(d.bb.w, d.bb.h)) / 2), bb = d.bb;
+        if (wx >= bb.x - m && wx <= bb.x + bb.w + m && wy >= bb.y - m && wy <= bb.y + bb.h + m) {
+          const dd = Math.hypot(wx - (bb.x + bb.w / 2), wy - (bb.y + bb.h / 2)); if (dd < bd) { bd = dd; best = i; }
+        }
+      });
+      if (best >= 0) dfFound(best);
+      else dfMiss(el, e.clientX - r.left, e.clientY - r.top);
+    });
+  }
+  function dfMark(i, cls) {
+    const d = df.plan.diffs[i], b = df.plan.box;
+    $$(".dfimg").forEach(el => {
+      const k = el.clientWidth / b.w, rr = Math.max(18, Math.max(d.bb.w, d.bb.h) * k / 2 + 6), x = (d.bb.x + d.bb.w / 2 - b.x) * k, y = (d.bb.y + d.bb.h / 2 - b.y) * k;
+      const m = document.createElement("i"); m.className = "dfmark " + cls; m.style.cssText = "left:" + (x - rr) + "px;top:" + (y - rr) + "px;width:" + 2 * rr + "px;height:" + 2 * rr + "px";
+      el.querySelector(".dfmarks").appendChild(m);
+      if (cls === "hint") setTimeout(() => m.remove(), 2600);
+    });
+  }
+  function dfFound(i) {
+    df.found[i] = true; dfMark(i, "ok"); C.sfx("cat"); C.buzz(12); dfGoals();
+    if (df.found.every(Boolean)) { df.running = false; clearInterval(dfTimer); setTimeout(() => finish(true), 500); }
+  }
+  function dfMiss(el, x, y) {
+    df.left -= DF.PENALTY; C.sfx("wrong"); C.buzz([20, 40, 20]);
+    const m = document.createElement("i"); m.className = "dfmiss"; m.textContent = "−" + DF.PENALTY + " s"; m.style.cssText = "left:" + x + "px;top:" + y + "px";
+    el.querySelector(".dfmarks").appendChild(m); setTimeout(() => m.remove(), 900);
+    dfTick();
+  }
+  function dfHint() {
+    if (!df || !df.running || df.hint <= 0) return;
+    const left = df.found.map((f, i) => (f ? -1 : i)).filter(i => i >= 0); if (!left.length) return;
+    df.hint--; dfMark(left[Math.floor(Math.random() * left.length)], "hint"); C.sfx("tap");
+    const b = $("#df-hint"); if (b) { b.disabled = true; b.innerHTML = C.ico("eye") + "Indice (0)"; }
+  }
+  function dfOut() {
+    const S = C.S();
+    if (!cur.rescued && S.tuna >= RESCUE) {
+      C.openSheet("<h2>Le temps est écoulé !</h2><p>Encore " + C.plural(df.found.filter(f => !f).length, "différence") + " à trouver. Continuer avec <strong>" + DF.EXTRA + " secondes de plus</strong> pour " + RESCUE + " boîtes de thon ?</p>" +
+        '<div class="row"><button class="btn ghost" id="df-stop" type="button">Arrêter</button><button class="btn" id="df-more" type="button">+' + DF.EXTRA + " s · " + RESCUE + " " + C.ico("tuna") + "</button></div>", { sticky: true });
+      $("#df-stop").onclick = () => { C.closeSheet(); dfReveal(); finish(false); };
+      $("#df-more").onclick = () => { C.closeSheet(); S.tuna -= RESCUE; C.save(); C.updateHud(); cur.rescued = true; df.left = DF.EXTRA; df.last = performance.now(); df.running = true; dfGoals(); clearInterval(dfTimer); dfTimer = setInterval(dfTick, 250); };
+    } else { dfReveal(); finish(false); }
+  }
+  function dfReveal() { df.found.forEach((f, i) => { if (!f) dfMark(i, "missed"); }); }
 })();

@@ -2690,6 +2690,26 @@
     if (h) layer.insertAdjacentHTML("beforeend", h);
     sortCats();
   }
+  /* Pour le jeu des différences : la maison telle qu'elle est, chantier par chantier (calques à plat dans l'ordre, objets avec leur profondeur),
+     avec les autres styles possibles de chaque chantier, et les places où un chat vient s'installer. */
+  function houseScene() {
+    const one = (s, k) => {
+      let p = patchOf(s, k); if (typeof p === "function") p = p(effStyle);
+      const flat = [], objs = [];
+      if (p) { if (s.depth) objs.push({ p: p, d: Array.isArray(s.depth) ? s.depth[k] : s.depth }); else flat.push(p); }
+      const more = !s.depth && s.extra && s.extra(effStyle); if (more) flat.push(more);
+      if (s.parts) (s.parts[vk(s, k, effStyle)] || s.parts[k] || []).forEach(o => { if (o.patch) objs.push({ p: o.patch, d: o.depth }); });
+      return { flat: flat, objs: objs };
+    };
+    const slots = [];
+    SLOTS.forEach(s => {
+      const k = effStyle(s.id); if (k == null) return;
+      const alts = s.styles ? s.styles.map((st, j) => j).filter(j => j !== k && s.styles[j].patch).map(j => Object.assign({ k: j }, one(s, j))) : [];
+      slots.push({ id: s.id, cur: one(s, k), alts: alts, at: s.at });
+    });
+    DECOS.forEach(d => { if (decoShown(d)) slots.push({ id: "deco_" + d.id, cur: { flat: [d.patch], objs: d.parts.map(o => ({ p: o.patch, d: o.depth })) }, alts: [], at: d.at }); });
+    return { tiles: TILES, slots: slots, pois: poiList(), world: WORLD, cats: S.cats.filter(c => !c.kitten).map(c => c.breed) };
+  }
   function renderMarkers() {
     markersEl.innerHTML = preview ? "" : SLOTS.filter(available).map(s =>
       '<button class="mk' + (S.kibble < s.cost || !hasArt(s) ? " poor" : "") + '" type="button" data-slot="' + s.id + '" style="left:' + s.at[0] + "px;top:" + s.at[1] +
@@ -2936,7 +2956,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.41." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.42." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -3331,7 +3351,8 @@
   $("#tab-shop").onclick = () => show("shop");
   $("#tab-cards").onclick = () => show("cards");
   $("#tab-games").onclick = () => show("games");
-  RonronJeux.init({ S: () => S, save: save, updateHud: updateHud, sfx: sfx, buzz: buzz, openSheet: openSheet, closeSheet: closeSheet, show: show, toast: toast, ico: ico, plural: plural, esc: esc });
+  RonronJeux.init({ S: () => S, save: save, updateHud: updateHud, sfx: sfx, buzz: buzz, openSheet: openSheet, closeSheet: closeSheet, show: show, toast: toast, ico: ico, plural: plural, esc: esc,
+    house: { scene: houseScene, bitmap: getBitmap, imgOf: imgOf, look: (breed, pose) => catLook(breed, [], pose), spriteScale: SPRITE_SCALE } });
   $("#b-quit").onclick = () => RonronJeux.quit();
   $("#btn-advent").onclick = () => openAdvent();
   $("#tab-play").onclick = () => startLevel();
