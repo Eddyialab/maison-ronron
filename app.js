@@ -1025,7 +1025,7 @@
   /* ================= 2. Sauvegarde et vies ================= */
 
   function freshSave() {
-    return { v: 1, level: 1, kibble: 0, lives: MAX_LIVES, lifeAt: 0, house: {}, zones: {}, cats: [], nextCat: 1, inLevel: null, tuna: 0, album: {} };
+    return { v: 1, level: 1, kibble: 0, lives: MAX_LIVES, lifeAt: 0, house: {}, zones: {}, cats: [], nextCat: 1, inLevel: null, tuna: 0, album: {}, tickets: 3, games: { m3: 1, tm: 1 } };
   }
   let S = freshSave();
   let memoryOnly = false;
@@ -1118,16 +1118,18 @@
 
   function show(name) {
     if (name !== "home") setZen(false);
-    if (pendingReload && name !== "level") { pendingReload = false; save(); location.reload(); return; }
+    if (pendingReload && name !== "level" && name !== "bonus") { pendingReload = false; save(); location.reload(); return; }
     view = name;
-    ["home", "level", "shop", "cards"].forEach(v => { $("#screen-" + v).hidden = v !== name; });
-    app.classList.toggle("inlevel", name === "level");
+    ["home", "level", "shop", "cards", "games", "bonus"].forEach(v => { $("#screen-" + v).hidden = v !== name; });
+    app.classList.toggle("inlevel", name === "level" || name === "bonus");
     $("#tab-home").setAttribute("aria-current", name === "home" ? "page" : "false");
     $("#tab-shop").setAttribute("aria-current", name === "shop" ? "page" : "false");
     $("#tab-cards").setAttribute("aria-current", name === "cards" ? "page" : "false");
+    $("#tab-games").setAttribute("aria-current", name === "games" ? "page" : "false");
     if (name === "home") { renderHome(); announceBirth(); }
     if (name === "shop") renderShop();
     if (name === "cards") renderCards();
+    if (name === "games") RonronJeux.renderHub();
     renderAdventBtn(); startSnow(); updateCardBadge();
   }
 
@@ -1266,7 +1268,10 @@
       for (let k = 0; k < 9; k++) tone({ f: 62 + (k % 2) * 4, t: k * 0.05, d: 0.05, g: 0.14, type: "sawtooth", a: 0.01 });
       chime([659, 784, 1047], 0.3, 0.1, 0.45, 0.16);
     },
-    wear: () => chime([880, 1319], 0, 0.07, 0.28, 0.13)
+    wear: () => chime([880, 1319], 0, 0.07, 0.28, 0.13),
+    pop: () => { tone({ f: 700, f2: 1100, d: 0.07, g: 0.12, type: "triangle" }); tone({ f: 1400, t: 0.03, d: 0.06, g: 0.05 }); },
+    pop2: () => { tone({ f: 880, f2: 1500, d: 0.07, g: 0.12, type: "triangle" }); chime([1568], 0.05, 0, 0.18, 0.08); },
+    zap: () => { hiss({ f: 2400, q: 0.8, d: 0.18, g: 0.16 }); tone({ f: 1200, f2: 300, d: 0.22, g: 0.12, type: "sawtooth" }); }
   };
   function sfx(name) {
     if (!AC || AC.state !== "running" || audioPref.sfx <= 0) return;
@@ -1302,6 +1307,8 @@
     play.classList.toggle("nolife", S.lives <= 0);
     $("#play-sub").textContent = S.lives <= 0 ? "Vie dans " + clock(nextLifeIn()) : levelName(S.level);
     play.dataset.kind = S.lives <= 0 ? "normal" : kindOf(S.level);
+    const gt = $("#tab-games"), nt = S.tickets || 0;
+    gt.classList.toggle("badge", nt > 0); gt.dataset.n = nt > 99 ? "99+" : nt;
   }
 
   /* ================= 4. Niveaux ================= */
@@ -1681,7 +1688,7 @@
     L.over = true; renderChrono();
     const done = S.level, kind = L.lv.kind || kindOf(done), base = L.lv.reward || rewardOf(done), fast = !L.limit && sec < L.fast ? 1 : 0;
     const perfect = S.inLevel ? S.inLevel.fishLost === 0 : L.fish >= 3, tuna = perfect ? TUNA_FOR[kind] || 1 : 0;
-    S.kibble += base + fast; S.tuna += tuna; S.level++; S.inLevel = null;
+    S.kibble += base + fast; S.tuna += tuna; S.level++; S.inLevel = null; S.tickets = (S.tickets || 0) + 1;
     const fam = growFamily(), pack = PACK_FOR[kind] || 0;
     if (pack) addPack(pack, KIND_NAME[kind] || "Niveau", { rare: kind === "geant" });
     fam.born.forEach(b => addPack(1, "Naissance de " + b.kid.name));
@@ -1703,6 +1710,7 @@
         fam.grown.map(c => "<p class=\"family\">" + ico("paw") + "<span>" + esc(c.name) + " est devenu grand.</span></p>").join("") +
         (packCards ? '<p class="family pack">' + ico("cards") + "<span><strong>" + (packCards > 1 ? plural(packCards, "carte") + " à ouvrir" : "Une carte à ouvrir") +
           '</strong></span><button class="btn small" id="w-pack" type="button">Ouvrir</button></p>' : "") +
+        '<p class="family ticket">' + ico("ticket") + "<span><strong>+1 ticket</strong> pour la salle de jeux (" + plural(S.tickets, "ticket") + ")</span></p>" +
         "<p>Tu as maintenant <strong>" + plural(S.kibble, "croquette") + "</strong> à dépenser dans la maison.</p>" +
         '<div class="row"><button class="btn ghost" id="w-home" type="button">La maison</button>' +
         '<button class="btn" id="w-next" type="button">Niveau suivant</button></div>',
@@ -2928,7 +2936,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.37." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.38." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -2942,7 +2950,8 @@
       '<p class="mapdiag">' + mapDiag() + "</p>" +
       '<div class="row"><button class="btn ghost small" id="t-kibble" type="button">+10 croquettes</button>' +
       '<button class="btn ghost small" id="t-lives" type="button">Recharger les vies</button>' +
-      '<button class="btn ghost small" id="t-tuna" type="button">+20 boîtes de thon</button></div>' +
+      '<button class="btn ghost small" id="t-tuna" type="button">+20 boîtes de thon</button>' +
+      '<button class="btn ghost small" id="t-tickets" type="button">+5 tickets</button></div>' +
       '<div class="field"><input id="t-level" type="number" min="1" max="99999" inputmode="numeric" value="' + S.level + '" aria-label="Numéro de niveau">' +
       '<button class="btn ghost small" id="t-go" type="button">Aller à ce niveau</button></div>' +
       '<button class="btn danger small" id="t-reset" type="button">Tout recommencer</button>');
@@ -2970,6 +2979,7 @@
     $("#t-kibble").onclick = () => { S.kibble += 10; save(); refresh(); toast("+10 croquettes"); };
     $("#t-lives").onclick = () => { S.lives = MAX_LIVES; S.lifeAt = 0; save(); refresh(); toast("Vies rechargées"); };
     $("#t-tuna").onclick = () => { S.tuna += 20; save(); refresh(); toast("+20 boîtes de thon"); };
+    $("#t-tickets").onclick = () => { S.tickets = (S.tickets || 0) + 5; save(); refresh(); toast("+5 tickets"); };
     $("#t-go").onclick = () => {
       const v = Math.max(1, Math.min(99999, parseInt($("#t-level").value, 10) || 1));
       S.level = v; save(); refresh(); toast("Prochain niveau : " + v);
@@ -3320,6 +3330,9 @@
   $("#tab-home").onclick = () => show("home");
   $("#tab-shop").onclick = () => show("shop");
   $("#tab-cards").onclick = () => show("cards");
+  $("#tab-games").onclick = () => show("games");
+  RonronJeux.init({ S: () => S, save: save, updateHud: updateHud, sfx: sfx, buzz: buzz, openSheet: openSheet, closeSheet: closeSheet, show: show, toast: toast, ico: ico, plural: plural, esc: esc });
+  $("#b-quit").onclick = () => RonronJeux.quit();
   $("#btn-advent").onclick = () => openAdvent();
   $("#tab-play").onclick = () => startLevel();
   $("#btn-settings").onclick = () => openSettings();
@@ -3350,7 +3363,7 @@
     let hadController = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (!hadController) { hadController = true; return; }       // première installation : rien à recharger
-      if (view === "level") pendingReload = true; else location.reload();
+      if (view === "level" || view === "bonus") pendingReload = true; else location.reload();
     });
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
