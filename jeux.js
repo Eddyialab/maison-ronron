@@ -461,7 +461,7 @@
   const $ = (s, r) => (r || document).querySelector(s);
   const wait = ms => new Promise(res => setTimeout(res, ms));
   J.init = ctx => { C = ctx; };
-  const REWARD = 3;                    // croquettes pour une partie gagnée (et une boîte de thon de plus tous les 10 niveaux)
+  const REWARD = 1;                    // une croquette par partie gagnée (et une boîte de thon de plus tous les 10 niveaux)
   const RESCUE = 2;                    // boîtes de thon pour un coup de pouce
   const games = () => { const S = C.S(); S.games = S.games || {}; return S.games; };
   const tickets = () => C.S().tickets || 0;
@@ -477,7 +477,7 @@
     const el = $("#screen-games"), n = tickets(), g = games();
     el.innerHTML = '<h2>Salle de jeux</h2>' +
       '<div class="tickets"><svg class="ico"><use href="#i-ticket"/></svg><strong>' + C.plural(n, "ticket") + '</strong>' +
-      '<span>1 ticket par niveau de puzzle réussi. Une partie coûte 1 ticket ; gagnée, elle rapporte ' + REWARD + " croquettes.</span></div>" +
+      '<span>1 ticket par niveau de puzzle réussi. Une partie coûte 1 ticket ; gagnée, elle rapporte ' + C.plural(REWARD, "croquette") + ".</span></div>" +
       GAMES.map(x => '<div class="gamecard"><div class="gameart">' + x.art + '</div><div class="gameinfo"><strong>' + x.name + "</strong><p>" + x.desc +
         '</p><span class="glevel">Niveau ' + (g[x.id] || 1) + ((g[x.id] || 1) % 10 === 0 ? " · niveau difficile, +1 boîte de thon" : "") + '</span></div>' +
         '<button class="btn" type="button" data-g="' + x.id + '"' + (n ? "" : " disabled") + '>Jouer · 1 <svg class="ico"><use href="#i-ticket"/></svg></button></div>').join("") +
@@ -500,14 +500,13 @@
     if (!cur || cur.over) return;
     cur.over = true;
     const S = C.S(); S.tickets = Math.max(0, (S.tickets || 0) - 1);
-    const g = games(), lv = cur.level, tuna = win && lv % 10 === 0 ? 1 : 0, extra = win && cur.bonus ? cur.bonus : 0;
-    if (win) { S.kibble += REWARD + extra; S.tuna += tuna; g[cur.game] = lv + 1; }
+    const g = games(), lv = cur.level, tuna = win && lv % 10 === 0 ? 1 : 0;
+    if (win) { S.kibble += REWARD; S.tuna += tuna; g[cur.game] = lv + 1; }
     C.save(); C.updateHud();
     setTimeout(() => C.sfx(win ? "win" : "lose"), 200);
     setTimeout(() => {
       C.openSheet((win ? '<span class="tag">Niveau ' + lv + " réussi</span><h2>Bravo !</h2>" +
-          '<div class="big">' + C.ico("kibble") + "+" + C.plural(REWARD + extra, "croquette") + "</div>" +
-          (extra ? '<p class="timeline">Dont <strong>+' + extra + "</strong> pour les coups qui restaient.</p>" : "") +
+          '<div class="big">' + C.ico("kibble") + "+" + C.plural(REWARD, "croquette") + "</div>" +
           (tuna ? '<div class="big tuna">' + C.ico("tuna") + "+1 boîte de thon</div>" : "")
         : '<span class="tag">Niveau ' + lv + "</span><h2>Perdu…</h2><p>Le ticket est parti, mais tu peux retenter ce niveau avec un autre ticket.</p>") +
         "<p>Il te reste <strong>" + C.plural(S.tickets || 0, "ticket") + "</strong>.</p>" +
@@ -702,7 +701,6 @@
   }
   function m3Win() {
     clearTimeout(hintTimer);
-    cur.bonus = m3.st.moves >= 5 ? 1 : 0;
     $$(".m3p").forEach((el, k) => setTimeout(() => el.classList.add("party"), k * 8));
     finish(true);
   }
