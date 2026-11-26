@@ -47,6 +47,8 @@
   const p8 = (x, y, pose, dir, depth) => ({ x: x + 6552, y: y + 3687, pose: pose, dir: dir, depth: depth, min: 12000, max: 30000 });
   const z9 = p => [p[0] + 6900, p[1] + 450];        // zone de l'étang, au-dessus de l'aile est (coordonnées à la taille du monde)
   const z10 = p => [p[0], p[1] + 2860];       // zone du labyrinthe, à gauche de l'allée (coordonnées à la taille du monde)
+  const z11 = p => [p[0] + 3580, p[1]];        // zone de la serre, au-dessus de la cour (coordonnées à la taille du monde)
+  const p11 = (x, y, pose, dir, depth) => ({ x: x + 3580, y: y, pose: pose, dir: dir, depth: depth, min: 12000, max: 30000 });
   const p10 = (x, y, pose, dir, depth) => ({ x: x, y: y + 2860, pose: pose, dir: dir, depth: depth, min: 12000, max: 30000 });
   const p9 = (x, y, pose, dir, depth) => ({ x: x + 6900, y: y + 450, pose: pose, dir: dir, depth: depth, min: 12000, max: 30000 });
   WORLD.start = g([1380, 640]);
@@ -670,6 +672,49 @@
       styles: [{ name: "Toit d'ardoise", sw: "#6B7280", patch: PATCH.laby_nichoir_A }, { name: "Maison rose", sw: "#F2A7B8", patch: PATCH.laby_nichoir_B }],
       parts: [[{ patch: PATCH.laby_nichoir_A_p0, depth: 3292 }], [{ patch: PATCH.laby_nichoir_B_p0, depth: 3286 }]] },
     /* ----- fin de la zone 10 ----- */
+    /* ----- Zone 11 : la serre (fenêtre monde x 3580..7220, y 0..2048 ; images agrandies ×4/3). Cadenas : 200 croquettes. ----- */
+    { id: "serre_debrousse", room: "Serre", name: "Débroussailler autour de la serre", short: "Débroussailler", verb: "Débroussailler", cost: 14, icon: "broom", need: ["aile_pelouse", "cour_desherbe"], at: z11([700, 1500]),
+      desc: "Branches mortes, ronces et feuilles : on dégage le tour de la vieille serre.", patch: PATCH.serre_debrousse },
+    { id: "serre_pelouse", room: "Serre", name: "Semer la pelouse", short: "Pelouse", verb: "Semer", cost: 16, icon: "plus", need: ["serre_debrousse"], at: z11([2700, 500]),
+      desc: "Un gazon bien vert tout autour de la serre.", patch: PATCH.serre_pelouse },
+    { id: "serre_verriere", room: "Serre", name: "Restaurer la verrière", short: "Verrière", verb: "Restaurer", cost: 34, icon: "hammer", need: ["serre_pelouse"], at: z11([1900, 900]),
+      desc: "Armature repeinte en blanc, vitres neuves, sol en terre cuite : la serre retrouve sa lumière.", patch: PATCH.serre_verriere },
+    { id: "serre_allees", room: "Serre", name: "Repaver le chemin", short: "Allées", verb: "Repaver", cost: 22, icon: "hammer", need: ["serre_pelouse"], at: z11([2700, 1850]),
+      desc: "Le chemin qui descend de la serre vers la cour.",
+      styles: [{ name: "Briques en épi", sw: "#B5523B", patch: PATCH.serre_allees_briques }, { name: "Dalles claires", sw: "#E8DCC0", patch: PATCH.serre_allees_dalles }] },
+    { id: "serre_etablis", room: "Serre", name: "Installer les établis", short: "Établis", verb: "Installer", cost: 16, icon: "plus", need: ["serre_verriere"], at: z11([1250, 1150]),
+      desc: "Le coin des semis, dans la moitié gauche de la serre.",
+      styles: [{ name: "Établis et pots", sw: "#C2703D", patch: PATCH.serre_etablis_A }, { name: "Fougères et orchidées", sw: "#E58FC0", patch: PATCH.serre_etablis_B }] },
+    { id: "serre_plantes", room: "Serre", name: "Rentrer les grandes plantes", short: "Grandes plantes", verb: "Rentrer", cost: 18, icon: "plus", need: ["serre_verriere"], at: z11([2450, 700]),
+      desc: "De quoi faire de l'ombre aux chats, dans la moitié droite.",
+      styles: [{ name: "Citronniers", sw: "#F2D23B", patch: PATCH.serre_plantes_A }, { name: "Palmiers et bananiers", sw: "#4E9A3E", patch: PATCH.serre_plantes_B }],
+      parts: [[{ patch: PATCH.serre_plantes_A_p0, depth: 1676 }], []] },
+    { id: "serre_suspensions", room: "Serre", name: "Accrocher des suspensions", short: "Suspensions", verb: "Accrocher", cost: 12, icon: "plus", need: ["serre_verriere"], at: z11([1800, 420]),
+      desc: "Le long du faîtage, sous le toit de verre.",
+      styles: [{ name: "Lanternes en laiton", sw: "#C9A24A", patch: PATCH.serre_suspensions_A }, { name: "Paniers fleuris", sw: "#E88AB4", patch: PATCH.serre_suspensions_B }] },
+    { id: "serre_chassis", room: "Serre", name: "Construire des châssis de semis", short: "Châssis", verb: "Construire", cost: 14, icon: "hammer", need: ["serre_pelouse"], at: z11([1150, 380]),
+      desc: "Deux caisses vitrées derrière la serre, pour les jeunes pousses.",
+      styles: [{ name: "Bois", sw: "#8A6A48", patch: PATCH.serre_chassis_A }, { name: "Peints en blanc", sw: "#F2F1EC", patch: PATCH.serre_chassis_B }],
+      parts: [[{ patch: PATCH.serre_chassis_A_p0, depth: 972 }, { patch: PATCH.serre_chassis_A_p1, depth: 844 }], [{ patch: PATCH.serre_chassis_B_p0, depth: 993 }, { patch: PATCH.serre_chassis_B_p1, depth: 849 }]] },
+    { id: "serre_tonneau", room: "Serre", name: "Poser une réserve d'eau", short: "Réserve d'eau", verb: "Poser", cost: 10, icon: "plus", need: ["serre_pelouse"], at: z11([3000, 950]),
+      desc: "Au coin de la serre, avec ses arrosoirs.",
+      styles: [{ name: "Tonneau et arrosoirs", sw: "#7A5232", patch: PATCH.serre_tonneau_A }, { name: "Jarre bleue", sw: "#2F6DB0", patch: PATCH.serre_tonneau_B }],
+      parts: [[{ patch: PATCH.serre_tonneau_A_p0, depth: 1332 }], [{ patch: PATCH.serre_tonneau_B_p0, depth: 1288 }]] },
+    { id: "serre_banc", room: "Serre", name: "Installer un banc", short: "Banc", verb: "Installer", cost: 14, icon: "plus", need: ["serre_pelouse"], at: z11([3250, 1300]),
+      desc: "Face à la serre, à l'ombre du grand arbre. Un chat y fait la sieste.", poi: [[p11(2988, 1491, "dort", -1, 1665)], [p11(3002, 1521, "dort", -1, 1689)]],
+      styles: [{ name: "Vert sauge", sw: "#9DB592", patch: PATCH.serre_banc_A }, { name: "Fer forgé blanc", sw: "#F2F1EC", patch: PATCH.serre_banc_B }],
+      parts: [[{ patch: PATCH.serre_banc_A_p0, depth: 1664 }], [{ patch: PATCH.serre_banc_B_p0, depth: 1688 }]] },
+    { id: "serre_brouette", room: "Serre", name: "Fleurir une brouette", short: "Brouette", verb: "Fleurir", cost: 12, icon: "plus", need: ["serre_allees"], at: z11([2250, 1950]),
+      desc: "Dans la boucle du chemin, sous la porte de la serre.",
+      styles: [{ name: "Géraniums", sw: "#D9423A", patch: PATCH.serre_brouette_A }, { name: "Pétunias", sw: "#E88AB4", patch: PATCH.serre_brouette_B }],
+      parts: [[{ patch: PATCH.serre_brouette_A_p0, depth: 1825 }], [{ patch: PATCH.serre_brouette_B_p0, depth: 1832 }]] },
+    { id: "serre_massif", room: "Serre", name: "Planter une bordure fleurie", short: "Bordure", verb: "Planter", cost: 14, icon: "plus", need: ["serre_verriere"], at: z11([1500, 1900]),
+      desc: "Le long du soubassement de la serre.",
+      styles: [{ name: "Lavande et marguerites", sw: "#8E7CC3", patch: PATCH.serre_massif_A }, { name: "Roses et hortensias", sw: "#7FA6D9", patch: PATCH.serre_massif_B }] },
+    { id: "serre_coussin", room: "Serre", name: "Poser un panier au soleil", short: "Panier", verb: "Poser", cost: 10, icon: "plus", need: ["serre_verriere"], at: z11([2600, 1560]),
+      desc: "Devant la porte de la serre, là où le sol est tiède.", poi: [[p11(2444, 1370, "dort", 1, 1443)], [p11(2421, 1374, "dort", 1, 1456)]],
+      styles: [{ name: "Vichy rouge", sw: "#D9423A", patch: PATCH.serre_coussin_A }, { name: "Lavande", sw: "#C7B3E6", patch: PATCH.serre_coussin_B }] },
+    /* ----- fin de la zone 11 ----- */
     /* ----- Détails de la grille d'entrée (lot G, 156 croquettes) : placés en fin de liste, leurs calques passent par-dessus le reste. ----- */
     { id: "grille_plaque", room: "Grille d'entrée", name: "Poser la plaque du domaine", short: "Plaque", verb: "Poser", cost: 12, icon: "plus", need: ["grille_mur"], at: z2([1450, 550]),
       desc: "« Maison Ronron », sur le petit mur à côté de la grille.",
@@ -832,7 +877,8 @@
     est: { name: "L'aile est", desc: "Son jardin, une cuisine, une chambre et une salle de bain." },
     perron: { name: "Le perron est", desc: "L'entrée est du manoir et son jardin : 19 chantiers, plein de détails." },
     etang: { name: "L'étang", desc: "L'étang aux nénuphars, son ponton et le hangar à bateaux : 12 chantiers." },
-    laby: { name: "Le labyrinthe", desc: "Les haies, la rotonde au centre et ses allées : 16 chantiers." }
+    laby: { name: "Le labyrinthe", desc: "Les haies, la rotonde au centre et ses allées : 16 chantiers." },
+    serre: { name: "La serre", desc: "La grande verrière, ses plantes et son jardin : 13 chantiers." }
   };
   const zoneCost = z => ZONE_STEP * (Object.keys(ZONES).indexOf(z) + 1);
   const zoneOf = s => { const p = s.id.split("_")[0]; return ZONES[p] ? p : null; };
@@ -1862,6 +1908,7 @@
   // Cache des images décodées : les plus anciennes sont libérées dès que le total dépasse BM_MAX.
   const bmCache = new Map();
   let bmPx = 0;
+  const imgOf = p => (p.pk ? p.pk[0] : p.src);     // petit calque rangé dans une planche (assets/f, pack_flats.py) : on le découpe dedans
   function getBitmap(src) {
     let e = bmCache.get(src);
     if (e) { bmCache.delete(src); bmCache.set(src, e); return e.p; }
@@ -1937,15 +1984,15 @@
           use.forEach(o => { if (o.pos - 1 === o.snapAt) {          // copie avant le calque essayé
             const c = document.createElement("canvas"); c.width = o.cv.width; c.height = o.cv.height; c.getContext("2d").drawImage(o.cv, 0, 0);
             o.snap = { n: o.snapAt, ids: o.list.slice(0, o.snapAt), at: all[ia].src, r: r, cv: c }; } });
-          for (let b = Math.max(k + 1, first); b < Math.min(srcs.length, Math.max(k + 1, first) + 2); b++) getBitmap(srcs[b].src);     // les suivantes se décodent pendant ce temps
-          const tw = performance.now(), bm = await getBitmap(p.src); paintStats.waitMs += performance.now() - tw; const td = performance.now();
+          for (let b = Math.max(k + 1, first); b < Math.min(srcs.length, Math.max(k + 1, first) + 2); b++) getBitmap(imgOf(srcs[b]));     // les suivantes se décodent pendant ce temps
+          const tw = performance.now(), bm = await getBitmap(imgOf(p)); paintStats.waitMs += performance.now() - tw; const td = performance.now();
           if (layersKey !== key || lod() !== r || cam.s < FAR) { ok = false; break; }
           if (!bm) { miss = true; continue; }
-          const kx = bm.width / p.w, ky = bm.height / p.h;
+          const kx = p.pk ? 1 : bm.width / p.w, ky = p.pk ? 1 : bm.height / p.h, ox = p.pk ? p.pk[1] : 0, oy = p.pk ? p.pk[2] : 0;
           use.forEach(o => {
             // seulement la partie de l'image qui tombe dans le carreau
             const x0 = Math.max(p.x, o.g.x), y0 = Math.max(p.y, o.g.y), x1 = Math.min(p.x + p.w, o.g.x + o.g.cw), y1 = Math.min(p.y + p.h, o.g.y + o.g.ch);
-            paintStats.draws++; try { o.ctx.drawImage(bm, (x0 - p.x) * kx, (y0 - p.y) * ky, (x1 - x0) * kx, (y1 - y0) * ky, (x0 - o.g.x) * r, (y0 - o.g.y) * r, (x1 - x0) * r, (y1 - y0) * r); } catch (e) { /* image libérée */ }
+            paintStats.draws++; try { o.ctx.drawImage(bm, ox + (x0 - p.x) * kx, oy + (y0 - p.y) * ky, (x1 - x0) * kx, (y1 - y0) * ky, (x0 - o.g.x) * r, (y0 - o.g.y) * r, (x1 - x0) * r, (y1 - y0) * r); } catch (e) { /* image libérée */ }
           });
           paintStats.drawMs += performance.now() - td;
           // on rend la main au navigateur toutes les 10 ms : la carte continue de glisser pendant qu'on peint
@@ -2137,7 +2184,7 @@
   // cases libres (1 maison, 2 jardin du gardien, 3 entrée du domaine, 4 passage caché dans la haie),
   // recalculées quand un meuble est posé ou qu'un chantier se termine
   let navFree = null;
-  let navHouse = [], navGarden = [], navGate = [], navAllee = [], navManoir = [], navSalon = [], navCour = [], navHall = [], navChats = [], navAile = [], navBiblio = [], navEst = [], navEstIn = [], navPerron = [], navEtang = [], navLaby = [];
+  let navHouse = [], navGarden = [], navGate = [], navAllee = [], navManoir = [], navSalon = [], navCour = [], navHall = [], navChats = [], navAile = [], navBiblio = [], navEst = [], navEstIn = [], navPerron = [], navEtang = [], navLaby = [], navSerre = [];
   // passages où le chat se faufile sans être vu : haie, sous la grille, porte du manoir, hall vers la cour, arche de la salle des chats
   const HIDDEN = v => v === 4 || v === 6 || v === 9 || v === 13 || v === 14 || v === 18 || v === 24 || v === 25 || v === 29 || v === 32;   // 29 : dans les roseaux ; 32 : derrière les haies du labyrinthe
   function buildNav() {
@@ -2155,13 +2202,14 @@
     const perron = manoir && isDone("perron_debrousse");     // le jardin du perron est, à côté du devant du manoir
     const etang = est && isDone("etang_debrousse"), ponton = etang && isDone("etang_ponton");   // l'étang, au-dessus du jardin de l'aile est
     const laby = allee && aile && isDone("laby_debrousse"), labyIn = laby && isDone("laby_haies");   // le labyrinthe ; ses allées une fois les haies taillées
+    const serre = isDone("serre_debrousse");                                  // autour de la serre
     for (let r = 0; r < NAV.h; r++) for (let c = 0; c < NAV.w; c++) {
       const v = NAV.rows[r].charCodeAt(c) - 48;
       navFree[r * NAV.w + c] = v === 1 || (v === 2 && garden) || ((v === 3 || v === 4) && gate) || ((v === 5 || v === 6) && allee) ||
         (v === 7 && manoir) || ((v === 8 || v === 9) && salon) || ((v === 10 || v === 11 || v === 13) && hall) || ((v === 12 || v === 14) && chats) ||
         ((v === 15 || v === 18) && aile) || (v === 16 && biblio) || (v === 17 && salle) || (v === 19 && atelier) ||
         ((v === 20 || v === 24) && est) || (((v >= 21 && v <= 23) || v === 25) && estIn) || (v === 26 && perron) || ((v === 27 || v === 29) && etang) || (v === 28 && ponton) ||
-        (v === 30 && laby) || ((v === 31 || v === 32) && labyIn) ? v : 0;
+        (v === 30 && laby) || ((v === 31 || v === 32) && labyIn) || (v === 33 && serre) ? v : 0;
     }
     const open = navFree.slice();                    // le sol praticable, avant les meubles
     Object.keys(NAV.blocks).forEach(id => {
@@ -2187,7 +2235,7 @@
       }
       if (size > bestSize) { bestSize = size; best = id; }
     }
-    navHouse = []; navGarden = []; navGate = []; navAllee = []; navManoir = []; navSalon = []; navCour = []; navHall = []; navChats = []; navAile = []; navBiblio = []; navEst = []; navEstIn = []; navPerron = []; navEtang = []; navLaby = [];
+    navHouse = []; navGarden = []; navGate = []; navAllee = []; navManoir = []; navSalon = []; navCour = []; navHall = []; navChats = []; navAile = []; navBiblio = []; navEst = []; navEstIn = []; navPerron = []; navEtang = []; navLaby = []; navSerre = [];
     for (let i = 0; i < navFree.length; i++) {
       if (comp[i] !== best) navFree[i] = 0;
       else if (navFree[i] === 1) navHouse.push(i);
@@ -2206,6 +2254,7 @@
       else if (navFree[i] === 26) navPerron.push(i);
       else if (navFree[i] === 27 || navFree[i] === 28) navEtang.push(i);
       else if (navFree[i] === 30 || navFree[i] === 31) navLaby.push(i);
+      else if (navFree[i] === 33) navSerre.push(i);
     }
   }
   /* Un meuble peut fermer un passage selon le style choisi (le banc vert de l'entrée coupait le salon et la cuisine du reste).
@@ -2255,7 +2304,7 @@
   const cellXY = i => [NAV.x0 + (i % NAV.w + 0.5) * NAV.cell, NAV.y0 + (((i / NAV.w) | 0) + 0.5) * NAV.cell];
   function randomCell() {
     // on tire d'abord l'endroit, pour que les chats restent visibles un peu partout : maison, jardin, entrée
-    const pools = [[navHouse, 0.22], [navGarden, 0.14], [navGate, 0.08], [navAllee, 0.09], [navManoir, 0.07], [navSalon, 0.11], [navCour, 0.11], [navHall, 0.02], [navChats, 0.06], [navAile, 0.07], [navBiblio, 0.03], [navEst, 0.06], [navEstIn, 0.06], [navPerron, 0.08], [navEtang, 0.08], [navLaby, 0.08]].filter(p => p[0].length);
+    const pools = [[navHouse, 0.22], [navGarden, 0.14], [navGate, 0.08], [navAllee, 0.09], [navManoir, 0.07], [navSalon, 0.11], [navCour, 0.11], [navHall, 0.02], [navChats, 0.06], [navAile, 0.07], [navBiblio, 0.03], [navEst, 0.06], [navEstIn, 0.06], [navPerron, 0.08], [navEtang, 0.08], [navLaby, 0.08], [navSerre, 0.08]].filter(p => p[0].length);
     if (!pools.length) return 0;
     let k = Math.random() * pools.reduce((t, p) => t + p[1], 0);
     for (const p of pools) { k -= p[1]; if (k <= 0) return p[0][Math.floor(Math.random() * p[0].length)]; }
@@ -2428,11 +2477,11 @@
     if (key === wallKey) return;
     wallKey = key;
     const stamp = ++wallStamp;
-    Promise.all(list.map(p => getBitmap(p.src))).then(ims => {
+    Promise.all(list.map(p => getBitmap(imgOf(p)))).then(ims => {
       if (stamp !== wallStamp) return;
       const cv = document.createElement("canvas"); cv.width = B.w; cv.height = B.h;
       const ctx = cv.getContext("2d");
-      list.forEach((p, i) => { if (ims[i]) try { ctx.drawImage(ims[i], p.x - B.x, p.y - B.y, p.w, p.h); } catch (e) { /* image libérée */ } });
+      list.forEach((p, i) => { if (ims[i]) try { if (p.pk) ctx.drawImage(ims[i], p.pk[1], p.pk[2], p.w, p.h, p.x - B.x, p.y - B.y, p.w, p.h); else ctx.drawImage(ims[i], p.x - B.x, p.y - B.y, p.w, p.h); } catch (e) { /* image libérée */ } });
       WALLS.strips.forEach(st => { if (st.node) { st.node.remove(); st.node = null; } });
       wallCanvas = cv;
       sortCats();
@@ -2879,7 +2928,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.36." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.37." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -2950,7 +2999,7 @@
   const DUP_POINTS = [10, 25, 50, 50];             // points de jauge d'un doublon, selon sa rareté
   const PACK_FOR = { mini: 1, boss: 2, geant: 3, rafale: 3, trouee: 3, zero: 3, pelotes: 3 };
   const ALBUM_GIFT = { gardien: { kibble: 40 }, grille: { kitten: "creme" }, allee: { tuna: 20 }, manoir: { kitten: "chocolat" }, cour: { kitten: "rose" },
-    aile: { kibble: 60 }, est: { kitten: "lavande" }, perron: { kitten: "menthe" }, etang: { kitten: "nuage" }, laby: { tuna: 30 }, hiver: { kitten: "bengalneige" }, uniques: { kitten: "or" } };
+    aile: { kibble: 60 }, est: { kitten: "lavande" }, perron: { kitten: "menthe" }, etang: { kitten: "nuage" }, laby: { tuna: 30 }, serre: { kibble: 80 }, hiver: { kitten: "bengalneige" }, uniques: { kitten: "or" } };
   const giftText = g => g.kitten ? "un chaton à la robe " + (BREED[g.kitten] ? BREED[g.kitten].name : "rare") : g.kibble ? plural(g.kibble, "croquette") : plural(g.tuna, "boîte") + " de thon";
 
   function migrateCards() {
@@ -3329,7 +3378,7 @@
     return Object.keys(PATCH).filter(k => out.has(PATCH[k]));
   }
   window.__ronron = { objKeys: objKeys, slots: () => SLOTS.map(x => ({ id: x.id, name: x.name, short: x.short, room: x.room, zone: zoneOf(x) || "gardien", poi: x.poi, at: x.at, styles: (x.styles || []).length })), state: () => S, level: () => L, nav: () => navFree, look: look, layers: () => shownList.map(p => [p.src, Object.keys(chunks).some(c => chunks[c].key === layersKey && hit(geom(+c), p)) ? p.src : ""]), shown: () => shownList.map(p => [p.src, p.x, p.y, p.w, p.h]), painted: painted, paintStats: () => paintStats, diag: () => diag, mem: () => ({ chunks: Object.keys(chunks).length, chunkPx: Object.keys(chunks).reduce((s, c) => s + chunks[c].cv.width * chunks[c].cv.height, 0), cachePx: bmPx, cached: bmCache.size }), far: () => [farKey === layersKey, farEl ? !farEl.hidden : false], path: (a, b) => pathTo(a, b), cats: () => catRT, cell: cellOf,
-    navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length, navManoir.length, navSalon.length, navCour.length, navHall.length, navChats.length, navAile.length, navBiblio.length, navEst.length, navEstIn.length, navPerron.length, navEtang.length, navLaby.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
+    navCount: () => [navHouse.length, navGarden.length, navGate.length, navAllee.length, navManoir.length, navSalon.length, navCour.length, navHall.length, navChats.length, navAile.length, navBiblio.length, navEst.length, navEstIn.length, navPerron.length, navEtang.length, navLaby.length, navSerre.length], pois: () => poiList(), sortItems: () => Array.from(document.querySelectorAll('#objects > *')).map(n => n.dataset.cat || (n.classList.contains('wall') ? 'mur' : (n.getAttribute('href') || '').split('/').pop().replace('.webp', ''))), hidden: () => Object.keys(catRT).filter(k => catRT[k].hidden).length,
     audio: () => ({ ctx: AC ? AC.state : null, playing: !!(musicSrc && !musicSrc.pending), track: musicIdx % MUSIC.length, pref: audioPref }), sfx: sfx, sfxNames: () => Object.keys(SFX), sfxRaw: name => SFX[name](),
     walls: () => (WALLS ? WALLS.strips.filter(st => st.node && st.node.parentNode).length : -1), wallsReady: () => !!wallCanvas,
     hedges: () => (HEDGES ? HEDGES.strips.filter(st => st.node && st.node.parentNode).length : -1) };
