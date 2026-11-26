@@ -338,8 +338,17 @@
       cascade(st, steps, [a, b]);
       return steps;
     }
+    // Deux taps sur une friandise spéciale : elle part sur place (rayée, paquet ; le chaton emporte la sorte la plus nombreuse). Ça compte un coup.
+    function activate(st, i) {
+      if (!piece(st, i) || !st.sp[i]) return null;
+      st.moves--;
+      const step = clearSet(st, new Set([i]), null, [i]), steps = [step];
+      steps.push(fall(st));
+      cascade(st, steps, null);
+      return steps;
+    }
     const won = st => st.goals.every(g => g.left <= 0);
-    return { W: W, H: H, N: N, CAT: CAT, SP_H: SP_H, SP_V: SP_V, SP_B: SP_B, SP_C: SP_C, TYPES: TYPES, config: config, make: make, play: play, legal: legal,
+    return { W: W, H: H, N: N, CAT: CAT, SP_H: SP_H, SP_V: SP_V, SP_B: SP_B, SP_C: SP_C, TYPES: TYPES, config: config, make: make, play: play, activate: activate, legal: legal,
       allMoves: allMoves, hasMove: hasMove, clone: clone, won: won, piece: piece, adjacent: adjacent };
   })();
 
@@ -559,7 +568,8 @@
     const has = k => cfg.goals.some(g => g.k === k);
     $("#b-tools").innerHTML = '<p class="hint">' + (has("box") ? "Les cartons s'abîment quand on aligne juste à côté (deux fois pour ceux qui sont scotchés en croix). " : "") +
       (has("mud") ? "Une tache part quand on aligne la friandise posée dessus. " : "") +
-      (level <= 3 || (!has("box") && !has("mud")) ? "Fais glisser une friandise vers sa voisine (ou touche-les l'une après l'autre). 4 alignées : une rayée. En L : un paquet. 5 alignées : un chaton qui emporte toute une sorte." : "") + "</p>";
+      (level <= 3 || (!has("box") && !has("mud")) ? "Fais glisser une friandise vers sa voisine (ou touche-les l'une après l'autre). 4 alignées : une rayée. En L : un paquet. 5 alignées : un chaton qui emporte toute une sorte. " : "") +
+      "Touche deux fois une spéciale pour la déclencher sur place (ça compte un coup).</p>";
     armHint();
   }
   const pos = (i, cs) => "translate(" + (i % M3.W) * cs + "px," + ((i / M3.W) | 0) * cs + "px)";
@@ -606,12 +616,16 @@
       select(-1);
       if (j >= 0) tryMove(i, j);
     });
+    let last = { i: -1, t: 0 };                        // tap précédent, pour reconnaître un double tap
     board.addEventListener("pointerup", e => {
       if (!down) return;
       const d = down; down = null;
-      if (d.moved || m3.busy) return;
-      if (m3.sel >= 0 && M3.adjacent(m3.sel, d.i)) { const a = m3.sel; select(-1); tryMove(a, d.i); }
-      else select(m3.sel === d.i ? -1 : d.i);
+      if (d.moved || m3.busy) { last = { i: -1, t: 0 }; return; }
+      const now = Date.now(), twice = last.i === d.i && now - last.t < 450;
+      last = { i: d.i, t: now };
+      if (twice && m3.st.sp[d.i] && M3.piece(m3.st, d.i)) { last = { i: -1, t: 0 }; select(-1); tryActivate(d.i); return; }
+      if (m3.sel >= 0 && M3.adjacent(m3.sel, d.i)) { const a = m3.sel; select(-1); last = { i: -1, t: 0 }; tryMove(a, d.i); }
+      else select(m3.sel === d.i && !m3.st.sp[d.i] ? -1 : d.i);
     });
     board.addEventListener("pointercancel", () => { down = null; });
   }
@@ -619,6 +633,24 @@
     if (m3.sel >= 0) { const el = m3.els.get(m3.st.id[m3.sel]); if (el) el.classList.remove("sel"); }
     m3.sel = M3.piece(m3.st, i) ? i : -1;
     if (m3.sel >= 0) { const el = m3.els.get(m3.st.id[m3.sel]); if (el) el.classList.add("sel"); }
+  }
+  async function tryActivate(i) {
+    if (m3.busy || !cur || cur.over) return;
+    const st = m3.st;
+    clearTimeout(hintTimer); $$(".m3p.hint").forEach(el => el.classList.remove("hint"));
+    const steps = M3.activate(st, i); if (!steps) return;
+    m3.busy = true; C.sfx("tap");
+    m3Moves();
+    await playSteps(steps);
+    afterMove();
+  }
+  function afterMove() {
+    const st = m3.st;
+    m3.busy = false;
+    m3Goals();
+    if (M3.won(st)) { m3Win(); return; }
+    if (st.moves <= 0) { m3Out(); return; }
+    armHint();
   }
   async function tryMove(a, b) {
     if (m3.busy || !cur || cur.over) return;
@@ -635,11 +667,7 @@
     }
     m3Moves();
     await playSteps(steps);
-    m3.busy = false;
-    m3Goals();
-    if (M3.won(st)) { m3Win(); return; }
-    if (st.moves <= 0) { m3Out(); return; }
-    armHint();
+    afterMove();
   }
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
   async function playSteps(steps) {
@@ -658,6 +686,7 @@
           const el = m3.els.get(x.id) || addPiece(x.id, x.i, x.t, 0, null);
           el.className = "m3p special s" + x.sp + " born"; el.innerHTML = pieceHtml(x.t, x.sp); el.style.transform = pos(x.i, m3.cs);
         });
+        if (s.created.length && !games().tipSp) { games().tipSp = 1; C.save(); setTimeout(() => C.toast("Touche deux fois une friandise spéciale pour la déclencher sur place."), 600); }
         s.boxes.forEach(b => {
           const el = $('.m3box[data-b="' + b.i + '"]');
           if (el) { el.className = "m3box hp" + b.hp + " hit"; if (!b.hp) setTimeout(() => el.remove(), 260); }
