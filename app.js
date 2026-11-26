@@ -1410,6 +1410,7 @@
     const rnd = window.RonronGen.mulberry32(lv.level * 31 + 7 + L.grid * 101);
     const cols = ZONE_COLORS.slice();
     for (let i = cols.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const t = cols[i]; cols[i] = cols[j]; cols[j] = t; }
+    L.cols = cols;
     const block = new Set(lv.block || []), clue = {};
     (lv.clues || []).forEach(q => { clue[q[0]] = q[1]; });
     board.className = "board";
@@ -1468,37 +1469,72 @@
   }
 
   /* Indice (2 boîtes de thon, toujours payant) : la prochaine case qu'on trouve par logique, avec la raison en une phrase.
-     La zone, la ligne ou la colonne concernée s'éclaire, la case brille, puis le chat s'y pose. Un indice n'est pas une erreur :
+     La zone, la ligne ou la colonne concernée s'éclaire, les cases écartées reçoivent une croix grise (un chat posé) ou orange (une déduction),
+     les lignes ou colonnes du raisonnement sont encadrées, la case brille, puis le chat s'y pose. Un indice n'est pas une erreur :
      le niveau peut rester parfait. Premier tap : le bouton demande confirmation ; deuxième tap dans les 3 secondes : on paie. */
   const HINT_COST = 2;
   let hintArm = 0, hintBusy = false;
-  const ordinal = k => k + 1;
-  function bandText(r) {
-    const w = r.byRow ? "ligne" : "colonne";
-    return r.a === r.b ? "la " + w + " " + ordinal(r.a) : "les " + w + "s " + ordinal(r.a) + " à " + ordinal(r.b);
+  // Les zones sont nommées par leur couleur ; les lignes et colonnes ne sont jamais numérotées : on les encadre sur la grille.
+  const ZONE_NAMES = { "#F6719F": "rose", "#FFC544": "jaune", "#86BDEB": "bleue", "#BDB8EA": "lilas", "#A9DE9C": "verte",
+                       "#FF9F6B": "orange", "#6FD3C7": "turquoise", "#C9A27E": "marron", "#9FB0C4": "grise", "#B877AC": "violette" };
+  const zoneName = z => '<b class="zn"><i style="background:' + L.cols[z] + '"></i>' + (ZONE_NAMES[L.cols[z]] || "") + "</b>";
+  function zoneList(zs) {
+    const p = zs.map(zoneName), names = p.length > 1 ? p.slice(0, -1).join(", ") + " et " + p[p.length - 1] : p[0];
+    return (zs.length > 1 ? "les zones " : "la zone ") + names;
+  }
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  function place(byRow, at) {
+    const n = L.n;
+    if (byRow) return at === 0 ? "tout en haut" : at === n - 1 ? "tout en bas" : (at + 1) + "e en partant du haut";
+    return at === 0 ? "tout à gauche" : at === n - 1 ? "tout à droite" : (at + 1) + "e en partant de la gauche";
+  }
+  function bandName(r) {
+    const m = r.b - r.a + 1, w = r.byRow ? "ligne" : "colonne";
+    return m === 1 ? "la " + w + " en pointillés jaunes" : "les " + m + " " + w + "s en pointillés jaunes";
+  }
+  function stepText(r, several) {
+    const one = r.zs && r.zs.length === 1, m = r.b - r.a + 1;
+    if (r.rule === "inside") return cap(zoneList(r.zs)) + (one ? " tient tout entière" : " tiennent tout entières") + " dans " + bandName(r) + " : " +
+      (one ? "son chat" : "leurs chats") + (m === 1 ? " occupe" : " occupent") + (m === 1 ? " cette " + (r.byRow ? "ligne" : "colonne") : " ces " + (r.byRow ? "lignes" : "colonnes")) +
+      ", il n'y reste pas de place pour une autre zone.";
+    if (r.rule === "touch") return (one ? "Seule " : "Seules ") + zoneList(r.zs) + (one ? " peut" : " peuvent") + " encore mettre un chat dans " + bandName(r) + " : " +
+      (one ? "son chat y sera" : "leurs chats y seront") + " forcément, donc pas ailleurs.";
+    if (r.rule === "look") {
+      const k = r.kill, where = k.unit === "zone" ? "dans la zone " + zoneName(k.at) : k.unit === "row" ? "sur la ligne en pointillés rouges"
+        : k.unit === "col" ? "dans la colonne en pointillés rouges" : "autour de la pelote en pointillés rouges";
+      return (several ? "Un chat sur une des cases entourées de rouge" : "Un chat sur la case entourée de rouge") +
+        " ne laisserait plus " + (L.k === 2 ? "assez de" : "aucune") + " place " + where + ".";
+    }
+    if (r.rule === "clue") return "La pelote " + r.v + " a déjà " + (r.v > 1 ? "ses " + r.v + " chats" : "son chat") + " autour d'elle : ses autres voisines restent vides.";
+    return "";
   }
   function hintText(h) {
     if (!h) return "Pas de déduction simple ici : voici un chat de la solution.";
-    const U = h.unit === "zone" ? "cette zone" : h.unit === "row" ? "cette ligne" : "cette colonne";
-    const two = L.k === 2, need = h.need || 1;
-    if (h.unit === "clue") return "Cette pelote veut <b>" + plural(h.v, "chat") + "</b> autour d'elle et il ne reste que ces cases : il en faut un ici.";
-    const end = two && need === 2 ? "il ne reste que deux cases pour " + U + ", qui a besoin de ses deux chats : en voici un."
-      : "il ne reste que <b>cette case</b> pour " + U + ".";
-    const r = h.rule;
-    if (!r) {
-      if (h.alone) return "Cette zone n'a qu'une seule case : son chat ne peut être que là.";
-      const cap = end.charAt(0).toUpperCase() + end.slice(1);
-      return h.cats ? "Les autres cases sont sur la ligne ou la colonne d'un chat déjà posé, ou le touchent : " + end
-        : cap;
+    if (h.alone) return "La zone " + zoneName(h.at) + " n'a qu'une seule case : son chat va forcément là.";
+    const need = h.need || 1, two = need === 2;
+    let head;
+    if (h.unit === "clue") head = "Cette pelote veut <b>" + plural(h.v, "chat") + "</b> autour d'elle et il ne reste que ces cases : il en faut un ici.";
+    else {
+      const inU = h.unit === "zone" ? "Dans la zone " + zoneName(h.at) : h.unit === "row" ? "Sur la ligne encadrée en noir (" + place(true, h.at) + ")"
+        : "Dans la colonne encadrée en noir (" + place(false, h.at) + ")";
+      head = inU + (two ? ", il ne reste que <b>deux cases</b> pour ses deux chats : en voici un." : ", il ne reste qu'<b>une case</b> possible : la voici.");
     }
-    if (r.rule === "inside") return (r.k === 1 ? "Une zone tient entièrement dans " + bandText(r) + " : elle la garde pour elle" : r.k + " zones tiennent entièrement dans " + bandText(r) + " : elles les remplissent") +
-      ". Les autres zones n'y ont plus de place, donc " + end;
-    if (r.rule === "touch") return (r.k === 1 ? "Une seule zone peut encore remplir " + bandText(r) + " : son chat y est forcément" : "Seules " + r.k + " zones peuvent encore remplir " + bandText(r) + " : leurs chats y sont forcément") +
-      ", donc " + end;
-    if (r.rule === "look") return "Un chat posé sur les autres cases ne laisserait plus aucune place à toute une ligne, une colonne ou une zone : " + end;
-    if (r.rule === "clue") return "Une pelote a déjà tous ses chats autour d'elle, ses autres voisines restent vides : " + end;
-    return end;
+    const out = [head];
+    if (h.no.some(q => q[1] < 0)) out.push('<span class="hx grey"></span>Croix grises : ces cases ' + (L.k === 2
+      ? "touchent un chat déjà posé, ou sont sur une ligne, une colonne ou une zone qui a déjà ses deux chats."
+      : "touchent un chat déjà posé, ou sont sur sa ligne, sa colonne ou sa zone."));
+    const st = h.steps.slice(-2), looks = st.filter(r => r.rule === "look").length;
+    const said = [];                                       // deux déductions qui se disent pareil : une seule phrase
+    st.forEach(r => { const t = stepText(r, looks > 1); if (said.indexOf(t) < 0) said.push(t); });
+    if (said.length) {
+      const t = said.join(" ");
+      out.push('<span class="hx orange"></span>Croix orange : ' + t.charAt(0).toLowerCase() + t.slice(1) +
+        (h.steps.length > 2 ? " D'autres croix orange viennent d'un raisonnement du même genre, fait juste avant." : ""));
+    }
+    return out.join("<br>");
   }
+  // Sur la grille : l'unité de l'indice (cases claires ou cadre blanc), les cases écartées (croix grises ou orange),
+  // les lignes ou colonnes du raisonnement (cadre jaune) et, pour « un chat ici bloquerait… », la case et ce qu'elle bloquerait (rouge).
   function hintCells(h, gr) {
     const n = L.n, out = [];
     for (let j = 0; j < n * n; j++) {
@@ -1506,6 +1542,51 @@
           : (j === h.at || window.RonronGen.around(n, h.at).indexOf(j) >= 0)) out.push(j);
     }
     return out;
+  }
+  function hintFrame(kind, r0, c0, r1, c1) {
+    const n = L.n, A = L.cells[r0 * n + c0], B = L.cells[r1 * n + c1], f = document.createElement("div"), pad = 3;
+    f.className = "hframe " + kind;
+    f.style.left = (A.offsetLeft - pad) + "px"; f.style.top = (A.offsetTop - pad) + "px";
+    f.style.width = (B.offsetLeft + B.offsetWidth - A.offsetLeft + 2 * pad) + "px"; f.style.height = (B.offsetTop + B.offsetHeight - A.offsetTop + 2 * pad) + "px";
+    board.appendChild(f); return f;
+  }
+  function clearHint() {
+    if (!L || !L.cells) return;
+    L.cells.forEach(el => el.classList.remove("hint-unit", "hint-dim", "hint-cell", "hint-no", "hint-rule", "hint-ring", "hint-band", "hint-kill"));
+    $$(".hframe", board).forEach(f => f.remove());
+  }
+  function showHint(h, gr, i) {
+    const n = L.n, keep = new Set(), unit = h ? hintCells(h, gr) : [i];
+    clearHint();
+    unit.forEach(j => { keep.add(j); if (j !== i) L.cells[j].classList.add("hint-unit"); });
+    if (h && (h.unit === "row" || h.unit === "col")) hintFrame("unit", h.unit === "row" ? h.at : 0, h.unit === "row" ? 0 : h.at, h.unit === "row" ? h.at : n - 1, h.unit === "row" ? n - 1 : h.at);
+    if (h) {
+      const shown = h.steps.length - Math.min(2, h.steps.length);
+      h.no.forEach(q => { const el = L.cells[q[0]]; if (L.st[q[0]] === 3 || L.st[q[0]] === 5) return; el.classList.add("hint-no"); if (q[1] >= 0) el.classList.add("hint-rule"); });
+      h.steps.forEach((r, k) => {
+        if (k < shown) return;
+        if (r.rule === "inside" || r.rule === "touch") {
+          hintFrame("band", r.byRow ? r.a : 0, r.byRow ? 0 : r.a, r.byRow ? r.b : n - 1, r.byRow ? n - 1 : r.b);
+          for (let j = 0; j < n * n; j++) { const l = r.byRow ? (j / n) | 0 : j % n; if (l >= r.a && l <= r.b) keep.add(j); }
+          (r.zs || []).forEach(z => { for (let j = 0; j < n * n; j++) if (gr.regions[j] === z) keep.add(j); });
+        } else if (r.rule === "look") {
+          L.cells[r.cell].classList.add("hint-ring"); keep.add(r.cell);
+          const k = r.kill;
+          if (k.unit === "row") hintFrame("kill", k.at, 0, k.at, n - 1);
+          else if (k.unit === "col") hintFrame("kill", 0, k.at, n - 1, k.at);
+          else if (k.unit === "clue") { const r0 = (k.at / n) | 0, c0 = k.at % n; hintFrame("kill", Math.max(0, r0 - 1), Math.max(0, c0 - 1), Math.min(n - 1, r0 + 1), Math.min(n - 1, c0 + 1)); }
+          for (let j = 0; j < n * n; j++) {
+            const inK = k.unit === "zone" ? gr.regions[j] === k.at : k.unit === "row" ? ((j / n) | 0) === k.at : k.unit === "col" ? j % n === k.at : Math.abs(((j / n) | 0) - ((k.at / n) | 0)) <= 1 && Math.abs(j % n - k.at % n) <= 1;
+            if (inK) { keep.add(j); if (k.unit === "zone") L.cells[j].classList.add("hint-kill"); }
+          }
+        } else if (r.rule === "clue") {
+          const r0 = (r.at / n) | 0, c0 = r.at % n; keep.add(r.at); window.RonronGen.around(n, r.at).forEach(j => keep.add(j));
+          hintFrame("band", Math.max(0, r0 - 1), Math.max(0, c0 - 1), Math.min(n - 1, r0 + 1), Math.min(n - 1, c0 + 1));
+        }
+      });
+    }
+    L.cells.forEach((el, j) => { if (!keep.has(j)) el.classList.add("hint-dim"); });
+    L.cells[i].classList.add("hint-cell");
   }
   function renderHintBtn() {
     const b = $("#btn-hint"); if (!b) return;
@@ -1532,19 +1613,18 @@
     S.tuna -= HINT_COST; S.hints = (S.hints || 0) + 1; save(); updateHud(); renderHintBtn();
     hintBusy = true;
     const why = $("#level-hint"); why.classList.add("why"); why.innerHTML = hintText(h);
-    const unit = h ? hintCells(h, gr) : [i], inUnit = new Set(unit), cur = L;
-    L.cells.forEach((el, j) => { el.classList.toggle("hint-unit", inUnit.has(j) && j !== i); el.classList.toggle("hint-dim", !inUnit.has(j)); });
-    L.cells[i].classList.add("hint-cell"); sfx("tap"); buzz(10);
+    const cur = L;
+    showHint(h, gr, i); sfx("tap"); buzz(10);
+    // le chat se pose au bout de 1,1 s ; les repères restent jusqu'au prochain tap sur la grille (ou 20 s) pour laisser le temps de lire
     setTimeout(() => {
       hintBusy = false;
       if (L !== cur) return;
       L.cells[i].classList.remove("hint-cell");
-      L.cells.forEach(el => el.classList.remove("hint-dim"));
       if (!L.over && L.st[i] !== 3) {
         setCell(i, 3); L.placed++; buzz(12); sfx("cat");
-        if (L.placed === L.n * L.k) { if (L.limit && L.grid < 4) nextGrid(); else win(); }
+        if (L.placed === L.n * L.k) { clearHint(); if (L.limit && L.grid < 4) nextGrid(); else win(); }
       }
-      setTimeout(() => { if (L === cur) L.cells.forEach(el => el.classList.remove("hint-unit")); }, 1600);
+      clearTimeout(L.hintT); L.hintT = setTimeout(() => { if (L === cur) clearHint(); }, 20000);
       renderHintBtn();
     }, 1100);
   }
@@ -1641,6 +1721,7 @@
   }
   board.addEventListener("pointerdown", e => {
     if (!L || L.over) return;
+    if (!hintBusy && board.querySelector(".hframe, .hint-no, .hint-unit, .hint-dim")) clearHint();
     const i = cellAt(e.clientX, e.clientY);
     if (i < 0) return;
     e.preventDefault();
@@ -1686,8 +1767,9 @@
       "<li>Finis vite pour une croquette en plus : de 30 s sur une grille 5 × 5 à 1:30 sur une 10 × 10, le double avec deux chats.</li>" +
       "<li>Finis sans perdre de poisson pour gagner du thon : une boîte, 2 sur un mini-boss, 3 sur un boss, 5 sur un boss géant. " +
       "Dans l'onglet Chats, 20 boîtes de thon données à un chat lui font avoir un chaton.</li>" +
-      "<li>Bloqué ? Le bouton <strong>Indice</strong> coûte 2 boîtes de thon : il te montre la prochaine case à trouver, t'explique pourquoi, " +
-      "et y pose le chat. Un indice n'est pas une erreur : le niveau peut rester parfait.</li>" +
+      "<li>Bloqué ? Le bouton <strong>Indice</strong> coûte 2 boîtes de thon : il te montre la prochaine case à trouver et y pose le chat. " +
+      "Sur la grille, une croix grise marque une case écartée par un chat déjà posé, une croix orange une case écartée par un raisonnement, expliqué sous la grille. " +
+      "Un indice n'est pas une erreur : le niveau peut rester parfait.</li>" +
       "</ul><p><strong>Un tap</strong> pose ou retire une croix ; tu peux glisser le doigt pour en tracer plusieurs. " +
       "<strong>Deux taps rapides</strong> sur une case y posent un chat.</p>" +
       '<button class="btn block" id="r-ok" type="button">Compris</button>', then ? { sticky: true } : undefined);
@@ -2797,7 +2879,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.35." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.36." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +

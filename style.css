@@ -225,6 +225,7 @@ h2 {
 
 .boardwrap { display: grid; place-items: center; }
 .board {
+  position: relative;
   --n: 5; --gap: 7px; --rc: 11px;
   width: 100%;
   max-width: min(100%, 58vh);
@@ -637,4 +638,18 @@ h2 {
 @keyframes hintglow { 50% { box-shadow: inset 0 0 0 3px #FFE7A3, 0 0 14px 4px rgba(255, 196, 70, 0.95); transform: scale(1.06); } }
 .hint.why { color: var(--ink); background: #FFF7EC; border: 1px solid #F3D9B8; border-radius: 12px; padding: 8px 12px; }
 .hint.why b { color: var(--accent-deep); }
+.hint.why b.zn { color: var(--ink); white-space: nowrap; }
+.hint.why b.zn i { display: inline-block; width: 0.85em; height: 0.85em; border-radius: 4px; margin: 0 0.25em -0.1em 0; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18); }
+.hint.why .hx { display: inline-block; width: 0.8em; height: 0.8em; margin-right: 0.35em; vertical-align: -0.05em;
+  background: linear-gradient(45deg, transparent 40%, currentColor 40%, currentColor 60%, transparent 60%), linear-gradient(-45deg, transparent 40%, currentColor 40%, currentColor 60%, transparent 60%); }
+.hint.why .hx.grey { color: #8A8394; }
+.hint.why .hx.orange { color: #F07A1A; }
+.cell.hint-no .x { display: block; width: 44%; height: 44%; color: rgba(70, 64, 80, 0.6); }
+.cell.hint-rule .x { color: #F07A1A; }
+.cell.hint-ring { box-shadow: inset 0 0 0 3px #E5484D; }
+.cell.hint-kill { box-shadow: inset 0 0 0 2px #E5484D; }
+.hframe { position: absolute; pointer-events: none; border-radius: calc(var(--rc) + 3px); z-index: 2; }
+.hframe.unit { border: 3px solid #3A3340; }
+.hframe.band { border: 3px dashed #E9A800; }
+.hframe.kill { border: 3px dashed #E5484D; }
 @media (prefers-reduced-motion: reduce) { .cell.hint-cell { animation: none; box-shadow: inset 0 0 0 3px #FFC444; } }

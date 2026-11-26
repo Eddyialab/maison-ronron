@@ -698,18 +698,32 @@
      et on note la dernière règle avancée qui a servi, pour l'expliquer en une phrase.
      g : zone de chaque case (< 0 : pot de fleurs), have : cases où un chat est déjà posé, opt.clues : pelotes [[case, nombre]].
      Renvoie { i, unit: "zone" | "row" | "col" | "clue", at, v?, rule, cats, alone } ou null si aucune déduction ne mène à un chat. */
+  // Pour expliquer l'indice, chaque case écartée garde sa raison : why[j] = -1 si un chat posé l'exclut, k ≥ 0 si c'est la déduction steps[k].
+  // Le résultat donne les cases écartées de l'unité (no : [case, -1 ou rang dans steps]) et les déductions qui y ont servi (steps).
+  function hintResult(n, g, i, unit, at, cand, why, catAt, steps, extra) {
+    const N = n * n, no = [], used = [];
+    for (let j = 0; j < N; j++) {
+      const inU = unit === "zone" ? g[j] === at : unit === "row" ? ((j / n) | 0) === at : unit === "col" ? j % n === at : around(n, at).indexOf(j) >= 0;
+      if (!inU || catAt[j] || cand[j] || why[j] === -2) continue;
+      if (why[j] >= 0 && used.indexOf(why[j]) < 0) used.push(why[j]);
+      no.push([j, why[j]]);
+    }
+    used.sort((x, y) => x - y);
+    return Object.assign({ i: i, unit: unit, at: at, no: no.map(q => [q[0], q[1] < 0 ? -1 : used.indexOf(q[1])]), steps: used.map(t => steps[t]) }, extra);
+  }
   function hintStep(n, g, have, opt) {
-    const N = n * n, cand = new Uint8Array(N).fill(1);
+    const N = n * n, cand = new Uint8Array(N).fill(1), why = new Int16Array(N).fill(-2), steps = [];
     const rowDone = new Uint8Array(n), colDone = new Uint8Array(n), regDone = new Uint8Array(n), catAt = new Uint8Array(N);
     for (let i = 0; i < N; i++) if (g[i] < 0) cand[i] = 0;
     const CL = opt && opt.clues ? opt.clues.map(q => { cand[q[0]] = 0; return [q[0], q[1], around(n, q[0])]; }) : null;
     let last = null;
+    const cut = (j, t) => { if (cand[j]) { cand[j] = 0; why[j] = t; } };
     function place(i) {
       const r = (i / n) | 0, c = i % n, z = g[i];
-      for (let k = 0; k < n; k++) { cand[r * n + k] = 0; cand[k * n + c] = 0; }
-      for (let j = 0; j < N; j++) if (g[j] === z) cand[j] = 0;
-      for (const j of around(n, i)) cand[j] = 0;
-      cand[i] = 0; rowDone[r] = 1; colDone[c] = 1; regDone[z] = 1; catAt[i] = 1;
+      for (let k = 0; k < n; k++) { cut(r * n + k, -1); cut(k * n + c, -1); }
+      for (let j = 0; j < N; j++) if (g[j] === z) cut(j, -1);
+      for (const j of around(n, i)) cut(j, -1);
+      cut(i, -1); rowDone[r] = 1; colDone[c] = 1; regDone[z] = 1; catAt[i] = 1;
     }
     have.forEach(place);
     function counts(cd) {
@@ -727,23 +741,23 @@
       for (let a = 0; a < n; a++) for (let b = a; b < n; b++) {
         let k = 0; for (let l = a; l <= b; l++) if (!done[l]) k++;
         if (k === 0 || k === free) continue;
-        let inside = 0, touching = 0;
+        const zin = [], ztouch = [];
         for (let z = 0; z < n; z++) {
           if (regDone[z] || hi[z] < 0) continue;
-          if (lo[z] >= a && hi[z] <= b) inside++;
-          if (lo[z] <= b && hi[z] >= a && inBand(z, a, b)) touching++;
+          if (lo[z] >= a && hi[z] <= b) zin.push(z);
+          if (lo[z] <= b && hi[z] >= a && inBand(z, a, b)) ztouch.push(z);
         }
-        let changed = false;
-        if (inside === k) for (let i = 0; i < N; i++) if (cand[i]) {
+        let changed = false; const t = steps.length;
+        if (zin.length === k) for (let i = 0; i < N; i++) if (cand[i]) {
           const l = lineOf(i, byRow), z = g[i];
-          if (l >= a && l <= b && !(lo[z] >= a && hi[z] <= b)) { cand[i] = 0; changed = true; }
+          if (l >= a && l <= b && !(lo[z] >= a && hi[z] <= b)) { cut(i, t); changed = true; }
         }
-        if (changed) { last = { rule: "inside", byRow: byRow, a: a, b: b, k: k }; return true; }
-        if (touching === k) for (let i = 0; i < N; i++) if (cand[i]) {
+        if (changed) { last = { rule: "inside", byRow: byRow, a: a, b: b, k: k, zs: zin }; steps.push(last); return true; }
+        if (ztouch.length === k) for (let i = 0; i < N; i++) if (cand[i]) {
           const l = lineOf(i, byRow), z = g[i];
-          if ((l < a || l > b) && lo[z] <= b && hi[z] >= a && inBand(z, a, b)) { cand[i] = 0; changed = true; }
+          if ((l < a || l > b) && lo[z] <= b && hi[z] >= a && inBand(z, a, b)) { cut(i, t); changed = true; }
         }
-        if (changed) { last = { rule: "touch", byRow: byRow, a: a, b: b, k: k }; return true; }
+        if (changed) { last = { rule: "touch", byRow: byRow, a: a, b: b, k: k, zs: ztouch }; steps.push(last); return true; }
       }
       return false;
     }
@@ -755,37 +769,38 @@
         for (let j = 0; j < N; j++) if (g[j] === z) cd[j] = 0;
         for (const j of around(n, i)) cd[j] = 0;
         const k = counts(cd);
-        let dead = false;
-        for (let u = 0; u < n && !dead; u++) {
-          if (!rowDone[u] && u !== r && k.rc[u] === 0) dead = true;
-          if (!colDone[u] && u !== c && k.cc[u] === 0) dead = true;
-          if (!regDone[u] && u !== z && k.zc[u] === 0) dead = true;
+        let kill = null;
+        for (let u = 0; u < n && !kill; u++) {
+          if (!rowDone[u] && u !== r && k.rc[u] === 0) kill = { unit: "row", at: u };
+          else if (!colDone[u] && u !== c && k.cc[u] === 0) kill = { unit: "col", at: u };
+          else if (!regDone[u] && u !== z && k.zc[u] === 0) kill = { unit: "zone", at: u };
         }
-        if (!dead && CL) for (const [, v, nb] of CL) {
+        if (!kill && CL) for (const [q, v, nb] of CL) {
           let h = 0, f = 0;
           for (const j of nb) { if (catAt[j] || j === i) h++; else if (cd[j]) f++; }
-          if (h > v || h + f < v) { dead = true; break; }
+          if (h > v || h + f < v) { kill = { unit: "clue", at: q }; break; }
         }
-        if (dead) { cand[i] = 0; last = { rule: "look" }; return true; }
+        if (kill) { cut(i, steps.length); last = { rule: "look", cell: i, kill: kill }; steps.push(last); return true; }
       }
       return false;
     }
     const alone = z => { let s = 0; for (let i = 0; i < N; i++) if (g[i] === z) s++; return s === 1; };
+    const done = (i, unit, at, x) => hintResult(n, g, i, unit, at, cand, why, catAt, steps, Object.assign({ rule: last, cats: have.length }, x));
     for (let guard = 0; guard < 600; guard++) {
       const { rc, cc, zc } = counts(cand);
       for (let u = 0; u < n; u++) if ((!rowDone[u] && rc[u] === 0) || (!colDone[u] && cc[u] === 0) || (!regDone[u] && zc[u] === 0)) return null;
       // une seule case possible : d'abord dans une zone (c'est le plus parlant), puis dans une ligne, puis dans une colonne
-      for (let i = 0; i < N; i++) if (cand[i] && zc[g[i]] === 1) return { i: i, unit: "zone", at: g[i], rule: last, cats: have.length, alone: alone(g[i]) };
-      for (let i = 0; i < N; i++) if (cand[i] && rc[(i / n) | 0] === 1) return { i: i, unit: "row", at: (i / n) | 0, rule: last, cats: have.length };
-      for (let i = 0; i < N; i++) if (cand[i] && cc[i % n] === 1) return { i: i, unit: "col", at: i % n, rule: last, cats: have.length };
+      for (let i = 0; i < N; i++) if (cand[i] && zc[g[i]] === 1) return done(i, "zone", g[i], { alone: alone(g[i]) });
+      for (let i = 0; i < N; i++) if (cand[i] && rc[(i / n) | 0] === 1) return done(i, "row", (i / n) | 0);
+      for (let i = 0; i < N; i++) if (cand[i] && cc[i % n] === 1) return done(i, "col", i % n);
       let step = false;
       if (CL) for (const [q, v, nb] of CL) {
         let h = 0, f = 0;
         for (const j of nb) { if (catAt[j]) h++; else if (cand[j]) f++; }
         if (h > v || h + f < v) return null;
         if (!f) continue;
-        if (h === v) { for (const j of nb) cand[j] = 0; last = { rule: "clue", at: q, v: v }; step = true; break; }
-        if (h + f === v) for (const j of nb) if (cand[j]) return { i: j, unit: "clue", at: q, v: v, rule: last, cats: have.length };
+        if (h === v) { const t = steps.length; for (const j of nb) cut(j, t); last = { rule: "clue", at: q, v: v }; steps.push(last); step = true; break; }
+        if (h + f === v) for (const j of nb) if (cand[j]) return done(j, "clue", q, { v: v });
       }
       if (step) continue;
       if (confine(true) || confine(false)) continue;
@@ -800,22 +815,25 @@
     for (let u = 0; u < 3 * n; u++) units.push([]);
     for (let i = 0; i < N; i++) { units[(i / n) | 0].push(i); units[n + i % n].push(i); if (g[i] >= 0) units[2 * n + g[i]].push(i); }
     const unitsOf = i => [(i / n) | 0, n + i % n, 2 * n + g[i]];
-    const cand = new Uint8Array(N).fill(1), got = new Int8Array(3 * n);
+    const cand = new Uint8Array(N).fill(1), got = new Int8Array(3 * n), why = new Int16Array(N).fill(-2), steps = [], catAt = new Uint8Array(N);
     for (let i = 0; i < N; i++) if (g[i] < 0) cand[i] = 0;
     let last = null;
-    function put(cd, gt, i) {
-      cd[i] = 0;
-      for (const j of around(n, i)) cd[j] = 0;
-      for (const u of unitsOf(i)) { gt[u]++; if (gt[u] >= K) for (const j of units[u]) cd[j] = 0; }
+    function put(cd, gt, i, mark) {
+      const k = j => { if (mark && cd[j]) why[j] = -1; cd[j] = 0; };
+      k(i);
+      for (const j of around(n, i)) k(j);
+      for (const u of unitsOf(i)) { gt[u]++; if (gt[u] >= K) for (const j of units[u]) k(j); }
     }
-    have.forEach(i => put(cand, got, i));
+    have.forEach(i => { catAt[i] = 1; put(cand, got, i, true); });
+    const cut = (j, t) => { if (cand[j]) { cand[j] = 0; why[j] = t; } };
     function room(cd, u) {
       let k = 0, lastp = -9;
       if (u < 2 * n) { for (let p = 0; p < n; p++) { const i = units[u][p]; if (cd[i] && p - lastp > 1) { k++; lastp = p; } } return k; }
       for (const i of units[u]) if (cd[i]) k++;
       return k;
     }
-    function dead(cd, gt) { for (let u = 0; u < 3 * n; u++) if (gt[u] < K && room(cd, u) < K - gt[u]) return true; return false; }
+    function deadU(cd, gt) { for (let u = 0; u < 3 * n; u++) if (gt[u] < K && room(cd, u) < K - gt[u]) return u; return -1; }
+    const dead = (cd, gt) => deadU(cd, gt) >= 0;
     function confine(byRow) {
       const line = i => byRow ? (i / n) | 0 : i % n, lu = byRow ? 0 : n;
       const lo = new Int8Array(n).fill(127), hi = new Int8Array(n).fill(-1);
@@ -830,11 +848,11 @@
           let any = false; for (const i of units[2 * n + z]) if (cand[i] && line(i) >= a && line(i) <= b) { any = true; break; }
           if (any) { touch[z] = 1; T += need; zt++; }
         }
-        let changed = false;
-        if (I === B) for (let i = 0; i < N; i++) if (cand[i] && line(i) >= a && line(i) <= b && !inside[g[i]]) { cand[i] = 0; changed = true; }
-        if (changed) { last = { rule: "inside", byRow: byRow, a: a, b: b, k: zi }; return true; }
-        if (T === B) for (let i = 0; i < N; i++) if (cand[i] && touch[g[i]] && (line(i) < a || line(i) > b)) { cand[i] = 0; changed = true; }
-        if (changed) { last = { rule: "touch", byRow: byRow, a: a, b: b, k: zt }; return true; }
+        let changed = false; const t = steps.length, zl = f => { const o = []; for (let z = 0; z < n; z++) if (f[z]) o.push(z); return o; };
+        if (I === B) for (let i = 0; i < N; i++) if (cand[i] && line(i) >= a && line(i) <= b && !inside[g[i]]) { cut(i, t); changed = true; }
+        if (changed) { last = { rule: "inside", byRow: byRow, a: a, b: b, k: zi, zs: zl(inside) }; steps.push(last); return true; }
+        if (T === B) for (let i = 0; i < N; i++) if (cand[i] && touch[g[i]] && (line(i) < a || line(i) > b)) { cut(i, t); changed = true; }
+        if (changed) { last = { rule: "touch", byRow: byRow, a: a, b: b, k: zt, zs: zl(touch) }; steps.push(last); return true; }
       }
       return false;
     }
@@ -842,7 +860,8 @@
       for (let i = 0; i < N; i++) {
         if (!cand[i]) continue;
         const cd = cand.slice(), gt = got.slice(); put(cd, gt, i);
-        if (dead(cd, gt)) { cand[i] = 0; last = { rule: "look" }; return true; }
+        const u = deadU(cd, gt);
+        if (u >= 0) { cut(i, steps.length); last = { rule: "look", cell: i, kill: { unit: u >= 2 * n ? "zone" : u >= n ? "col" : "row", at: u >= 2 * n ? u - 2 * n : u % n } }; steps.push(last); return true; }
       }
       return false;
     }
@@ -854,7 +873,7 @@
       for (const u of order) {
         const need = K - got[u]; if (need <= 0) continue;
         const c = units[u].filter(i => cand[i]);
-        if (c.length === need) return { i: c[0], unit: u >= 2 * n ? "zone" : u >= n ? "col" : "row", at: u >= 2 * n ? u - 2 * n : u % n, need: need, rule: last, cats: have.length };
+        if (c.length === need) return hintResult(n, g, c[0], u >= 2 * n ? "zone" : u >= n ? "col" : "row", u >= 2 * n ? u - 2 * n : u % n, cand, why, catAt, steps, { need: need, rule: last, cats: have.length });
       }
       if (confine(true) || confine(false)) continue;
       if (lookahead()) continue;
