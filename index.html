@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=40073e303a">
+<link rel="stylesheet" href="style.css?v=51b4c8e9f2">
 </head>
 <body>
 
@@ -84,6 +84,7 @@
   <symbol id="i-pot" viewBox="0 0 24 24"><path d="M12 13c-3-1-5.5-3.8-5-7.5 2.6.3 4.4 2.2 5 4.6.6-2.4 2.4-4.3 5-4.6.5 3.7-2 6.5-5 7.5z" fill="#6FA14A"/><path d="M12 12.5c-.4-2.8.2-6 2.3-8.5 1 2.6.6 5.8-2.3 8.5z" fill="#86B95A"/><path d="M6 13h12l-1.5 8.2a1.2 1.2 0 0 1-1.2 1H8.7a1.2 1.2 0 0 1-1.2-1z" fill="#C9744A"/><rect x="5.2" y="12" width="13.6" height="3" rx="1" fill="#B5603A"/></symbol>
   <symbol id="i-yarn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="#E58FA8"/><g fill="none" stroke="#C0607E" stroke-width="1.3" stroke-linecap="round"><path d="M4.5 8.5c4 0 9 3 11.5 10"/><path d="M3.2 13c3.5-.3 7.5 1.8 9.5 7.3"/><path d="M8 3.5c3.5 2 7.5 6.5 8 13"/><path d="M14.5 2.8c1.8 2.6 3.6 7 3 12.5"/><path d="M20 17c1.5 1 2.5 2.6 2.2 4.5"/></g></symbol>
   <!-- Salle de jeux : ticket, manette, et les six friandises du jeu Friandises (formes et couleurs toutes différentes) -->
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="10" cy="11" r="4.6" fill="#F2B33D"/><g stroke="#F2B33D" stroke-width="2" stroke-linecap="round"><path d="M10 2.6v2M10 17.4v2M1.6 11h2M3.9 4.9l1.4 1.4M3.9 17.1l1.4-1.4M16.1 4.9l-1.4 1.4"/></g><path d="M22.4 15.6a6 6 0 1 1-6.9-7.5 4.8 4.8 0 0 0 6.9 7.5z" fill="#5B6BB5"/></symbol>
   <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3 6.5h18v3.2a2.3 2.3 0 0 0 0 4.6v3.2H3v-3.2a2.3 2.3 0 0 0 0-4.6z" fill="#F2B33D"/><path d="M15 6.5v11" stroke="#fff" stroke-width="1.4" stroke-dasharray="1.6 1.4"/><path d="M8.6 9.6l.9 1.8 2 .3-1.5 1.4.4 2-1.8-1-1.8 1 .4-2-1.5-1.4 2-.3z" fill="#fff"/></symbol>
   <symbol id="i-games" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><path d="M7 7.5h10a4.5 4.5 0 0 1 4.4 5.4l-.8 4a2.6 2.6 0 0 1-4.5 1.2L14.6 16H9.4l-1.5 2.1a2.6 2.6 0 0 1-4.5-1.2l-.8-4A4.5 4.5 0 0 1 7 7.5z"/><path d="M8 10.5v3M6.5 12h3"/></g><circle cx="15.6" cy="11" r="1.1" fill="currentColor"/><circle cx="17.6" cy="13" r="1.1" fill="currentColor"/></symbol>
   <symbol id="t-croquette" viewBox="0 0 40 40"><path d="M20 3.5 L35.5 20 L20 36.5 L4.5 20 Z" fill="#B9743A" stroke="#7E4A1E" stroke-width="2" stroke-linejoin="round"/><path d="M20 9 L30 20" stroke="#E2A86E" stroke-width="2.6" stroke-linecap="round"/><circle cx="16" cy="21" r="2.2" fill="#7E4A1E"/><circle cx="23" cy="25" r="2.2" fill="#7E4A1E"/><circle cx="21" cy="17" r="1.6" fill="#7E4A1E"/></symbol>
@@ -135,10 +136,13 @@
           <canvas id="farlayers" hidden></canvas>
           <div id="chunks"></div>
           <svg id="world-svg" viewBox="0 4916 2730 1536" aria-hidden="true"><g id="objects"></g></svg>
+          <div id="amb-tint" hidden></div>
           <div id="markers"></div>
         </div>
         <canvas id="snow" hidden aria-hidden="true"></canvas>
+        <canvas id="amb-fx" hidden aria-hidden="true"></canvas>
         <button class="advbtn" id="btn-advent" type="button" hidden aria-label="Calendrier de l'Avent"><svg class="ico"><use href="#i-gift"/></svg><span id="advent-sub">Avent</span></button>
+        <button class="advbtn ambbtn" id="btn-amb" type="button" aria-label="Ambiances du domaine"><svg class="ico"><use href="#i-sun"/></svg><span>Ambiance</span></button>
         <button class="btn ghost small mapbtn" id="btn-styles" type="button" hidden>Changer un style</button>
         <p class="maphint" id="room-hint"></p>
       </div>
@@ -200,16 +204,16 @@
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </div>
 
-<script src="assets/tiles.js?v=40073e303a"></script>
-<script src="assets/patches.js?v=40073e303a"></script>
-<script src="assets/lo.js?v=40073e303a"></script>
-<script src="assets/cats.js?v=40073e303a"></script>
-<script src="assets/nav.js?v=40073e303a"></script>
-<script src="assets/walls.js?v=40073e303a"></script>
-<script src="assets/haies.js?v=40073e303a"></script>
-<script src="assets/cards.js?v=40073e303a"></script>
-<script src="gen.js?v=40073e303a"></script>
-<script src="jeux.js?v=40073e303a"></script>
-<script src="app.js?v=40073e303a"></script>
+<script src="assets/tiles.js?v=51b4c8e9f2"></script>
+<script src="assets/patches.js?v=51b4c8e9f2"></script>
+<script src="assets/lo.js?v=51b4c8e9f2"></script>
+<script src="assets/cats.js?v=51b4c8e9f2"></script>
+<script src="assets/nav.js?v=51b4c8e9f2"></script>
+<script src="assets/walls.js?v=51b4c8e9f2"></script>
+<script src="assets/haies.js?v=51b4c8e9f2"></script>
+<script src="assets/cards.js?v=51b4c8e9f2"></script>
+<script src="gen.js?v=51b4c8e9f2"></script>
+<script src="jeux.js?v=51b4c8e9f2"></script>
+<script src="app.js?v=51b4c8e9f2"></script>
 </body>
 </html>

@@ -1130,7 +1130,7 @@
     if (name === "shop") renderShop();
     if (name === "cards") renderCards();
     if (name === "games") RonronJeux.renderHub();
-    renderAdventBtn(); startSnow(); updateCardBadge();
+    renderAdventBtn(); startSnow(); startAmbFx(); ambSound(); updateCardBadge();
   }
 
   let sheetClose = null, sheetSticky = false;
@@ -1191,6 +1191,7 @@
         audioApply();
       } else if (AC.state !== "running" && !document.hidden) AC.resume();
     } catch (e) { AC = null; }
+    if (!rainSrc) setTimeout(() => { try { ambSound(); } catch (e) { /* sans importance */ } }, 120);   // la pluie d'une ambiance, une fois le son permis
   }
   ["pointerdown", "touchend", "keydown"].forEach(ev => document.addEventListener(ev, audioWake, true));
   document.addEventListener("visibilitychange", () => {
@@ -2956,7 +2957,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.42." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.43." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -3251,7 +3252,7 @@
     return S.advent;
   }
   const decoShown = d => adventDay() >= 1 && !!(S.advent && S.advent.deco && S.advent.deco[d.id]) && S.advent.year === advent().year;
-  const snowOn = () => adventDay() >= 1 && !!(S.advent && S.advent.open && S.advent.open[1]) && !S.snowOff;
+  const snowOn = () => adventDay() >= 1 && !!(S.advent && S.advent.open && S.advent.open[1]) && !S.snowOff && !(S.amb && S.amb.on) && !ambPreview;
   const adventWaiting = () => { const day = adventDay(); if (day < 1) return 0; const A = advent(); let n = 0; for (let k = 1; k <= Math.min(24, day); k++) if (!A.open[k]) n++; return n; };
   function adventText(r) {
     const parts = [];
@@ -3344,6 +3345,272 @@
   }
   document.addEventListener("visibilitychange", startSnow);
 
+
+  /* ================= Ambiances du domaine ================= */
+  // Achetées en croquettes, puis mises ou enlevées quand on veut. Une teinte posée sur tout le domaine (sous les bulles des chantiers),
+  // un léger voile à l'écran, et des effets animés dessinés à l'écran (pétales, pluie, lucioles…). Rien à dessiner : tout est calculé.
+  const AMBS = [
+    { id: "matin", name: "Matin doré", price: 150, desc: "Lumière chaude, rayons de soleil et poussières dorées.", tint: "rgba(255,196,110,0.17)", veil: "linear-gradient(135deg, rgba(255,226,160,0.22), transparent 55%)", fx: "rays" },
+    { id: "brume", name: "Brume du matin", price: 150, desc: "Des nappes de brume qui glissent lentement.", tint: "rgba(226,234,242,0.28)", veil: "", fx: "fog" },
+    { id: "printemps", name: "Printemps en fleurs", price: 200, desc: "Tons frais et pétales de cerisier qui tourbillonnent.", tint: "rgba(255,212,232,0.14)", veil: "", fx: "petals" },
+    { id: "ete", name: "Plein été", price: 200, desc: "Couleurs chaudes et papillons au-dessus des jardins.", tint: "rgba(255,206,80,0.13)", veil: "radial-gradient(ellipse at 50% 30%, rgba(255,240,180,0.16), transparent 70%)", fx: "butterflies" },
+    { id: "couchant", name: "Coucher de soleil", price: 200, desc: "Orange et rose, et des oiseaux qui passent au loin.", tint: "rgba(244,120,84,0.24)", veil: "linear-gradient(180deg, rgba(255,170,90,0.26), rgba(220,90,120,0.12) 50%, rgba(90,40,110,0.22))", fx: "birds" },
+    { id: "automne", name: "Automne", price: 200, desc: "Roux et doré, et des feuilles qui tombent.", tint: "rgba(222,118,36,0.18)", veil: "", fx: "leaves" },
+    { id: "pluie", name: "Pluie douce", price: 150, desc: "Fines gouttes et bruit de la pluie (si le son est mis).", tint: "rgba(84,102,124,0.27)", veil: "", fx: "rain" },
+    { id: "orage", name: "Orage", price: 300, desc: "Grosse pluie, éclairs et tonnerre.", tint: "rgba(32,40,64,0.45)", veil: "radial-gradient(ellipse at center, transparent 45%, rgba(10,14,30,0.35))", fx: "storm" },
+    { id: "neige", name: "Neige", price: 250, desc: "Tons bleutés et gros flocons qui tombent doucement.", tint: "rgba(205,226,252,0.24)", veil: "", fx: "snow" },
+    { id: "nuit", name: "Nuit étoilée", price: 250, desc: "La pénombre bleue et des lucioles dans les jardins.", tint: "rgba(12,20,62,0.54)", veil: "radial-gradient(ellipse at center, transparent 50%, rgba(4,8,30,0.4))", fx: "fireflies" },
+    { id: "fete", name: "Nuit de fête", price: 350, desc: "Lanternes qui s'envolent et feux d'artifice.", tint: "rgba(26,16,62,0.48)", veil: "radial-gradient(ellipse at center, transparent 50%, rgba(10,4,30,0.36))", fx: "party" }
+  ];
+  const AMB = {}; AMBS.forEach(a => { AMB[a.id] = a; });
+  const ambState = () => { S.amb = S.amb || { have: {}, on: null }; return S.amb; };
+  let ambPreview = null, ambPreviewTimer = 0;
+  const ambCur = () => AMB[ambPreview || ambState().on] || null;
+  function applyAmb() {
+    const a = ambCur(), tint = $("#amb-tint"), cv = $("#amb-fx");
+    if (!tint || !cv) return;
+    tint.hidden = !a; tint.style.background = a ? a.tint : "";
+    cv.style.background = a && a.veil ? a.veil : "";
+    startSnow(); startAmbFx(); ambSound();
+    const b = $("#btn-amb"); if (b) b.classList.toggle("on", !!a);
+  }
+  // Effets animés (à l'écran, 30 images par seconde, seulement sur la maison et si l'appareil n'a pas demandé moins d'animations)
+  let ambRaf = 0, ambLast = 0, ambFx = null, ambSprites = {};
+  function glowSprite(key, r, inner, outer) {
+    if (ambSprites[key]) return ambSprites[key];
+    const c = document.createElement("canvas"); c.width = c.height = r * 2;
+    const g = c.getContext("2d"), grd = g.createRadialGradient(r, r, 0, r, r, r);
+    grd.addColorStop(0, inner); grd.addColorStop(0.35, outer); grd.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = grd; g.fillRect(0, 0, r * 2, r * 2);
+    return (ambSprites[key] = c);
+  }
+  const R = (a, b) => a + Math.random() * (b - a);
+  function ambInit(kind, w, h) {
+    const f = { kind: kind, w: w, h: h, t: 0, p: [], next: 0, flash: 0, bursts: [] };
+    const n = { rays: 46, fog: 8, petals: 52, butterflies: 12, birds: 0, leaves: 40, rain: 150, storm: 230, snow: 140, fireflies: 36, party: 13 }[kind] || 0;
+    for (let i = 0; i < n; i++) f.p.push(ambNew(kind, w, h, true));
+    f.next = kind === "birds" ? R(1, 4) : kind === "storm" ? R(3, 7) : kind === "party" ? R(1, 3) : 0;
+    return f;
+  }
+  function ambNew(kind, w, h, anywhere) {
+    const y0 = anywhere ? R(0, h) : -20;
+    if (kind === "rays") return { x: R(0, w), y: R(0, h), r: R(0.8, 2.2), vy: R(-8, -3), ph: R(0, 6.3) };
+    if (kind === "fog") return { x: R(-0.3, 1.1) * w, y: R(0, 1) * h, r: R(0.32, 0.6) * Math.max(w, h), vx: R(6, 16) * (Math.random() < 0.5 ? -1 : 1), a: R(0.14, 0.26) };
+    if (kind === "petals") return { x: R(0, w), y: y0, s: R(3.5, 6.5), vy: R(26, 52), ph: R(0, 6.3), rot: R(0, 6.3), vr: R(-2, 2), c: ["#F9C9DA", "#F4A6C1", "#FFE3EC", "#F7B8CF"][Math.floor(R(0, 4))] };
+    if (kind === "butterflies") return { x: R(0, w), y: R(0, h), a: R(0, 6.3), v: R(26, 46), ph: R(0, 6.3), c: ["#F7D04A", "#9CCBF5", "#FFFFFF", "#F59A4A", "#E7A6E0"][Math.floor(R(0, 5))], s: R(7, 11) };
+    if (kind === "leaves") return { x: R(0, w), y: y0, s: R(7, 12), vy: R(24, 44), ph: R(0, 6.3), rot: R(0, 6.3), vr: R(-1.6, 1.6), c: ["#D9622B", "#E8A33A", "#B8432A", "#F2C14E", "#A8552A"][Math.floor(R(0, 5))] };
+    if (kind === "rain" || kind === "storm") { const big = kind === "storm"; return { x: R(-0.1, 1.1) * w, y: anywhere ? R(0, h) : R(-40, -5), l: R(10, 18) * (big ? 1.3 : 1), v: R(520, 720) * (big ? 1.25 : 1) }; }
+    if (kind === "snow") return { x: R(0, w), y: y0, r: R(1.4, 3.6), v: R(16, 34), ph: R(0, 6.3) };
+    if (kind === "fireflies") return { x: R(0, w), y: R(0, h), a: R(0, 6.3), v: R(6, 16), ph: R(0, 6.3), sp: R(0.8, 1.8) };
+    if (kind === "party") return { x: R(0, w), y: anywhere ? R(0, h) : h + 20, v: R(14, 26), ph: R(0, 6.3), s: R(1.1, 1.6) };
+    return {};
+  }
+  function startAmbFx() {
+    const cv = $("#amb-fx"); if (!cv) return;
+    const a = ambCur(), on = !!a && view === "home" && !document.hidden;
+    cv.hidden = !a;
+    if (!on || reducedMotion) { if (ambRaf) cancelAnimationFrame(ambRaf); ambRaf = 0; const g = cv.getContext("2d"); g.clearRect(0, 0, cv.width, cv.height); return; }
+    if (ambFx && ambFx.kind !== a.fx) ambFx = null;
+    if (ambRaf) return;
+    ambLast = 0;
+    const tick = t => {
+      ambRaf = requestAnimationFrame(tick);
+      if (t - ambLast < 33) return;
+      const dt = Math.min(0.1, (t - (ambLast || t)) / 1000); ambLast = t;
+      const w = cv.clientWidth, h = cv.clientHeight, dpr = Math.min(2, window.devicePixelRatio || 1);
+      if (!w || !h) return;
+      if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+      const cur = ambCur(); if (!cur) return;
+      if (!ambFx || ambFx.kind !== cur.fx || Math.abs(ambFx.w - w) > 40 || Math.abs(ambFx.h - h) > 40) ambFx = ambInit(cur.fx, w, h);
+      const g = cv.getContext("2d");
+      g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+      ambDraw(g, ambFx, dt, w, h);
+    };
+    ambRaf = requestAnimationFrame(tick);
+  }
+  function ambDraw(g, f, dt, w, h) {
+    f.t += dt;
+    const k = f.kind, P = f.p;
+    if (k === "rays") {
+      g.save(); g.globalCompositeOperation = "lighter";
+      for (let i = 0; i < 5; i++) {                       // rayons en biais depuis le coin haut gauche
+        const a = 0.09 + 0.05 * Math.sin(f.t * 0.4 + i * 1.7), x = -w * 0.2 + i * w * 0.26;
+        const grd = g.createLinearGradient(x, 0, x + h * 0.6, h);
+        grd.addColorStop(0, "rgba(255,226,150," + a.toFixed(3) + ")"); grd.addColorStop(1, "rgba(255,226,150,0)");
+        g.fillStyle = grd; g.beginPath(); g.moveTo(x, -10); g.lineTo(x + w * 0.09, -10); g.lineTo(x + w * 0.09 + h * 0.75, h + 10); g.lineTo(x + h * 0.6, h + 10); g.closePath(); g.fill();
+      }
+      const dot = glowSprite("dust", 8, "rgba(255,240,190,0.95)", "rgba(255,214,120,0.35)");
+      P.forEach(p => {
+        p.y += p.vy * dt; p.ph += dt; p.x += Math.sin(p.ph * 0.7) * 6 * dt;
+        if (p.y < -10) { p.y = h + 10; p.x = R(0, w); }
+        g.globalAlpha = 0.35 + 0.35 * Math.sin(p.ph * 1.3); g.drawImage(dot, p.x - p.r * 3, p.y - p.r * 3, p.r * 6, p.r * 6);
+      });
+      g.restore(); g.globalAlpha = 1;
+    } else if (k === "fog") {
+      P.forEach(p => {
+        p.x += p.vx * dt;
+        if (p.x - p.r > w) p.x = -p.r; else if (p.x + p.r < 0) p.x = w + p.r;
+        const grd = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+        grd.addColorStop(0, "rgba(245,248,252," + p.a + ")"); grd.addColorStop(1, "rgba(245,248,252,0)");
+        g.fillStyle = grd; g.fillRect(p.x - p.r, p.y - p.r, p.r * 2, p.r * 2);
+      });
+    } else if (k === "petals" || k === "leaves") {
+      P.forEach((p, i) => {
+        p.y += p.vy * dt; p.ph += dt; p.rot += p.vr * dt; p.x += Math.sin(p.ph * 1.1) * (k === "petals" ? 26 : 20) * dt + (k === "leaves" ? 8 * dt : 4 * dt);
+        if (p.y > h + 12 || p.x > w + 20) P[i] = Object.assign(ambNew(k, w, h, false), { x: R(-20, w) });
+        g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.scale(1, 0.35 + 0.65 * Math.abs(Math.sin(p.ph * 2.2)));
+        g.fillStyle = p.c; g.beginPath();
+        if (k === "petals") g.ellipse(0, 0, p.s, p.s * 0.62, 0, 0, Math.PI * 2);
+        else { g.moveTo(-p.s, 0); g.quadraticCurveTo(0, -p.s * 0.8, p.s, 0); g.quadraticCurveTo(0, p.s * 0.8, -p.s, 0); }
+        g.fill();
+        if (k === "leaves") { g.strokeStyle = "rgba(90,40,20,0.45)"; g.lineWidth = 0.8; g.beginPath(); g.moveTo(-p.s, 0); g.lineTo(p.s, 0); g.stroke(); }
+        g.restore();
+      });
+    } else if (k === "butterflies") {
+      P.forEach(p => {
+        p.ph += dt; p.a += Math.sin(p.ph * 0.9) * 1.2 * dt;
+        p.x += Math.cos(p.a) * p.v * dt; p.y += Math.sin(p.a) * p.v * dt + Math.sin(p.ph * 6) * 10 * dt;
+        if (p.x < -20) p.x = w + 20; else if (p.x > w + 20) p.x = -20;
+        if (p.y < -20) p.y = h + 20; else if (p.y > h + 20) p.y = -20;
+        const flap = 0.25 + 0.75 * Math.abs(Math.sin(p.ph * 11));
+        g.save(); g.translate(p.x, p.y); g.rotate(p.a + Math.PI / 2);
+        g.fillStyle = p.c; g.strokeStyle = "rgba(60,40,30,0.55)"; g.lineWidth = 0.7;
+        [-1, 1].forEach(sd => { g.save(); g.scale(sd * flap, 1); g.beginPath(); g.ellipse(p.s * 0.55, -p.s * 0.25, p.s * 0.6, p.s * 0.45, -0.4, 0, Math.PI * 2); g.ellipse(p.s * 0.45, p.s * 0.45, p.s * 0.42, p.s * 0.32, 0.4, 0, Math.PI * 2); g.fill(); g.stroke(); g.restore(); });
+        g.fillStyle = "#4A3A2E"; g.fillRect(-0.8, -p.s * 0.6, 1.6, p.s * 1.2);
+        g.restore();
+      });
+    } else if (k === "birds") {
+      f.next -= dt;
+      if (f.next <= 0) {                                  // un vol d'oiseaux traverse l'écran
+        const dir = Math.random() < 0.5 ? 1 : -1, y = R(0.1, 0.55) * h, n = Math.floor(R(3, 7)), v = R(40, 70);
+        for (let i = 0; i < n; i++) P.push({ x: dir > 0 ? -30 - i * R(14, 26) : w + 30 + i * R(14, 26), y: y + R(-24, 24), v: v * dir, ph: R(0, 6.3), s: R(5, 8) });
+        f.next = R(5, 11);
+      }
+      g.strokeStyle = "rgba(70,32,56,0.7)"; g.lineWidth = 1.6; g.lineCap = "round";
+      for (let i = P.length - 1; i >= 0; i--) {
+        const p = P[i]; p.x += p.v * dt; p.ph += dt * 9; p.y += Math.sin(p.ph * 0.2) * 4 * dt;
+        if ((p.v > 0 && p.x > w + 40) || (p.v < 0 && p.x < -40)) { P.splice(i, 1); continue; }
+        const fl = Math.sin(p.ph) * p.s * 0.5;
+        g.beginPath(); g.moveTo(p.x - p.s, p.y - fl); g.quadraticCurveTo(p.x - p.s * 0.4, p.y - fl * 0.3, p.x, p.y); g.quadraticCurveTo(p.x + p.s * 0.4, p.y - fl * 0.3, p.x + p.s, p.y - fl); g.stroke();
+      }
+    } else if (k === "rain" || k === "storm") {
+      g.strokeStyle = k === "storm" ? "rgba(210,222,240,0.5)" : "rgba(220,230,245,0.42)"; g.lineWidth = k === "storm" ? 1.3 : 1;
+      const wind = k === "storm" ? 0.32 : 0.18;
+      g.beginPath();
+      P.forEach((p, i) => {
+        p.y += p.v * dt; p.x += p.v * wind * dt;
+        if (p.y > h + 20) P[i] = ambNew(k, w, h, false);
+        g.moveTo(p.x, p.y); g.lineTo(p.x - p.l * wind, p.y - p.l);
+      });
+      g.stroke();
+      if (k === "storm") {
+        f.next -= dt;
+        if (f.next <= 0) { f.flash = 1; f.flick = R(0.08, 0.16); f.next = R(5, 11); ambThunder(R(0.25, 1.2)); }
+        if (f.flash > 0) {
+          const a = f.flash > 0.7 ? 0.55 : f.flash > 0.55 ? 0.12 : f.flash * 0.6;
+          g.fillStyle = "rgba(235,240,255," + a.toFixed(3) + ")"; g.fillRect(0, 0, w, h);
+          f.flash -= dt * 2.6;
+        }
+      }
+    } else if (k === "snow") {
+      g.fillStyle = "rgba(255,255,255,0.9)";
+      P.forEach((p, i) => {
+        p.y += p.v * dt * (0.6 + p.r / 3); p.ph += dt; p.x += Math.sin(p.ph) * 14 * dt;
+        if (p.y > h + 6) P[i] = ambNew(k, w, h, false);
+        if (p.x < -6) p.x = w + 6; else if (p.x > w + 6) p.x = -6;
+        g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.283); g.fill();
+      });
+    } else if (k === "fireflies") {
+      const spr = glowSprite("fly", 20, "rgba(250,255,190,1)", "rgba(200,240,90,0.5)");
+      g.save(); g.globalCompositeOperation = "lighter";
+      P.forEach(p => {
+        p.ph += dt * p.sp; p.a += Math.sin(p.ph * 0.7) * 0.9 * dt;
+        p.x += Math.cos(p.a) * p.v * dt; p.y += Math.sin(p.a) * p.v * dt;
+        if (p.x < -10) p.x = w + 10; else if (p.x > w + 10) p.x = -10;
+        if (p.y < -10) p.y = h + 10; else if (p.y > h + 10) p.y = -10;
+        const al = Math.max(0, Math.sin(p.ph * 1.6)); if (al < 0.02) return;
+        g.globalAlpha = al; g.drawImage(spr, p.x - 13, p.y - 13, 26, 26);
+      });
+      g.restore(); g.globalAlpha = 1;
+    } else if (k === "party") {
+      const glow = glowSprite("lantern", 22, "rgba(255,230,160,1)", "rgba(255,150,60,0.5)");
+      g.save(); g.globalCompositeOperation = "lighter";
+      P.forEach((p, i) => {
+        p.y -= p.v * dt; p.ph += dt; p.x += Math.sin(p.ph * 0.8) * 8 * dt;
+        if (p.y < -30) P[i] = ambNew(k, w, h, false);
+        g.globalAlpha = 0.75 + 0.25 * Math.sin(p.ph * 3); g.drawImage(glow, p.x - 16 * p.s, p.y - 16 * p.s, 32 * p.s, 32 * p.s);
+        g.globalAlpha = 1; g.fillStyle = "rgba(255,170,80,0.95)"; g.fillRect(p.x - 3.2 * p.s, p.y - 4.5 * p.s, 6.4 * p.s, 8 * p.s);
+      });
+      f.next -= dt;
+      if (f.next <= 0) {                                  // un feu d'artifice
+        const x = R(0.15, 0.85) * w, y = R(0.12, 0.5) * h, hue = Math.floor(R(0, 360)), n = 42, parts = [];
+        for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2 + R(-0.05, 0.05), v = R(60, 140); parts.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v }); }
+        f.bursts.push({ t: 0, hue: hue, p: parts }); f.next = R(2.5, 5.5); ambBoom();
+      }
+      for (let b = f.bursts.length - 1; b >= 0; b--) {
+        const B = f.bursts[b]; B.t += dt;
+        if (B.t > 1.6) { f.bursts.splice(b, 1); continue; }
+        g.fillStyle = "hsla(" + B.hue + ",95%,68%," + Math.max(0, 1 - B.t / 1.6).toFixed(3) + ")";
+        B.p.forEach(q => { q.vx *= 1 - 1.2 * dt; q.vy = q.vy * (1 - 1.2 * dt) + 70 * dt; q.x += q.vx * dt; q.y += q.vy * dt; g.beginPath(); g.arc(q.x, q.y, 1.9, 0, 6.283); g.fill(); });
+      }
+      g.restore();
+    }
+  }
+  // Sons : pluie en boucle, tonnerre, feux d'artifice (avec le volume des bruitages)
+  let rainSrc = null;
+  function ambSound() {
+    const a = ambCur(), want = a && (a.fx === "rain" || a.fx === "storm") && view === "home" && !document.hidden && AC && audioPref.sfx > 0;
+    if (!want) { if (rainSrc) { try { rainSrc.src.stop(); } catch (e) { /* déjà arrêtée */ } rainSrc = null; } return; }
+    if (rainSrc && rainSrc.kind === a.fx) return;
+    if (rainSrc) { try { rainSrc.src.stop(); } catch (e) { /* déjà arrêtée */ } rainSrc = null; }
+    if (AC.state !== "running") return;
+    if (!noiseBuf) hiss({ f: 1000, d: 0.01, g: 0.0001 });           // prépare le bruit blanc
+    const src = AC.createBufferSource(), lp = AC.createBiquadFilter(), hp = AC.createBiquadFilter(), gn = AC.createGain();
+    src.buffer = noiseBuf; src.loop = true; lp.type = "lowpass"; lp.frequency.value = a.fx === "storm" ? 1600 : 2200; hp.type = "highpass"; hp.frequency.value = 350;
+    gn.gain.value = a.fx === "storm" ? 0.11 : 0.07;
+    src.connect(hp); hp.connect(lp); lp.connect(gn); gn.connect(sfxOut); src.start();
+    rainSrc = { src: src, kind: a.fx };
+  }
+  function ambThunder(delay) {
+    if (!AC || AC.state !== "running" || audioPref.sfx <= 0) return;
+    if (!noiseBuf) hiss({ f: 1000, d: 0.01, g: 0.0001 });
+    const t0 = AC.currentTime + delay, src = AC.createBufferSource(), lp = AC.createBiquadFilter(), gn = AC.createGain();
+    src.buffer = noiseBuf; src.loop = true; lp.type = "lowpass"; lp.frequency.value = 160;
+    gn.gain.setValueAtTime(0.0001, t0); gn.gain.exponentialRampToValueAtTime(0.5, t0 + 0.08); gn.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.6);
+    src.connect(lp); lp.connect(gn); gn.connect(sfxOut); src.start(t0); src.stop(t0 + 2.7);
+  }
+  function ambBoom() {
+    if (!AC || AC.state !== "running" || audioPref.sfx <= 0 || view !== "home") return;
+    hiss({ f: 260, q: 0.7, d: 0.5, g: 0.12 }); tone({ f: 120, f2: 60, d: 0.35, g: 0.08 });
+  }
+  document.addEventListener("visibilitychange", () => { startAmbFx(); ambSound(); });
+
+  // La feuille des ambiances : toutes les ambiances, à voir quelques secondes, acheter ou mettre.
+  function openAmb() {
+    const st = ambState(), on = st.on;
+    const row = a => {
+      const have = !!st.have[a.id], here = on === a.id;
+      return '<div class="amb' + (here ? " here" : "") + '"><span class="ambsw" style="--tint:' + a.tint + '"></span><div class="ambtxt"><strong>' + esc(a.name) + "</strong><small>" + esc(a.desc) + "</small></div>" +
+        (here ? '<span class="tag">En place</span>'
+          : have ? '<button class="btn small" type="button" data-on="' + a.id + '">Mettre</button>'
+          : '<div class="ambbuy"><button class="btn ghost small" type="button" data-see="' + a.id + '">Voir</button><button class="btn small" type="button" data-buy="' + a.id + '"' + (S.kibble < a.price ? " disabled" : "") + ">" + a.price + " " + ico("kibble") + "</button></div>") + "</div>";
+    };
+    openSheet('<h2>Ambiances du domaine</h2><p>Change l\'heure, la saison ou la météo sur toute la maison. Une fois achetée, une ambiance se met et s\'enlève quand tu veux.</p>' +
+      '<div class="amblist"><div class="amb' + (on ? "" : " here") + '"><span class="ambsw"></span><div class="ambtxt"><strong>Lumière du jour</strong><small>Le domaine tel qu\'il est.</small></div>' +
+      (on ? '<button class="btn small" type="button" data-on="">Mettre</button>' : '<span class="tag">En place</span>') + "</div>" + AMBS.map(row).join("") + "</div>" +
+      '<p class="hint">Tu as ' + plural(S.kibble, "croquette") + ". Ambiances achetées : " + Object.keys(st.have).length + " sur " + AMBS.length + ".</p>");
+    Array.from(document.querySelectorAll("#sheet [data-on]")).forEach(b => { b.onclick = () => { st.on = b.dataset.on || null; save(); applyAmb(); sfx("wear"); openAmb(); }; });
+    Array.from(document.querySelectorAll("#sheet [data-buy]")).forEach(b => { b.onclick = () => {
+      const a = AMB[b.dataset.buy]; if (!a || S.kibble < a.price || st.have[a.id]) return;
+      S.kibble -= a.price; st.have[a.id] = true; st.on = a.id; save(); updateHud(); sfx("buy"); buzz(20);
+      closeSheet(); applyAmb(); toast(a.name + " : c'est en place !");
+    }; });
+    Array.from(document.querySelectorAll("#sheet [data-see]")).forEach(b => { b.onclick = () => {
+      closeSheet(); clearTimeout(ambPreviewTimer); ambPreview = b.dataset.see; applyAmb(); toast("Aperçu : " + AMB[ambPreview].name);
+      ambPreviewTimer = setTimeout(() => { ambPreview = null; applyAmb(); }, 7000);
+    }; });
+  }
+
   /* ================= 10. Démarrage ================= */
 
   load();
@@ -3355,6 +3622,8 @@
     house: { scene: houseScene, bitmap: getBitmap, imgOf: imgOf, look: (breed, pose) => catLook(breed, [], pose), spriteScale: SPRITE_SCALE } });
   $("#b-quit").onclick = () => RonronJeux.quit();
   $("#btn-advent").onclick = () => openAdvent();
+  $("#btn-amb").onclick = () => { if (ambPreview) { clearTimeout(ambPreviewTimer); ambPreview = null; applyAmb(); } openAmb(); };
+  applyAmb();
   $("#tab-play").onclick = () => startLevel();
   $("#btn-settings").onclick = () => openSettings();
   $("#btn-quit").onclick = () => quitLevel();

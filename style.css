@@ -788,3 +788,19 @@ h2 {
 .dftools .ico { width: 18px; height: 18px; margin-right: 4px; }
 .gameart .gt.frame { width: 40px; height: 34px; background: #fff; border: 1px solid #E3D4C0; border-radius: 6px; overflow: hidden; }
 .gameart .gt.frame .ring { position: absolute; inset: 3px 8px; border: 2px solid #3FAE62; border-radius: 50%; }
+/* ---------- Ambiances du domaine ---------- */
+#amb-tint { position: absolute; inset: 0; pointer-events: none; }
+#amb-fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+.ambbtn { top: 62px; color: #5B6BB5; }
+.advbtn:not([hidden]) ~ .ambbtn { top: 128px; }
+.ambbtn.on { box-shadow: 0 0 0 2px #F2B33D, 0 3px 10px rgba(0, 0, 0, 0.3); }
+#app.zen .ambbtn { display: none; }
+.amblist { display: flex; flex-direction: column; gap: 8px; }
+.amb { display: grid; grid-template-columns: 54px 1fr auto; gap: 10px; align-items: center; padding: 8px; border: 1px solid var(--edge); border-radius: 14px; background: var(--card); }
+.amb.here { border-color: #F2B33D; background: #FFF8E8; }
+.ambsw { width: 54px; height: 54px; border-radius: 10px; background: linear-gradient(var(--tint, transparent), var(--tint, transparent)), url(assets/monde.webp) 18% 74% / 900% auto; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08); }
+.ambtxt strong { display: block; font-size: 0.95rem; }
+.ambtxt small { display: block; font-size: 0.78rem; line-height: 1.3; color: var(--ink-soft); }
+.ambbuy { display: flex; flex-direction: column; gap: 4px; }
+.ambbuy .btn, .amb > .btn { white-space: nowrap; }
+.ambbuy .ico { width: 16px; height: 16px; vertical-align: -3px; }
