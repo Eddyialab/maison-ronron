@@ -764,3 +764,6 @@ h2 {
   .m3p, .tmt { transition-duration: 0.05s; }
   .m3p.hint .tr, .m3p.s4 .tr, .m3p .sp.b { animation: none; }
 }
+.gboost { display: block; margin-top: 2px; font-size: 0.8rem; font-weight: 800; color: var(--good); }
+.family.boost { align-items: center; }
+.m3p.mini { position: relative; flex: none; width: 34px; height: 34px; transform: none; transition: none; --cs: 34px; }

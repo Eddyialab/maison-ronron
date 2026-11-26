@@ -347,8 +347,27 @@
       cascade(st, steps, null);
       return steps;
     }
+    // Bonus de départ (après deux essais ratés sur un niveau) : une rayée et un paquet posés sur deux friandises du milieu du plateau, écartées l'une de l'autre.
+    // La sorte des friandises ne change pas : aucun alignement n'apparaît.
+    function boost(st) {
+      const pick = (avoid) => {
+        const c = [];
+        for (let i = 0; i < N; i++) {
+          const [r, cc] = rc(i);
+          if (!piece(st, i) || st.sp[i] || r < 2 || r > 5 || cc < 1 || cc > 6) continue;
+          if (avoid >= 0) { const [r2, c2] = rc(avoid); if (Math.abs(r - r2) + Math.abs(cc - c2) < 3) continue; }
+          c.push(i);
+        }
+        if (!c.length) for (let i = 0; i < N; i++) if (piece(st, i) && !st.sp[i] && i !== avoid) c.push(i);
+        return c.length ? c[Math.floor(st.rnd() * c.length)] : -1;
+      };
+      const a = pick(-1); if (a < 0) return [];
+      st.sp[a] = st.rnd() < 0.5 ? SP_H : SP_V;
+      const b = pick(a); if (b >= 0) st.sp[b] = SP_B;
+      return b >= 0 ? [a, b] : [a];
+    }
     const won = st => st.goals.every(g => g.left <= 0);
-    return { W: W, H: H, N: N, CAT: CAT, SP_H: SP_H, SP_V: SP_V, SP_B: SP_B, SP_C: SP_C, TYPES: TYPES, config: config, make: make, play: play, activate: activate, legal: legal,
+    return { W: W, H: H, N: N, CAT: CAT, SP_H: SP_H, SP_V: SP_V, SP_B: SP_B, SP_C: SP_C, TYPES: TYPES, config: config, make: make, play: play, activate: activate, boost: boost, legal: legal,
       allMoves: allMoves, hasMove: hasMove, clone: clone, won: won, piece: piece, adjacent: adjacent };
   })();
 
@@ -488,7 +507,8 @@
       '<div class="tickets"><svg class="ico"><use href="#i-ticket"/></svg><strong>' + C.plural(n, "ticket") + '</strong>' +
       '<span>1 ticket par niveau de puzzle réussi. Une partie coûte 1 ticket ; gagnée, elle rapporte ' + C.plural(REWARD, "croquette") + ".</span></div>" +
       GAMES.map(x => '<div class="gamecard"><div class="gameart">' + x.art + '</div><div class="gameinfo"><strong>' + x.name + "</strong><p>" + x.desc +
-        '</p><span class="glevel">Niveau ' + (g[x.id] || 1) + ((g[x.id] || 1) % 10 === 0 ? " · niveau difficile, +1 boîte de thon" : "") + '</span></div>' +
+        '</p><span class="glevel">Niveau ' + (g[x.id] || 1) + ((g[x.id] || 1) % 10 === 0 ? " · niveau difficile, +1 boîte de thon" : "") + '</span>' +
+        (x.id === "m3" && (g.m3f || 0) >= 2 ? '<span class="gboost">Bonus de départ : une rayée et un paquet</span>' : "") + "</div>" +
         '<button class="btn" type="button" data-g="' + x.id + '"' + (n ? "" : " disabled") + '>Jouer · 1 <svg class="ico"><use href="#i-ticket"/></svg></button></div>').join("") +
       (n ? "" : '<p class="hint">Plus de ticket : réussis un niveau du puzzle (bouton Jouer) pour en gagner un.</p>');
     el.querySelectorAll("[data-g]").forEach(b => { b.onclick = () => start(b.dataset.g); });
@@ -511,13 +531,17 @@
     const S = C.S(); S.tickets = Math.max(0, (S.tickets || 0) - 1);
     const g = games(), lv = cur.level, tuna = win && lv % 10 === 0 ? 1 : 0;
     if (win) { S.kibble += REWARD; S.tuna += tuna; g[cur.game] = lv + 1; }
+    if (cur.game === "m3") g.m3f = win ? 0 : (g.m3f || 0) + 1;            // essais ratés sur le niveau en cours (2 et plus : bonus de départ)
+    const fails = cur.game === "m3" && !win ? g.m3f : 0;
     C.save(); C.updateHud();
     setTimeout(() => C.sfx(win ? "win" : "lose"), 200);
     setTimeout(() => {
       C.openSheet((win ? '<span class="tag">Niveau ' + lv + " réussi</span><h2>Bravo !</h2>" +
           '<div class="big">' + C.ico("kibble") + "+" + C.plural(REWARD, "croquette") + "</div>" +
           (tuna ? '<div class="big tuna">' + C.ico("tuna") + "+1 boîte de thon</div>" : "")
-        : '<span class="tag">Niveau ' + lv + "</span><h2>Perdu…</h2><p>Le ticket est parti, mais tu peux retenter ce niveau avec un autre ticket.</p>") +
+        : '<span class="tag">Niveau ' + lv + "</span><h2>Perdu…</h2><p>Le ticket est parti, mais tu peux retenter ce niveau avec un autre ticket.</p>" +
+          (fails >= 2 ? '<p class="family boost"><span class="m3p special s1 mini">' + treat(1) + '<i class="sp h"></i></span><span>Au prochain essai, <strong>une rayée et un paquet</strong> t\'attendent sur le plateau.</span></p>'
+            : fails === 1 ? "<p>Encore un essai raté sur ce niveau et tu auras un coup de pouce au départ : une rayée et un paquet.</p>" : "")) +
         "<p>Il te reste <strong>" + C.plural(S.tickets || 0, "ticket") + "</strong>.</p>" +
         '<div class="row"><button class="btn ghost" id="bj-hub" type="button">La salle de jeux</button>' +
         '<button class="btn" id="bj-again" type="button"' + ((S.tickets || 0) ? "" : " disabled") + ">" + (win ? "Niveau suivant" : "Rejouer") + "</button></div>", { sticky: true });
@@ -532,7 +556,11 @@
     C.openSheet("<h2>Abandonner la partie ?</h2><p>Le ticket de cette partie sera perdu.</p>" +
       '<div class="row"><button class="btn ghost" id="bq-stay" type="button">Continuer</button><button class="btn danger" id="bq-go" type="button">Abandonner</button></div>');
     $("#bq-stay").onclick = () => C.closeSheet();
-    $("#bq-go").onclick = () => { C.closeSheet(); const S = C.S(); S.tickets = Math.max(0, (S.tickets || 0) - 1); C.save(); C.updateHud(); cur.over = true; leave(); };
+    $("#bq-go").onclick = () => {
+      C.closeSheet(); const S = C.S(); S.tickets = Math.max(0, (S.tickets || 0) - 1);
+      if (cur.game === "m3") games().m3f = (games().m3f || 0) + 1;     // un abandon compte comme un essai raté
+      C.save(); C.updateHud(); cur.over = true; leave();
+    };
   };
   J.active = () => !!(cur && !cur.over);
   J.peek = () => ({ cur: cur, m3: m3, tm: tm });             // pour les tests
@@ -551,6 +579,7 @@
   let m3 = null, hintTimer = 0;
   function m3Start(level) {
     const cfg = M3.config(level), st = M3.make(cfg, Math.random);
+    const boosted = (games().m3f || 0) >= 2 ? M3.boost(st) : [];
     const stage = $("#b-stage"), wpx = Math.min(stage.clientWidth || 360, 420), cs = Math.floor(wpx / M3.W);
     m3 = { st: st, cfg: cfg, cs: cs, els: new Map(), busy: false, sel: -1 };
     stage.innerHTML = '<div class="m3" style="width:' + cs * M3.W + "px;height:" + cs * M3.H + "px;--cs:" + cs + 'px"><div class="m3bg"></div><div class="m3pieces"></div></div>';
@@ -564,6 +593,10 @@
     }
     bg.innerHTML = h;
     for (let i = 0; i < M3.N; i++) if (M3.piece(st, i)) addPiece(st.id[i], i, st.t[i], st.sp[i], null);
+    if (boosted.length) {
+      boosted.forEach(i => { const el = m3.els.get(st.id[i]); if (el) el.classList.add("born"); });
+      setTimeout(() => C.toast("Coup de pouce après deux essais ratés : une rayée et un paquet t'attendent."), 400);
+    }
     m3Goals(); m3Moves(); bindM3();
     const has = k => cfg.goals.some(g => g.k === k);
     $("#b-tools").innerHTML = '<p class="hint">' + (has("box") ? "Les cartons s'abîment quand on aligne juste à côté (deux fois pour ceux qui sont scotchés en croix). " : "") +
