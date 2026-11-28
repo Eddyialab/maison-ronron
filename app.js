@@ -29,7 +29,6 @@
   /* Le domaine : une carte de 5 x 5 zones qu'on parcourt au doigt. Coordonnées en pixels du monde.
      Sous les zones peintes, le plan d'ensemble agrandi sert de fond flou pour les zones pas encore faites. */
   const WORLD = { w: 11466, h: 6452 };
-  const TILES = window.RONRON_TILES || [];
   const GARDIEN = [0, 4916];                       // origine de la zone A5, la maison du gardien
   const g = p => [p[0] + GARDIEN[0], p[1] + GARDIEN[1]];
   const z2 = p => [p[0] + 2184, p[1] + 4916];
@@ -1852,25 +1851,32 @@
   }
   // On n'écrit la position de la carte qu'une fois par image, même si le doigt envoie plus d'évènements.
   // Pendant un pincement, les images ne sont rechargées qu'à petite cadence : c'est ce qui faisait saccader le zoom.
-  let camFrame = 0, viewAt = 0, viewTimer = 0, wheelAt = 0;
+  let camFrame = 0, viewAt = 0, viewTimer = 0, wheelAt = 0, lastInv = "";
   const zooming = () => fingers.size >= 2 || performance.now() - wheelAt < 250;
   function drawCam() {
     camFrame = 0;
     worldEl.style.transform = "translate(" + cam.x.toFixed(1) + "px," + cam.y.toFixed(1) + "px) scale(" + cam.s.toFixed(4) + ")";
-    markersEl.style.setProperty("--inv", (1 / cam.s).toFixed(3));
+    const inv = (1 / cam.s).toFixed(3);
+    if (inv !== lastInv) { lastInv = inv; markersEl.style.setProperty("--inv", inv); }      // seulement quand le zoom change : sinon tous les styles des bulles sont recalculés à chaque image
     clearTimeout(viewTimer);
+    farCheck();
     if (zooming() && performance.now() - viewAt < 220) viewTimer = setTimeout(updateView, 240);
     else updateView();
   }
 
   /* Peinture de la carte. Sur un téléphone, garder chaque calque décodé à l'écran faisait jusqu'à 400 Mo d'images (et le zoom les redessinait toutes) :
      le navigateur ralentissait puis fermait la page. On peint donc le domaine nous-mêmes, dans des carreaux de 1024 × 1024 pixels du monde :
-     dalles du terrain puis calques des chantiers, dans l'ordre. Seuls les carreaux autour de l'écran existent ; les images ne servent que le temps
-     de les peindre (un petit cache garde les dernières). Zoomer ou déplacer la carte ne fait que glisser des images déjà prêtes.
+     le terrain puis les calques des chantiers, dans l'ordre. Seuls les carreaux autour de l'écran existent.
+     Les images elles-mêmes sont livrées en morceaux, carreau par carreau (assets/q, meow/pack_chunks.py) : peindre un carreau ne décode que
+     son terrain (4 Mo) et quelques planches de 8 Mo au plus, une à la fois — et plus des calques entiers de 29 Mo, 800 Mo d'un coup en zoomant.
+     Zoomer ou déplacer la carte ne fait que glisser des images déjà prêtes.
      En vue éloignée : une seule toile au quart (le domaine et tous les calques), qui reste aussi dessous en attendant les carreaux. */
   const chunkEl = $("#chunks"), farEl = $("#farlayers"), planEl = worldEl.querySelector(".plan"), LO = window.RONRON_LO || null;
   const FAR = 0.26, CH = 1024, NI = Math.ceil(WORLD.w / CH), NJ = Math.ceil(WORLD.h / CH);
   const DPR = Math.min(3, window.devicePixelRatio || 1);
+  const PC = window.RONRON_PIECES || { m: {} }, pieceIdx = {}, sheetN = {};     // carreau -> { calque@x,y : [carreau, planche, sx, sy, largeur, hauteur, dx, dy] }
+  Object.keys(PC.m).forEach(k => { const full = "assets/p/" + k.replace("@", ".webp@"); PC.m[k].forEach(a => { (pieceIdx[a[0]] = pieceIdx[a[0]] || {})[full] = a; sheetN[a[0]] = Math.max(sheetN[a[0]] || 0, a[1] + 1); }); });
+  const sheetSrc = (id, n) => "assets/q/" + id + "-" + n + ".webp", terrSrc = id => "assets/q/t" + (id % NI) + "-" + ((id - id % NI) / NI) + ".webp";
   // Safari (tous les navigateurs d'iPhone) : createImageBitmap y est fragile (dalles du terrain dessinées vides) et chaque image repasse par la
   // mémoire graphique : on y décode des images classiques, et on garde moins de choses en mémoire.
   const WEBKIT = /Apple/.test(navigator.vendor || "");
@@ -1917,7 +1923,6 @@
   // Cache des images décodées : les plus anciennes sont libérées dès que le total dépasse BM_MAX.
   const bmCache = new Map();
   let bmPx = 0;
-  const imgOf = p => (p.pk ? p.pk[0] : p.src);     // petit calque rangé dans une planche (assets/f, pack_flats.py) : on le découpe dedans
   function getBitmap(src) {
     let e = bmCache.get(src);
     if (e) { bmCache.delete(src); bmCache.set(src, e); return e.p; }
@@ -1947,6 +1952,7 @@
   function updateView() {
     const l = camLimits();
     if (!l.vw) return;
+    viewAt = performance.now();
     const far = cam.s < FAR;
     if (chunkEl.hidden !== far) chunkEl.hidden = far;
     if (far) { if (!zooming()) Object.keys(chunks).forEach(dropChunk); farCheck(); return; }
@@ -1954,6 +1960,15 @@
     Object.keys(chunks).forEach(id => { if (!keep.has(+id)) dropChunk(id); });
     if (!painting) paint(); else paintAgain = true;
     farCheck();
+  }
+  // La toile de la vue éloignée reste sous les carreaux tant qu'il en manque à l'écran ; une fois l'écran couvert, elle ne sert plus :
+  // on la cache, le navigateur a une grande image de moins à composer à chaque déplacement.
+  function farCheck() {
+    if (!farEl || !farKey) return;
+    if (farEl.hidden) farEl.hidden = false;
+    const cover = cam.s >= FAR && layersKey !== null && !zooming() && chunkIds(viewBox(60)).every(id => chunks[id]);
+    const v = cover ? "hidden" : "";
+    if (farEl.style.visibility !== v) farEl.style.visibility = v;
   }
   function jobs() {
     const r = lod(), v = viewBox(160), cx = (v.x0 + v.x1) / 2, cy = (v.y0 + v.y1) / 2;
@@ -1966,96 +1981,128 @@
       for (;;) {
         paintAgain = false;
         if (cam.s < FAR || layersKey === null) break;
-        const todo = jobs().slice(0, 16);           // tout l'écran d'un coup : chaque image n'est décodée qu'une fois
-        if (!todo.length) break;
-        const key = layersKey, r = lod(), all = TILES.concat(shownList);
-        // essai d'un style : la copie est prise à la place du chantier dans l'ordre global (même si son calque ne touche pas ce carreau)
-        const ia = snapIds ? all.findIndex(p => snapIds.has(p.src)) : -1, gi = ia >= 0 ? new Map(all.map((p, i) => [pid(p), i])) : null;
-        todo.forEach(o => {
-          o.cv = document.createElement("canvas"); o.cv.width = Math.ceil(o.g.cw * r); o.cv.height = Math.ceil(o.g.ch * r);
-          o.ctx = o.cv.getContext("2d"); o.ctx.imageSmoothingQuality = "high";
-          o.list = all.filter(p => hit(o.g, p)).map(pid); o.pos = 0; o.start = 0; o.snapAt = -1;
-          const old = chunks[o.id], sn = old && old.snap;
-          if (sn && sn.cv.width && sn.r === r && sn.n <= o.list.length && sn.ids.every((s, i) => s === o.list[i])) try { o.ctx.drawImage(sn.cv, 0, 0); o.start = sn.n; o.snap = sn; } catch (e) { /* copie libérée */ }
-          if (o.start) paintStats.fromSnap++; else paintStats.full++;
-          if (ia >= 0) { let k = o.list.findIndex(s => gi.get(s) >= ia); if (k < 0) k = o.list.length; if (k > 0 && !(o.snap && o.snap.n === k)) o.snapAt = k; }
-        });
-        const srcs = all.filter(p => todo.some(o => hit(o.g, p))), at = new Map(srcs.map((p, i) => [pid(p), i]));
-        // premier calque à peindre vraiment (ceux d'avant sont dans les instantanés) : on ne décode rien avant
-        const first = Math.min.apply(null, todo.map(o => (o.start < o.list.length ? at.get(o.list[o.start]) : srcs.length)));
-        paintStats.batches++; paintStats.chunks += todo.length;
-        let ok = true, miss = false, slice = performance.now();
-        for (let k = 0; k < srcs.length; k++) {
-          const p = srcs[k];
-          // ce calque est-il à peindre dans au moins un carreau ? (sinon : déjà dans l'instantané)
-          const use = todo.filter(o => hit(o.g, p) && o.pos++ >= o.start);
-          if (!use.length) continue;
-          use.forEach(o => { if (o.pos - 1 === o.snapAt) {          // copie avant le calque essayé
-            const c = document.createElement("canvas"); c.width = o.cv.width; c.height = o.cv.height; c.getContext("2d").drawImage(o.cv, 0, 0);
-            o.snap = { n: o.snapAt, ids: o.list.slice(0, o.snapAt), at: all[ia].src, r: r, cv: c }; } });
-          for (let b = Math.max(k + 1, first); b < Math.min(srcs.length, Math.max(k + 1, first) + 2); b++) getBitmap(imgOf(srcs[b]));     // les suivantes se décodent pendant ce temps
-          const tw = performance.now(), bm = await getBitmap(imgOf(p)); paintStats.waitMs += performance.now() - tw; const td = performance.now();
-          if (layersKey !== key || lod() !== r || cam.s < FAR) { ok = false; break; }
-          if (!bm) { miss = true; continue; }
-          const kx = p.pk ? 1 : bm.width / p.w, ky = p.pk ? 1 : bm.height / p.h, ox = p.pk ? p.pk[1] : 0, oy = p.pk ? p.pk[2] : 0;
-          use.forEach(o => {
-            // seulement la partie de l'image qui tombe dans le carreau
-            const x0 = Math.max(p.x, o.g.x), y0 = Math.max(p.y, o.g.y), x1 = Math.min(p.x + p.w, o.g.x + o.g.cw), y1 = Math.min(p.y + p.h, o.g.y + o.g.ch);
-            paintStats.draws++; try { o.ctx.drawImage(bm, ox + (x0 - p.x) * kx, oy + (y0 - p.y) * ky, (x1 - x0) * kx, (y1 - y0) * ky, (x0 - o.g.x) * r, (y0 - o.g.y) * r, (x1 - x0) * r, (y1 - y0) * r); } catch (e) { /* image libérée */ }
-          });
-          paintStats.drawMs += performance.now() - td;
-          // on rend la main au navigateur toutes les 10 ms : la carte continue de glisser pendant qu'on peint
-          if (performance.now() - slice > 10) { await yieldNow(); slice = performance.now(); }
+        const o = jobs()[0];                        // un carreau à la fois, le plus proche du centre de l'écran : ses images ne servent qu'à lui
+        if (!o) break;
+        const key = layersKey, r = lod(), idx = pieceIdx[o.id] || {}, stale = () => layersKey !== key || lod() !== r || cam.s < FAR;
+        const parts = shownList.filter(p => idx[pid(p)]), list = parts.map(pid);       // les calques qui ont un morceau dans ce carreau, dans l'ordre
+        const cv = document.createElement("canvas"); cv.width = Math.ceil(o.g.cw * r); cv.height = Math.ceil(o.g.ch * r);
+        const ctx = cv.getContext("2d"); ctx.imageSmoothingQuality = "high";
+        const old = chunks[o.id], sn = old && old.snap;
+        let start = -1, snap = null, snapAt = -1, tried = null;       // start = -1 : le terrain reste à peindre
+        if (sn && sn.cv.width && sn.r === r && sn.n <= list.length && sn.ids.every((x, i) => x === list[i])) try { ctx.drawImage(sn.cv, 0, 0); start = sn.n; snap = sn; } catch (e) { /* copie libérée */ }
+        if (start >= 0) paintStats.fromSnap++; else paintStats.full++;
+        // essai d'un style : une copie du carreau est gardée juste avant le calque essayé (à sa place dans l'ordre, même s'il ne touche pas ce carreau)
+        const ia = snapIds ? shownList.findIndex(p => snapIds.has(p.src)) : -1;
+        if (ia >= 0) { tried = shownList[ia].src; let k = parts.findIndex(p => shownList.indexOf(p) >= ia); if (k < 0) k = parts.length; if (!(snap && snap.n === k)) snapAt = k; }
+        const copy = n => { const c = document.createElement("canvas"); c.width = cv.width; c.height = cv.height; c.getContext("2d").drawImage(cv, 0, 0); snap = { n: n, ids: list.slice(0, n), at: tried, r: r, cv: c }; };
+        paintStats.batches++; paintStats.chunks++;
+        let ok = true, miss = false, slice = performance.now(), last = -1;
+        const load = async src => { const tw = performance.now(), bm = await getBitmap(src); paintStats.waitMs += performance.now() - tw; return bm; };
+        if (start < 0) {
+          if (sheetN[o.id]) getBitmap(sheetSrc(o.id, 0));                      // la première planche se décode pendant ce temps
+          const bm = await load(terrSrc(o.id));
+          if (stale()) ok = false;
+          else if (!bm) miss = true;
+          else try { ctx.drawImage(bm, 0, 0, bm.width, bm.height, 0, 0, o.g.cw * r, o.g.ch * r); paintStats.draws++; } catch (e) { /* image libérée */ }
+          start = 0;
         }
-        if (ok) todo.forEach(o => {               // le chantier essayé vient après tout ce carreau : copie du carreau entier
-          if (o.snapAt > 0 && o.snapAt === o.list.length && !(o.snap && o.snap.n === o.snapAt)) {
-            const c = document.createElement("canvas"); c.width = o.cv.width; c.height = o.cv.height; c.getContext("2d").drawImage(o.cv, 0, 0);
-            o.snap = { n: o.snapAt, ids: o.list.slice(), at: all[ia].src, r: r, cv: c };
-          }
-        });
-        if (!ok) { todo.forEach(o => { o.cv.width = o.cv.height = 0; const sn = chunks[o.id] && chunks[o.id].snap; if (o.snap && o.snap !== sn) o.snap.cv.width = o.snap.cv.height = 0; }); continue; }
-        const keep = new Set(chunkIds(viewBox(WEBKIT ? 250 : 400)));
-        todo.forEach(o => {
-          if (!keep.has(o.id)) { o.cv.width = o.cv.height = 0; return; }        // la carte est partie ailleurs entre-temps
-          const cv = o.cv;
-          cv.className = "chunk"; cv.style.cssText = "left:" + o.g.x + "px;top:" + o.g.y + "px;width:" + o.g.cw + "px;height:" + o.g.ch + "px";
-          const old = chunks[o.id];
-          if (old) { old.cv.replaceWith(cv); old.cv.width = old.cv.height = 0; } else chunkEl.appendChild(cv);
-          if (old && old.snap && old.snap !== o.snap) { old.snap.cv.width = old.snap.cv.height = 0; }
-          const sn = o.snap && o.snap.cv.width && snapIds ? o.snap : null;
-          if (o.snap && !sn) o.snap.cv.width = o.snap.cv.height = 0;      // plus d'essai en cours : la copie ne sert plus
-          chunks[o.id] = { cv: cv, key: miss ? null : key, r: r, snap: sn };      // une image manquait : ce carreau sera repeint
-        });
+        for (let k = start; ok && k < parts.length; k++) {
+          if (k === snapAt) copy(k);
+          const a = idx[list[k]];
+          if (a[1] !== last) { last = a[1]; if (a[1] + 1 < sheetN[o.id]) getBitmap(sheetSrc(o.id, a[1] + 1)); }     // la planche suivante se décode pendant ce temps
+          const bm = await load(sheetSrc(o.id, a[1])), td = performance.now();
+          if (stale()) { ok = false; break; }
+          if (!bm) { miss = true; continue; }
+          paintStats.draws++; try { ctx.drawImage(bm, a[2], a[3], a[4], a[5], a[6] * r, a[7] * r, a[4] * r, a[5] * r); } catch (e) { /* image libérée */ }
+          paintStats.drawMs += performance.now() - td;
+          // on rend la main au navigateur toutes les 8 ms : la carte continue de glisser pendant qu'on peint
+          if (performance.now() - slice > 8) { await yieldNow(); slice = performance.now(); if (stale()) ok = false; }
+        }
+        if (ok && snapAt === parts.length) copy(parts.length);      // le chantier essayé vient après tout ce carreau : copie du carreau entier
+        const cur = chunks[o.id], curSnap = cur && cur.snap;
+        if (!ok || !new Set(chunkIds(viewBox(WEBKIT ? 250 : 400))).has(o.id)) {      // l'affichage a changé, ou la carte est partie ailleurs entre-temps
+          cv.width = cv.height = 0; if (snap && snap !== curSnap) snap.cv.width = snap.cv.height = 0;
+          if (!ok) await yieldNow();
+          continue;
+        }
+        cv.className = "chunk"; cv.style.cssText = "left:" + o.g.x + "px;top:" + o.g.y + "px;width:" + o.g.cw + "px;height:" + o.g.ch + "px";
+        if (cur) { cur.cv.replaceWith(cv); cur.cv.width = cur.cv.height = 0; } else chunkEl.appendChild(cv);
+        if (curSnap && curSnap !== snap) curSnap.cv.width = curSnap.cv.height = 0;
+        const keepSnap = snap && snap.cv.width && snapIds ? snap : null;
+        if (snap && !keepSnap) snap.cv.width = snap.cv.height = 0;      // plus d'essai en cours : la copie ne sert plus
+        chunks[o.id] = { cv: cv, key: miss ? null : key, r: r, snap: keepSnap };      // une image manquait : ce carreau sera repeint
         if (miss) { missN++; setTimeout(updateView, Math.min(60000, 4000 * Math.pow(2, missN - 1))); break; }
         missN = 0;
+        farCheck();
+        // Safari : une courte pause entre deux carreaux, le temps qu'il rende la mémoire des images du précédent
+        if (WEBKIT) await new Promise(res => setTimeout(res, 24)); else await yieldNow();
       }
     } catch (e) { diag.errors++; diag.last = String(e && e.message || e); missN++; setTimeout(updateView, Math.min(60000, 2000 * Math.pow(2, missN))); } finally { painting = false; }
+  }
+  /* Une partie du domaine (boîte en pixels du monde) dessinée dans une toile, à l'échelle k : terrain puis calques de la liste, carreau par carreau.
+     Sert aux murs de la maison et au jeu des différences. opt.filter(calque) peut rendre une fonction qui retouche les pixels du morceau. */
+  async function paintBox(ctx, B, list, k, opt) {
+    opt = opt || {};
+    for (const id of chunkIds({ x0: B.x, y0: B.y, x1: B.x + B.w - 1, y1: B.y + B.h - 1 })) {
+      const i = id % NI, j = (id - i) / NI, idx = pieceIdx[id] || {};
+      // la part du carreau dans la boîte, calée sur les pixels de la toile : deux carreaux voisins se touchent sans se recouvrir
+      const x0 = Math.round((Math.max(B.x, i * CH) - B.x) * k), y0 = Math.round((Math.max(B.y, j * CH) - B.y) * k);
+      const x1 = Math.round((Math.min(B.x + B.w, (i + 1) * CH) - B.x) * k), y1 = Math.round((Math.min(B.y + B.h, (j + 1) * CH) - B.y) * k);
+      if (x1 <= x0 || y1 <= y0) continue;
+      const ox = (i * CH - B.x) * k, oy = (j * CH - B.y) * k;
+      ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, x1 - x0, y1 - y0); ctx.clip();
+      try {
+        const t = await getBitmap(terrSrc(id));
+        if (opt.stale && opt.stale()) return false;
+        if (t) ctx.drawImage(t, 0, 0, t.width, t.height, ox, oy, t.width * k, t.height * k);
+        for (const p of list) {
+          const a = idx[pid(p)]; if (!a) continue;
+          const bm = await getBitmap(sheetSrc(id, a[1]));
+          if (opt.stale && opt.stale()) return false;
+          if (!bm) continue;
+          const f = opt.filter && opt.filter(p);
+          if (!f) { ctx.drawImage(bm, a[2], a[3], a[4], a[5], ox + a[6] * k, oy + a[7] * k, a[4] * k, a[5] * k); continue; }
+          const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(a[4] * k)); c.height = Math.max(1, Math.round(a[5] * k));
+          const g = c.getContext("2d"); g.drawImage(bm, a[2], a[3], a[4], a[5], 0, 0, c.width, c.height);
+          const im = g.getImageData(0, 0, c.width, c.height); f(im.data); g.putImageData(im, 0, 0);
+          ctx.drawImage(c, ox + a[6] * k, oy + a[7] * k, a[4] * k, a[5] * k); c.width = c.height = 0;
+        }
+      } catch (e) { /* image libérée : on continue avec le carreau suivant */ } finally { ctx.restore(); }
+    }
+    return true;
   }
   function painted() { return cam.s < FAR || !jobs().length; }
   // rendre la main sans attendre l'image suivante (un message est servi tout de suite, setTimeout et requestAnimationFrame font attendre)
   const yieldChan = typeof MessageChannel === "function" ? new MessageChannel() : null, yieldQ = [];
   if (yieldChan) yieldChan.port1.onmessage = () => { const f = yieldQ.shift(); if (f) f(); };
   const yieldNow = () => new Promise(res => { if (yieldChan) { yieldQ.push(res); yieldChan.port2.postMessage(0); } else setTimeout(res, 0); });
+  // La vue éloignée : le domaine au quart, puis les calques dans l'ordre. Les planches (jusqu'à 31 Mo décodées chacune) sont rangées dans l'ordre
+  // des calques (lowres.py) : on n'en garde qu'une en mémoire à la fois, au lieu de les décoder toutes ensemble.
   function composeFar() {
     if (!LO || !farEl || farBusy || farKey === layersKey) return;
     farBusy = true;
-    const key = layersKey, shown = shownList;
-    const load = src => new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
-    const sheets = farSheets || Promise.all(["assets/monde.webp"].concat(LO.sheets).map(load));
-    farSheets = sheets;
-    clearTimeout(farDrop); farDrop = setTimeout(() => { if (!farBusy) farSheets = null; }, 15000);   // les planches ne restent pas en mémoire
-    sheets.then(ims => {
+    const key = layersKey, shown = shownList, q = LO.q;
+    const load = src => new Promise(res => { const im = new Image(); im.decoding = "async"; im.onload = () => (im.decode ? im.decode() : Promise.resolve()).then(() => res(im), () => res(im)); im.onerror = () => res(null); im.src = src; });
+    (async () => {
+      const cv = document.createElement("canvas"); cv.width = Math.ceil(WORLD.w / q); cv.height = Math.ceil(WORLD.h / q);
+      const ctx = cv.getContext("2d");
+      const base = planEl && planEl.complete && planEl.naturalWidth ? planEl : await load("assets/monde.webp");
+      if (base) ctx.drawImage(base, 0, 0, cv.width, cv.height);
+      let cur = -1, im = null;
+      for (const p of shown) {
+        const m = LO.map[p.src]; if (!m) continue;
+        if (m[0] !== cur) { if (im) im.src = ""; cur = m[0]; im = await load(LO.sheets[cur]); if (key !== layersKey) break; }
+        if (im) ctx.drawImage(im, m[1], m[2], m[3], m[4], Math.round(p.x / q), Math.round(p.y / q), m[3], m[4]);   // calé sur les pixels : pas de bord à demi transparent
+      }
+      if (im) im.src = "";
       farBusy = false;
-      if (key !== layersKey) { composeFar(); return; }
-      const q = LO.q;
-      if (farEl.width !== Math.ceil(WORLD.w / q)) { farEl.width = Math.ceil(WORLD.w / q); farEl.height = Math.ceil(WORLD.h / q); }
-      const ctx = farEl.getContext("2d");
-      ctx.clearRect(0, 0, farEl.width, farEl.height);
-      if (ims[0]) ctx.drawImage(ims[0], 0, 0, farEl.width, farEl.height);
-      shown.forEach(p => { const m = LO.map[p.src]; if (m && ims[m[0] + 1]) ctx.drawImage(ims[m[0] + 1], m[1], m[2], m[3], m[4], Math.round(p.x / q), Math.round(p.y / q), m[3], m[4]); });   // calé sur les pixels : pas de bord à demi transparent
+      if (key !== layersKey) { cv.width = cv.height = 0; composeFar(); return; }
+      if (farEl.width !== cv.width) { farEl.width = cv.width; farEl.height = cv.height; }
+      const out = farEl.getContext("2d"); out.clearRect(0, 0, farEl.width, farEl.height); out.drawImage(cv, 0, 0); cv.width = cv.height = 0;
       farKey = key; farEl.hidden = false;
+      if (planEl) planEl.style.display = "none";          // la toile montre le même domaine : l'image du dessous ne sert plus (18 Mo décodés en moins)
       farCheck();
-    });
+    })().catch(() => { farBusy = false; });
   }
   // Retour dans l'appli : un iPhone à court de mémoire peut vider des toiles pendant qu'elle était en arrière-plan.
   // Un carreau est toujours entièrement opaque (les dalles couvrent tout) : un pixel transparent veut dire « vidé », on le repeint.
@@ -2066,7 +2113,7 @@
     if (document.hidden) return;
     missN = 0;
     Object.keys(chunks).forEach(c => { const o = chunks[c]; if (emptied(o.cv, o.cv.width >> 1, o.cv.height >> 1)) o.key = null; });
-    if (farEl && farKey && emptied(farEl, farEl.width >> 1, farEl.height >> 1)) { farKey = null; composeFar(); }
+    if (farEl && farKey && emptied(farEl, farEl.width >> 1, farEl.height >> 1)) { farKey = null; if (planEl) planEl.style.display = ""; composeFar(); }
     updateView();
   });
   // état de la carte, affiché dans les réglages : aide à comprendre un souci sur un téléphone
@@ -2076,7 +2123,6 @@
       Math.round(bmPx * 4 / 1e6) + " Mo d'images, " + (WEBKIT ? "Safari" : "autre") + ", écran ×" + DPR +
       (diag.fails || diag.errors ? " · échecs " + diag.fails + ", erreurs " + diag.errors + " (" + diag.last.slice(0, 60) + ")" : " · aucun échec");
   }
-  function farCheck() { if (farEl && farKey && farEl.hidden) farEl.hidden = false; }
   function centerOn(wx, wy, s) {
     const l = camLimits();
     if (!l.vw) return;
@@ -2481,17 +2527,15 @@
   function refreshWalls(layers) {
     if (!WALLS) return;
     const B = wallBox, inB = t => t.x < B.x + B.w && t.x + t.w > B.x && t.y < B.y + B.h && t.y + t.h > B.y;
-    const list = TILES.filter(inB).concat(layers.filter(inB));      // seulement ce qui touche la maison : pas tout le domaine
+    const list = layers.filter(inB);                                // seulement ce qui touche la maison : pas tout le domaine
     const key = list.map(p => p.src).join("|");                     // un chantier ailleurs sur le domaine ne refait pas les murs
     if (key === wallKey) return;
     wallKey = key;
-    const stamp = ++wallStamp;
-    Promise.all(list.map(p => getBitmap(imgOf(p)))).then(ims => {
-      if (stamp !== wallStamp) return;
-      const cv = document.createElement("canvas"); cv.width = B.w; cv.height = B.h;
-      const ctx = cv.getContext("2d");
-      list.forEach((p, i) => { if (ims[i]) try { if (p.pk) ctx.drawImage(ims[i], p.pk[1], p.pk[2], p.w, p.h, p.x - B.x, p.y - B.y, p.w, p.h); else ctx.drawImage(ims[i], p.x - B.x, p.y - B.y, p.w, p.h); } catch (e) { /* image libérée */ } });
+    const stamp = ++wallStamp, cv = document.createElement("canvas"); cv.width = B.w; cv.height = B.h;
+    paintBox(cv.getContext("2d"), B, list, 1, { stale: () => stamp !== wallStamp }).then(ok => {
+      if (!ok || stamp !== wallStamp) { cv.width = cv.height = 0; return; }
       WALLS.strips.forEach(st => { if (st.node) { st.node.remove(); st.node = null; } });
+      if (wallCanvas) wallCanvas.width = wallCanvas.height = 0;
       wallCanvas = cv;
       sortCats();
     });
@@ -2709,7 +2753,7 @@
       slots.push({ id: s.id, cur: one(s, k), alts: alts, at: s.at });
     });
     DECOS.forEach(d => { if (decoShown(d)) slots.push({ id: "deco_" + d.id, cur: { flat: [d.patch], objs: d.parts.map(o => ({ p: o.patch, d: o.depth })) }, alts: [], at: d.at }); });
-    return { tiles: TILES, slots: slots, pois: poiList(), world: WORLD, cats: S.cats.filter(c => !c.kitten).map(c => c.breed) };
+    return { slots: slots, pois: poiList(), world: WORLD, cats: S.cats.filter(c => !c.kitten).map(c => c.breed) };
   }
   function renderMarkers() {
     markersEl.innerHTML = preview ? "" : SLOTS.filter(available).map(s =>
@@ -2957,7 +3001,7 @@
 
   function openSettings() {
     openSheet(
-      "<h2>Maison Ronron</h2><p>Version 0.43." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
+      "<h2>Maison Ronron</h2><p>Version 0.44." + (memoryOnly ? " <strong>La sauvegarde est indisponible dans ce navigateur : la partie sera perdue à la fermeture.</strong>" : " La partie est enregistrée sur cet appareil.") + "</p>" +
       '<span class="tag">Son</span>' +
       '<label class="vol"><span>Musique</span><input id="v-music" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.music * 100) + '"><output id="o-music">' + Math.round(audioPref.music * 100) + '</output></label>' +
       '<label class="vol"><span>Bruitages</span><input id="v-sfx" type="range" min="0" max="100" step="5" value="' + Math.round(audioPref.sfx * 100) + '"><output id="o-sfx">' + Math.round(audioPref.sfx * 100) + '</output></label>' +
@@ -3619,7 +3663,7 @@
   $("#tab-cards").onclick = () => show("cards");
   $("#tab-games").onclick = () => show("games");
   RonronJeux.init({ S: () => S, save: save, updateHud: updateHud, sfx: sfx, buzz: buzz, openSheet: openSheet, closeSheet: closeSheet, show: show, toast: toast, ico: ico, plural: plural, esc: esc,
-    house: { scene: houseScene, bitmap: getBitmap, imgOf: imgOf, look: (breed, pose) => catLook(breed, [], pose), spriteScale: SPRITE_SCALE } });
+    house: { scene: houseScene, bitmap: getBitmap, paint: paintBox, look: (breed, pose) => catLook(breed, [], pose), spriteScale: SPRITE_SCALE } });
   $("#b-quit").onclick = () => RonronJeux.quit();
   $("#btn-advent").onclick = () => openAdvent();
   $("#btn-amb").onclick = () => { if (ambPreview) { clearTimeout(ambPreviewTimer); ambPreview = null; applyAmb(); } openAmb(); };

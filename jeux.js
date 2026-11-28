@@ -1286,14 +1286,13 @@
     g.fillStyle = "#EDE3D3"; g.fillRect(0, 0, cv.width, cv.height);
     const mods = {}; plan.diffs.forEach(d => { if (d.side === side && d.id) mods[d.id] = d; });
     const hit = p => p && p.x < b.x + b.w && p.x + p.w > b.x && p.y < b.y + b.h && p.y + p.h > b.y;
-    const draws = [];                                  // [patch, teinte]
-    plan.scene.tiles.forEach(p => { if (hit(p)) draws.push([p, 0]); });
+    const flats = [], hues = new Map();                // calques à plat (dans l'ordre) et teinte de ceux qui changent de couleur
     const objs = [];
     plan.scene.slots.forEach(s => {
       const m = mods[s.id];
       if (m && m.kind === "hide") return;
       const v = m && m.kind === "style" ? m.alt : s.cur, hue = m && m.kind === "hue" ? m.hue : 0;
-      v.flat.forEach(p => { if (hit(p)) draws.push([p, hue]); });
+      v.flat.forEach(p => { if (hit(p)) { flats.push(p); if (hue) hues.set(p, hue); } });
       v.objs.forEach(o => { if (hit(o.p)) objs.push({ p: o.p, d: o.d, hue: hue }); });
     });
     plan.cats.forEach((c, j) => {
@@ -1302,23 +1301,13 @@
     });
     plan.diffs.forEach(d => { if (d.kind === "cat" && d.side === side) objs.push({ cat: d.cat, d: d.cat.poi.depth || d.cat.poi.y }); });
     objs.sort((a, b2) => a.d - b2.d);
-    for (const [p, hue] of draws) await drawPatch(g, p, b, k, hue);
+    // le terrain et les calques à plat, carreau par carreau (app.js)
+    await H.paint(g, b, flats, k, { filter: p => { const h = hues.get(p); return h ? a => hueShift(a, h) : null; } });
     for (const o of objs) { if (o.cat) await drawCat(g, o.cat, b, k); else await drawPatch(g, o.p, b, k, o.hue); }
   }
-  async function drawPatch(g, p, b, k, hue) {
-    const H = C.house, bm = await H.bitmap(H.imgOf(p)); if (!bm) return;
-    let sx = 0, sy = 0, sw = bm.width, sh = bm.height;
-    if (p.pk) { sx = p.pk[1]; sy = p.pk[2]; sw = p.w; sh = p.h; }
-    else if (p.fw) { const f = bm.width / p.fw; sx = p.sx * f; sy = p.sy * f; sw = p.w * f; sh = p.h * f; }
-    const x0 = Math.max(p.x, b.x), y0 = Math.max(p.y, b.y), x1 = Math.min(p.x + p.w, b.x + b.w), y1 = Math.min(p.y + p.h, b.y + b.h);
-    if (x1 <= x0 || y1 <= y0) return;
-    const kx = sw / p.w, ky = sh / p.h, dx = (x0 - b.x) * k, dy = (y0 - b.y) * k, dw = (x1 - x0) * k, dh = (y1 - y0) * k;
-    const src = [sx + (x0 - p.x) * kx, sy + (y0 - p.y) * ky, (x1 - x0) * kx, (y1 - y0) * ky];
-    if (!hue) { g.drawImage(bm, src[0], src[1], src[2], src[3], dx, dy, dw, dh); return; }
-    // autre couleur : on tourne la teinte des pixels (et on colore un peu ce qui est gris)
-    const t = document.createElement("canvas"); t.width = Math.max(1, Math.round(dw)); t.height = Math.max(1, Math.round(dh));
-    const tg = t.getContext("2d"); tg.drawImage(bm, src[0], src[1], src[2], src[3], 0, 0, t.width, t.height);
-    const im = tg.getImageData(0, 0, t.width, t.height), a = im.data, rot = hue / 360;
+  // autre couleur : on tourne la teinte des pixels (et on colore un peu ce qui est gris)
+  function hueShift(a, hue) {
+    const rot = hue / 360;
     for (let i = 0; i < a.length; i += 4) {
       if (a[i + 3] < 8) continue;
       let r = a[i] / 255, gg = a[i + 1] / 255, bb = a[i + 2] / 255;
@@ -1330,6 +1319,20 @@
       const f = tt => { tt = (tt + 1) % 1; return tt < 1 / 6 ? p2 + (q2 - p2) * 6 * tt : tt < 0.5 ? q2 : tt < 2 / 3 ? p2 + (q2 - p2) * (2 / 3 - tt) * 6 : p2; };
       a[i] = f(h + 1 / 3) * 255; a[i + 1] = f(h) * 255; a[i + 2] = f(h - 1 / 3) * 255;
     }
+  }
+  // un objet trié en profondeur (image d'une planche assets/s), coupé à la vue
+  async function drawPatch(g, p, b, k, hue) {
+    const H = C.house, bm = await H.bitmap(p.src); if (!bm) return;
+    let sx = 0, sy = 0, sw = bm.width, sh = bm.height;
+    if (p.fw) { const f = bm.width / p.fw; sx = p.sx * f; sy = p.sy * f; sw = p.w * f; sh = p.h * f; }
+    const x0 = Math.max(p.x, b.x), y0 = Math.max(p.y, b.y), x1 = Math.min(p.x + p.w, b.x + b.w), y1 = Math.min(p.y + p.h, b.y + b.h);
+    if (x1 <= x0 || y1 <= y0) return;
+    const kx = sw / p.w, ky = sh / p.h, dx = (x0 - b.x) * k, dy = (y0 - b.y) * k, dw = (x1 - x0) * k, dh = (y1 - y0) * k;
+    const src = [sx + (x0 - p.x) * kx, sy + (y0 - p.y) * ky, (x1 - x0) * kx, (y1 - y0) * ky];
+    if (!hue) { g.drawImage(bm, src[0], src[1], src[2], src[3], dx, dy, dw, dh); return; }
+    const t = document.createElement("canvas"); t.width = Math.max(1, Math.round(dw)); t.height = Math.max(1, Math.round(dh));
+    const tg = t.getContext("2d"); tg.drawImage(bm, src[0], src[1], src[2], src[3], 0, 0, t.width, t.height);
+    const im = tg.getImageData(0, 0, t.width, t.height); hueShift(im.data, hue);
     tg.putImageData(im, 0, 0); g.drawImage(t, dx, dy, dw, dh);
   }
   async function drawCat(g, c, b, k) {
